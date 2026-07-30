@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "../test-utils";
 import { Markdown, OPEN_ARTIFACT_EVENT } from "./Markdown";
 
 afterEach(cleanup);

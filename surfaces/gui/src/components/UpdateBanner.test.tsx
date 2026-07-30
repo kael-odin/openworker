@@ -2,7 +2,7 @@
 // driven through a mocked __TAURI__ global (the browser build renders nothing, so the
 // e2e harness never sees this — these unit tests are the coverage).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "../test-utils";
 import { UpdateBanner } from "./UpdateBanner";
 
 const FIRST_CHECK_MS = 15_000;
@@ -42,7 +42,7 @@ describe("UpdateBanner", () => {
     expect(screen.getByTestId("update-banner").textContent).toContain("v1.2.0");
     // Pre-download resolved immediately → the button is ready and enabled.
     const btn = screen.getByTestId("update-install") as HTMLButtonElement;
-    expect(btn.textContent).toBe("Restart to update");
+    expect(btn.textContent).toBe("重启以更新");
     expect(btn.disabled).toBe(false);
   });
 
@@ -74,11 +74,11 @@ describe("UpdateBanner", () => {
     await advance(FIRST_CHECK_MS);
 
     const btn = screen.getByTestId("update-install") as HTMLButtonElement;
-    expect(btn.textContent).toBe("Downloading…");
+    expect(btn.textContent).toBe("下载中…");
     expect(btn.disabled).toBe(true);
 
     await act(async () => finish());
-    expect(btn.textContent).toBe("Restart to update");
+    expect(btn.textContent).toBe("重启以更新");
     expect(btn.disabled).toBe(false);
   });
 
@@ -88,7 +88,7 @@ describe("UpdateBanner", () => {
     await advance(FIRST_CHECK_MS);
 
     const btn = screen.getByTestId("update-install") as HTMLButtonElement;
-    expect(btn.textContent).toBe("Restart to update");
+    expect(btn.textContent).toBe("重启以更新");
     expect(btn.disabled).toBe(false);
 
     fireEvent.click(btn);
