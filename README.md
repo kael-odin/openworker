@@ -18,11 +18,11 @@
 
 ## 下载
 
-[**⬇ macOS（Apple Silicon）**](https://download.openworker.com/mac)
-<sub>macOS 12+ · 已签名与公证 · 自动更新</sub>
+[**⬇ macOS（Apple Silicon）**](https://github.com/kael-odin/openworker/releases/latest/download/OpenWorker-macos-arm64.dmg)
+<sub>macOS 12+ · fork 构建未经 Apple 签名与公证，首次启动需右键打开 · 支持应用内自动更新</sub>
 
-[**⬇ Windows 10/11（x64）**](https://download.openworker.com/windows)
-<sub>构建尚未做代码签名，SmartScreen 会提示；签名工作正在进行中</sub>
+[**⬇ Windows 10/11（x64）**](https://github.com/kael-odin/openworker/releases/latest/download/OpenWorker-windows-setup.exe)
+<sub>fork 构建未经 Authenticode 代码签名，SmartScreen 会提示 · 支持应用内自动更新</sub>
 
 打开应用，添加一个模型 Key（或指向 Ollama），提一个真实的需求。
 
