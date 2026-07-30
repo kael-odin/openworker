@@ -14,6 +14,8 @@
 
 它运行在你自己的机器上，不锁定任何模型：自带 OpenAI、Anthropic、Google 或任意开放权重模型的 API Key，或用 Ollama 完全本地运行。你的数据只有在经过*你*选择的模型与集成时才会离开你的机器。
 
+[![OpenWorker 的工作方式](docs/assets/how-it-works.png)](https://openworker.com)
+
 ## 下载
 
 [**⬇ macOS（Apple Silicon）**](https://download.openworker.com/mac)
