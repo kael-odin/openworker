@@ -2,6 +2,23 @@ import { useState } from "react";
 import type { ApprovalDecision, Item } from "../types";
 import { humanizeApprovalTitle, type HumanLine } from "../humanize";
 import { Icon } from "./Icon";
+import { useT } from "../i18n/I18nProvider";
+import { currentLang } from "../i18n/I18nProvider";
+import zh from "../i18n/zh.json";
+import en from "../i18n/en.json";
+
+type Dict = Record<string, string>;
+const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
+// Non-component helpers (shortArgs, scopeNote, toolVerb) read the lang at call time,
+// mirroring humanize.ts — they're invoked from render of components that already
+// re-render on lang change, so the value is fresh.
+function tt(key: string, params?: Record<string, string | number>): string {
+  const lang = currentLang();
+  const d = DICTS[lang] ?? DICTS.zh;
+  const raw = d[key] ?? DICTS.en[key] ?? key;
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
+}
 
 export function shortArgs(args: any): string {
   if (!args || typeof args !== "object") return "";
@@ -14,16 +31,21 @@ export function shortArgs(args: any): string {
     .join("  ");
 }
 
-// Human verbs kept for the §25 grant lines (the card title now comes from humanize.ts).
-const TOOL_VERBS: Record<string, string> = {
-  write_file: "Write a file",
-  replace_in_file: "Edit a file",
-  apply_patch: "Apply a patch",
-  apply_unified_diff: "Apply a patch",
-  run_shell: "Run a command",
-  send_message: "Send a message",
-  send_file: "Send a file",
+// Human verbs for the §25 grant lines (the card title now comes from humanize.ts).
+// Localized via approval.verb_* keys; falls back to the raw tool name.
+const TOOL_VERB_KEYS: Record<string, string> = {
+  write_file: "approval.verb_write_file",
+  replace_in_file: "approval.verb_replace_in_file",
+  apply_patch: "approval.verb_apply_patch",
+  apply_unified_diff: "approval.verb_apply_patch",
+  run_shell: "approval.verb_run_shell",
+  send_message: "approval.verb_send_message",
+  send_file: "approval.verb_send_file",
 };
+function toolVerb(name: string): string {
+  const key = TOOL_VERB_KEYS[name];
+  return key ? tt(key) : name;
+}
 
 // §35: routine workspace writes render as a compact ROW; everything else is a full card.
 const FILE_WRITES = new Set(["write_file", "replace_in_file", "apply_patch", "apply_unified_diff"]);
@@ -65,14 +87,15 @@ export function scopeNote(
   args: any,
   category?: string,
 ): { text: string; external: boolean } {
-  if (category === "connector") return { text: "acts on a connected service", external: true };
+  if (category === "connector") return { text: tt("approval.scope_connector"), external: true };
   if (EXTERNAL.has(name)) {
     const platform = String(args?.target ?? "").split(":")[0];
     const names: Record<string, string> = { slack: "Slack", telegram: "Telegram" };
-    return { text: `leaves this Mac → ${names[platform] || platform || "a connected chat"}`, external: true };
+    const target = names[platform] || platform || tt("approval.scope_chat_fallback");
+    return { text: tt("approval.scope_leaves_mac", { target }), external: true };
   }
   const overwrite = name === "write_file" && args?.overwrite;
-  return { text: "stays on this Mac" + (overwrite ? " · overwrites the existing file" : ""), external: false };
+  return { text: tt("approval.scope_stays_mac") + (overwrite ? tt("approval.scope_overwrites") : ""), external: false };
 }
 
 // The proposed content/command, straight from the tool call's ARGS — the file/action
@@ -84,6 +107,7 @@ const PREVIEW_CHARS = 420;
 
 export function PreviewBlock({ text, mono = true }: { text: string; mono?: boolean }) {
   const [all, setAll] = useState(false);
+  const { t } = useT();
   const lines = text.split("\n");
   const clipped = lines.length > PREVIEW_LINES || text.length > PREVIEW_CHARS;
   let shown = text;
@@ -97,10 +121,10 @@ export function PreviewBlock({ text, mono = true }: { text: string; mono?: boole
       {clipped && (
         <button className="approval-prev-more" onClick={() => setAll((v) => !v)}>
           {all
-            ? "show less"
+            ? t("approval.show_less")
             : lines.length > PREVIEW_LINES
-              ? `show all ${lines.length} lines`
-              : "show the full message"}
+              ? t("approval.show_all_lines", { n: lines.length })
+              : t("approval.show_full_message")}
         </button>
       )}
     </div>
@@ -133,6 +157,7 @@ function Buttons({
 }) {
   const connector = item.category === "connector";
   const offerStanding = !!(runTask && item.standingTarget);
+  const { t } = useT();
   return (
     <div className="approval-btns">
       <button className="btn approval-primary" onClick={() => onApprove("once")}>
@@ -141,10 +166,14 @@ function Buttons({
       {offerStanding && (
         <button
           className="btn"
-          title={`Always allow ${item.name} → ${item.standingTarget} for “${runTask?.title || "this automation"}” — revoke any time on its Automations page`}
+          title={t("approval.always_task_title", {
+            tool: item.name,
+            target: item.standingTarget || "",
+            task: runTask?.title || t("approval.this_automation"),
+          })}
           onClick={() => onApprove("always_task")}
         >
-          Allow every time
+          {t("approval.allow_every_time")}
         </button>
       )}
       {/* In a run context the task-persistent grant replaces the session-scoped one —
@@ -155,20 +184,20 @@ function Buttons({
       {!connector && !offerStanding && item.name !== "run_shell" && (
         <button
           className="btn"
-          title={`Always allow ${TOOL_VERBS[item.name]?.toLowerCase() || item.name} for this session`}
+          title={t("approval.always_tool_title", { verb: toolVerb(item.name).toLowerCase() })}
           onClick={() => onApprove("always_tool")}
         >
-          Always allow
+          {t("approval.always_allow")}
         </button>
       )}
       {item.name === "run_shell" && (
         <button className="btn" onClick={() => onApprove("always_command")}>
-          Always allow this command
+          {t("approval.always_allow_command")}
         </button>
       )}
       <span className="spacer" />
       <button className="btn quiet-deny" onClick={() => onApprove("deny")}>
-        Deny
+        {t("approval.deny")}
       </button>
     </div>
   );
@@ -188,6 +217,7 @@ export function ApprovalCard({
   compact?: boolean;
 }) {
   const [peek, setPeek] = useState(false);
+  const { t } = useT();
   const title = humanizeApprovalTitle(item.name, item.args);
   const scope = scopeNote(item.name, item.args, item.category);
   const grants = item.name === "create_scheduled_task" ? permissionLines(item.args) : [];
@@ -206,11 +236,11 @@ export function ApprovalCard({
           <TitleText line={title} />
           {content && (
             <button className="approval-peek" onClick={() => setPeek((v) => !v)}>
-              preview {peek ? "▴" : "▾"}
+              {t("approval.preview")} {peek ? "▴" : "▾"}
             </button>
           )}
           <span className="spacer" />
-          <Buttons item={item} onApprove={onApprove} runTask={runTask} primaryLabel="Allow" />
+          <Buttons item={item} onApprove={onApprove} runTask={runTask} primaryLabel={t("approval.allow")} />
         </div>
         {peek && content && <PreviewBlock text={content} />}
         {reason && <div className="approval-reason">{reason}</div>}
@@ -222,7 +252,7 @@ export function ApprovalCard({
     <div className={"approval" + (scope.external ? " approval-external" : "") + dock}>
       <div className="approval-top">
         <div className="approval-heading">
-          <span className="approval-ico" title={`Tool: ${item.name}`}>
+          <span className="approval-ico" title={t("approval.tool_label", { name: item.name })}>
             <Icon name="shield" size={15} />
           </span>
           <TitleText line={title} />
@@ -241,11 +271,11 @@ export function ApprovalCard({
             <span className="ico">
               <Icon name="file" size={13} />
             </span>
-            {String(item.args?.path ?? "").split("/").pop() || "file"}
-            {item.args?.as_screenshot ? " · as a PNG screenshot" : ""}
+            {String(item.args?.path ?? "").split("/").pop() || t("approval.file")}
+            {item.args?.as_screenshot ? t("approval.as_png") : ""}
           </span>
           {item.args?.comment && (
-            <MessagePreview text={String(item.args.comment)} label="With the message" />
+            <MessagePreview text={String(item.args.comment)} label={t("approval.with_message")} />
           )}
         </>
       )}
@@ -261,9 +291,9 @@ export function ApprovalCard({
                 {g.access === "write" ? "✓" : "·"}
               </span>
               <span className="grant-line">
-                {TOOL_VERBS[g.tool] || g.tool} <code className="approval-tool">{g.target}</code>
+                {toolVerb(g.tool)} <code className="approval-tool">{g.target}</code>
                 <span className="grant-note">
-                  {g.access === "write" ? " — always allowed once you approve" : " — read-only"}
+                  {g.access === "write" ? t("approval.grant_write_note") : t("approval.grant_read_note")}
                 </span>
               </span>
             </div>
@@ -278,9 +308,9 @@ export function ApprovalCard({
       {reason && <div className="approval-reason">{reason}</div>}
 
       {item.resolved ? (
-        <div className="resolved">Approved: {item.resolved.replace("_", " ")}</div>
+        <div className="resolved">{t("approval.resolved", { state: item.resolved.replace(/_/g, " ") })}</div>
       ) : (
-        <Buttons item={item} onApprove={onApprove} runTask={runTask} primaryLabel="Allow once" />
+        <Buttons item={item} onApprove={onApprove} runTask={runTask} primaryLabel={t("approval.allow_once")} />
       )}
     </div>
   );
