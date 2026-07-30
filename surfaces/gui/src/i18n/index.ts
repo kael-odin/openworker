@@ -27,6 +27,8 @@ export function setLangPref(lang: Lang) {
   } catch {
     /* private mode etc. — still applies for this session */
   }
+  // Keep <html lang> in sync for accessibility / search engines / screen readers.
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
   // Force a re-render of every useT() consumer by toggling the event.
   window.dispatchEvent(new CustomEvent(LANG_EVENT, { detail: lang }));
 }
