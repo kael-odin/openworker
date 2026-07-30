@@ -1,3 +1,8 @@
 /target
 /gen/schemas
 /binaries
+# Keep the placeholder dir tracked so Tauri's build script (which validates the
+# `bundle.resources` `binaries/sidecar` path exists) doesn't fail on a fresh
+# clone in dev mode — see scripts/README.md. Packaged sidecars are built by the
+# release scripts and still land here, ignored.
+!/binaries/sidecar/.gitkeep

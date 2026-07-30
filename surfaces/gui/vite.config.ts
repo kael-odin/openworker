@@ -27,7 +27,22 @@ export default defineConfig(({ command }) => {
   return {
     base: "./",
     plugins: [react()],
-    server: { port: 1420, strictPort: true },
+    server: {
+      port: 1420,
+      strictPort: true,
+      // The Tauri dev flow runs `cargo build` in src-tauri/target while Vite's
+      // fs watcher is live; on Windows the build-script .exe files there are
+      // locked by cargo, so a recursive watch into target/ hits EBUSY and
+      // crashes Vite (killing beforeDevCommand → Tauri aborts). Keep the
+      // watcher out of cargo's build tree (and the Python venv) entirely.
+      watch: {
+        ignored: [
+          "**/src-tauri/target/**",
+          "**/.venv/**",
+          "**/node_modules/**",
+        ],
+      },
+    },
     define: { __COWORKER_DEV_TOKEN__: JSON.stringify(devToken) },
     // Tauri CLI looks for these; harmless for the browser build.
     clearScreen: false,
