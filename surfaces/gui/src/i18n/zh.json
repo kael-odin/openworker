@@ -56,6 +56,7 @@
   "app.jump_to_latest": "跳到最新",
   "app.notice_stopped_max": "已停止：达到最大迭代次数。",
   "app.notice_model_switched": "模型已切换",
+  "app.notice_compacted": "上下文已压缩",
   "app.notice_interrupted": "已中断。",
   "app.notice_error_prefix": "错误：",
   "app.notice_unknown": "未知",
@@ -1192,5 +1193,15 @@
   "settings.files_save": "保存",
   "settings.files_saved": "已保存。新会话将使用此位置。",
   "settings.files_err": "无法使用该位置。",
-  "settings.files_help": "每个会话在此位置下拥有独立文件夹。现有会话保留其当前文件夹；你可以在任意会话内授权访问更多文件夹。"
+  "settings.files_help": "每个会话在此位置下拥有独立文件夹。现有会话保留其当前文件夹；你可以在任意会话内授权访问更多文件夹。",
+  "settings.compaction_title": "上下文压缩",
+  "settings.compaction_blurb": "长会话会自动压缩：更早的回合会被生成摘要，让协作伙伴继续工作而不是耗尽上下文。你可见的对话记录不会被改动——只显示一个小标记标明压缩发生的位置。",
+  "settings.compaction_compact_at": "压缩于",
+  "settings.compaction_of_window": "% 的上下文窗口",
+  "settings.compaction_or_at": "或于",
+  "settings.compaction_tokens_smaller": "tokens，取较小者",
+  "settings.compaction_cap_help": "上限让超大上下文的模型提前压缩——在名义上限之前，质量和速度就已经下降。",
+  "settings.compaction_summarizer_model": "摘要模型",
+  "settings.compaction_own_model_default": "会话自身的模型（默认）",
+  "settings.compaction_model_help": "摘要由该模型生成。默认跟随会话当前使用的模型。"
 }

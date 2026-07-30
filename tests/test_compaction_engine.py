@@ -32,7 +32,7 @@ class CompactingProvider(ProviderClient):
         self.main_calls = 0
 
     def complete(self, *, model, messages, tools=None, **settings):
-        if messages and "compacting an AI coworker" in str(
+        if messages and "你正在压缩一个 AI 协作伙伴" in str(
             messages[0].get("content", "")
         ):
             self.summary_calls.append({"model": model, "messages": messages})
@@ -138,7 +138,7 @@ def test_summarizer_failure_unattended_auto_trims(tmp_path):
     events = collect(engine)  # is_attended is None → unattended policy
 
     compacted = [e for e in events if e.type == EventType.COMPACTED]
-    assert compacted and "trimmed" in compacted[0].data["text"].lower()
+    assert compacted and "裁剪" in compacted[0].data["text"]
     assert engine.compaction_state is not None and engine.compaction_state.trimmed
     assert len(provider.summary_calls) == 2  # the one unconditional retry, then trim
 
@@ -153,12 +153,12 @@ def test_summarizer_failure_attended_prompts_retry_then_succeeds(tmp_path):
 
     async def asker(args, tool_call_id=None):
         asked.append(args)
-        return {"answer": "Retry"}
+        return {"answer": "重试"}
 
     engine.question_asker = asker
     collect(engine)
 
-    assert asked and asked[0]["options"] == ["Retry", "Trim oldest 10%"]
+    assert asked and asked[0]["options"] == ["重试", "裁剪最旧的 10%"]
     assert engine.compaction_state is not None and not engine.compaction_state.trimmed
 
 
@@ -170,7 +170,7 @@ def test_summarizer_failure_attended_choose_trim(tmp_path):
     engine.is_attended = lambda: True
 
     async def asker(args, tool_call_id=None):
-        return {"answer": "Trim oldest 10%"}
+        return {"answer": "裁剪最旧的 10%"}
 
     engine.question_asker = asker
     collect(engine)

@@ -476,18 +476,18 @@ class TurnEngine:
                     self.question_asker(
                         {
                             "question": (
-                                "Context compaction failed — the summarizer couldn't "
-                                "condense this session's history. How should I proceed?"
+                                "上下文压缩失败——摘要器无法精简本次会话的历史。"
+                                "我该如何继续？"
                             ),
-                            "options": ["Retry", "Trim oldest 10%"],
+                            "options": ["重试", "裁剪最旧的 10%"],
                             "allow_text": False,
-                            "header": "Compaction",
+                            "header": "压缩",
                         },
                         None,
                     ),
                     interrupted=None,
                 )
-                if not answer or answer.get("answer") != "Retry":
+                if not answer or answer.get("answer") != "重试":
                     break
                 try:
                     state = await asyncio.to_thread(_build)
@@ -498,13 +498,13 @@ class TurnEngine:
         if state is not None:
             self.compaction_state = state
             self._last_context_tokens = None  # stale once the outbound view shrank
-            return "Context compacted — earlier turns were summarized"
+            return "上下文已压缩——更早的回合已生成摘要"
         if failed or force:
             trimmed = _compaction.trim_state(self.messages, prior=self.compaction_state)
             if trimmed is not None:
                 self.compaction_state = trimmed
                 self._last_context_tokens = None
-                return "Context trimmed — oldest turns dropped (summary unavailable)"
+                return "上下文已裁剪——已丢弃最旧的回合（无可用摘要）"
         return None
 
     # -- helpers ----------------------------------------------------------------

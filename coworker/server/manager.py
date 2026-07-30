@@ -1908,11 +1908,11 @@ class SessionManager:
             try:
                 pct = float(threshold_pct)
             except (TypeError, ValueError):
-                return {"ok": False, "error": "compaction_threshold_pct must be a number"}
+                return {"ok": False, "error": "compaction_threshold_pct 必须是数字"}
             if not 0.10 <= pct <= 0.95:
                 return {
                     "ok": False,
-                    "error": "compaction_threshold_pct must be between 0.10 and 0.95",
+                    "error": "compaction_threshold_pct 必须在 0.10 到 0.95 之间",
                 }
             self._prefs["compaction_threshold_pct"] = pct
         if cap_tokens is not None:
@@ -1921,7 +1921,7 @@ class SessionManager:
                     10_000, min(int(cap_tokens), 2_000_000)
                 )
             except (TypeError, ValueError):
-                return {"ok": False, "error": "compaction_cap_tokens must be a number"}
+                return {"ok": False, "error": "compaction_cap_tokens 必须是数字"}
         if model is not None:
             self._prefs["compaction_model"] = str(model)
         self._save_prefs()

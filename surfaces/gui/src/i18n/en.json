@@ -56,6 +56,7 @@
   "app.jump_to_latest": "Jump to latest",
   "app.notice_stopped_max": "Stopped: max iterations reached.",
   "app.notice_model_switched": "Model switched",
+  "app.notice_compacted": "Context compacted",
   "app.notice_interrupted": "Interrupted.",
   "app.notice_error_prefix": "Error: ",
   "app.notice_unknown": "unknown",
@@ -1192,5 +1193,15 @@
   "settings.files_save": "Save",
   "settings.files_saved": "Saved. New conversations will use this location.",
   "settings.files_err": "Could not use that location.",
-  "settings.files_help": "Each conversation gets its own folder under this location. Existing conversations keep their current folder; you can grant access to more folders inside any conversation."
+  "settings.files_help": "Each conversation gets its own folder under this location. Existing conversations keep their current folder; you can grant access to more folders inside any conversation.",
+  "settings.compaction_title": "Context compaction",
+  "settings.compaction_blurb": "Long sessions are compacted automatically: older turns are summarized so the coworker keeps working instead of running out of context. Your visible transcript is never changed — a small marker shows where compaction happened.",
+  "settings.compaction_compact_at": "Compact at",
+  "settings.compaction_of_window": "% of the context window",
+  "settings.compaction_or_at": "or at",
+  "settings.compaction_tokens_smaller": "tokens, whichever is smaller",
+  "settings.compaction_cap_help": "The cap makes very-large-context models compact early — quality and speed degrade well before their nominal limit.",
+  "settings.compaction_summarizer_model": "Summarizer model",
+  "settings.compaction_own_model_default": "Session's own model (default)",
+  "settings.compaction_model_help": "The summary is written by this model. The default follows whatever model the session is using."
 }

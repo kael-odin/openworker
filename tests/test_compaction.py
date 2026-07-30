@@ -193,7 +193,7 @@ def test_summarizer_messages_clip_tool_results_and_fold_prior():
     body = msgs[1]["content"]
     assert "OLD SUMMARY" in body
     assert len(body) < 3000  # the 2500-char tool result got clipped hard
-    assert msgs[0]["role"] == "system" and "Primary request and intent" in msgs[0]["content"]
+    assert msgs[0]["role"] == "system" and "主要请求与意图" in msgs[0]["content"]
 
 
 def test_summarize_span_passes_model_and_raises_on_empty():
@@ -268,7 +268,7 @@ def test_trim_advances_boundary_and_keeps_user_messages():
     assert state is not None and state.trimmed
     assert msgs[state.boundary_index]["role"] in ("user", "assistant")
     assert state.user_messages  # preserved mechanically even without a summary
-    assert "trimmed" in state.summary_text
+    assert "裁剪" in state.summary_text
     out = apply_to_outbound(msgs, state)
     assert len(out) < len(msgs) + 1
 

@@ -239,21 +239,21 @@ def extract_working_state(span: list[dict[str, Any]]) -> str:
                 break
         return seen
 
-    lines = ["## Working state (extracted mechanically from tool records)"]
+    lines = ["## 工作状态（从工具调用记录中机械抽取）"]
     written = _dedupe_recent_first(files, 20)
     if written:
-        lines.append("Files written/edited (most recent first):")
+        lines.append("写过的文件（最近在前）：")
         lines += [f"- {p}" for p in written]
     recent_cmds = commands[-10:]
     if recent_cmds:
-        lines.append("Recent shell commands:")
+        lines.append("最近的 shell 命令：")
         lines += [f"- {c}" for c in recent_cmds]
     made = _dedupe_recent_first(artifacts, 10)
     if made:
-        lines.append("Artifacts produced:")
+        lines.append("产出的成果：")
         lines += [f"- {a}" for a in made]
     if tools:
-        lines.append("Tools used in the summarized span: " + ", ".join(sorted(tools)))
+        lines.append("摘要区间内用过的工具：" + ", ".join(sorted(tools)))
     return "\n".join(lines) if len(lines) > 1 else ""
 
 
@@ -291,28 +291,27 @@ def extract_user_messages(
 
 # -- summarizer ---------------------------------------------------------------
 
-SUMMARY_SYSTEM_PROMPT = """You are compacting an AI coworker's session history so the coworker can continue working in a smaller context. Write a structured summary of the conversation below. It is the coworker's ONLY memory of these turns, so preserve everything load-bearing.
+SUMMARY_SYSTEM_PROMPT = """你正在压缩一个 AI 协作伙伴的会话历史，使其能在更小的上下文中继续工作。请为下方对话写一份结构化摘要。这是协作伙伴对这些回合唯一的记忆，因此务必保留所有关键信息。
 
-Produce ALL of the following sections, in this order, each as a markdown heading:
+按以下顺序生成全部章节，每个章节用 markdown 标题：
 
-1. **Primary request and intent** — what the user is trying to get done, in their terms, including standing constraints stated at any point (e.g. "never send without my approval"). Constraints outlive the turns they were stated in.
-2. **Key concepts and decisions** — domain facts, technical choices, and rationale established so far. Include the WHY, not just the what — a decision without its reason gets relitigated.
-3. **Artifacts and files** — every file/deliverable created, modified, or read that still matters: path, its role, and a short excerpt of load-bearing content only.
-4. **Errors and fixes** — problems hit and how they were resolved, including user corrections ("no, do it this way") — those are feedback with lasting force.
-5. **All user messages** — a chronological list of every user message (trimmed of pasted bulk). This is the intent audit-trail.
-6. **Pending tasks** — explicitly incomplete items, promised follow-ups, things the user said "later" about.
-7. **Current work** — precisely what was in progress at this point: which step, which file, what state.
-8. **Next step** — the immediate next action, justified by the user's request.
+1. **主要请求与意图** —— 用户想完成什么，用用户的措辞表达，包括任何时刻提出的常驻约束（例如「未经我批准不得发送」）。约束的生命周期长于它被提出时的那个回合。
+2. **关键概念与决策** —— 迄今确立的领域事实、技术选择及其理由。要包含「为什么」，而不只是「是什么」——没有理由的决策会被反复重新讨论。
+3. **成果与文件** —— 仍然重要的每个已创建、修改或读取的文件/交付物：路径、它的作用，以及仅关键内容的简短摘录。
+4. **错误与修复** —— 遇到的问题及解决方式，包括用户的纠正（「不，要这样做」）——这些是具有持久效力的反馈。
+5. **全部用户消息** —— 每条用户消息的时序列表（裁去粘贴的大段内容）。这是意图的审计轨迹。
+6. **待办任务** —— 明确未完成的事项、承诺的后续工作、用户说过「稍后」处理的东西。
+7. **当前工作** —— 此刻正在进行的：哪一步、哪个文件、什么状态。
+8. **下一步** —— 紧接着的下一个动作，并依据用户的请求给出理由。
 
-Rules:
-- Do NOT carry full file contents as truth. Note THAT a file was read/edited; the coworker re-reads if it needs the content again. Stale memory of a file is worse than no memory.
-- Be concrete: paths, names, commands, ids — not vague references.
-- Output only the summary sections, no preamble."""
+规则：
+- 不要把文件全文当作事实保留。只记录某个文件被读取/编辑过；协作伙伴需要内容时会重新读取。对文件的陈旧记忆比没有记忆更糟。
+- 要具体：路径、名称、命令、id —— 不要模糊指代。
+- 只输出摘要章节，不要加前言。"""
 
 CONTINUATION_CONTRACT = (
-    "Continue where you left off: pick up the current work and next step exactly as "
-    "described. Do not re-ask answered questions, do not recap, do not mention that the "
-    "context was compacted. If you need the contents of a file noted above, re-read it."
+    "从你停下的地方继续：按描述接手当前工作和下一步。不要重新提问已回答过的问题，"
+    "不要复述，不要提及上下文已被压缩。如果需要上面提到的某文件内容，请重新读取。"
 )
 
 
@@ -456,8 +455,8 @@ def trim_state(
     prior_users = list(prior.user_messages) if prior is not None else []
     summary = (
         (prior.summary_text + "\n\n" if prior is not None and prior.summary_text else "")
-        + "(Older turns were trimmed to fit the context window; no summary is available "
-        "for them. Re-read files and re-run commands if earlier results are needed.)"
+        + "（更早的回合已被裁剪以适应上下文窗口；没有为它们生成摘要。"
+        "如需早期结果，请重新读取文件并重新运行命令。）"
     )
     return CompactionState(
         boundary_index=boundary,
@@ -474,15 +473,14 @@ def compacted_block(state: CompactionState) -> str:
     """The single outbound message standing in for everything before the boundary."""
     parts = [
         "<compacted-history>",
-        "Earlier turns of this session were compacted. The summary below is your memory "
-        "of them.",
+        "本会话更早的回合已被压缩。下方摘要是你对这些回合的记忆。",
         "",
         state.summary_text,
     ]
     if state.working_state:
         parts += ["", state.working_state]
     if state.user_messages:
-        parts += ["", "## User messages in the compacted span (verbatim, chronological)"]
+        parts += ["", "## 压缩区间内的用户消息（逐字保留，按时间顺序）"]
         parts += [f"- {u}" for u in state.user_messages]
     parts += ["", CONTINUATION_CONTRACT, "</compacted-history>"]
     return "\n".join(parts)

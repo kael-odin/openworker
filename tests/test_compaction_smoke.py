@@ -24,7 +24,7 @@ class LongSessionProvider(ProviderClient):
         self.summary_prompts: list[str] = []
 
     def complete(self, *, model, messages, tools=None, **settings):
-        if messages and "compacting an AI coworker" in str(
+        if messages and "压缩一个 AI 协作伙伴" in str(
             messages[0].get("content", "")
         ):
             self.summary_prompts.append(str(messages[1]["content"]))
@@ -101,7 +101,7 @@ def test_long_session_survives_repeated_compaction(tmp_path):
     assert "<compacted-history>" in block
     assert "Q3 report" in block  # the summary carries the intent
     assert "user step 0" in block  # mechanical user-message preservation, from turn 0
-    assert "do not recap" in block  # the continuation contract
+    assert "不要复述" in block  # the continuation contract
     assert len(final_view) < len(engine.messages)
 
     # Canonical transcript: untouched (every turn still present) + the divider notices.
