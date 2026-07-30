@@ -13,201 +13,191 @@ for every available connector — tests/test_connectors.py enforces it.
 from __future__ import annotations
 
 ABOUT: dict[str, str] = {
-    "telegram": "Chat with your coworker from Telegram. Messages to your bot "
-    "reach the agent and replies come back to the same chat — only senders on "
-    "your allow-list get through.",
-    "slack": "Bring your coworker into Slack: mention it in a channel or DM it, "
-    "and replies land in-thread. Any number of workspaces can be connected, "
-    "each with its own allow-list of who may talk to the agent.",
-    "email": "Read, search, and send mail on any IMAP account — Gmail, iCloud, "
-    "Fastmail, or your own server — using an app password instead of your "
-    "account password.",
-    "gmail": "Search, summarize, and send over your Gmail. Multiple accounts "
-    "connect side by side, and privacy filters can hide chosen senders or "
-    "labels from agents entirely.",
-    "google_calendar": "Check availability, summarize your week, and manage "
-    "events. Multiple Google accounts connect side by side.",
-    "browser": "A built-in browser agents drive to read pages and act on "
-    "websites — separate from your personal browser, with actions subject to "
-    "approval.",
-    "github": "Work with issues, pull requests, repository files, and CI "
-    "status. One click installs the OpenWorker GitHub App on the repositories "
-    "you pick; mention the agent on an issue or PR and it answers from your "
-    "desktop.",
-    "outlook": "Search, summarize, and send Microsoft 365 mail, and run your "
-    "calendar — create and move meetings, respond to invites. Multiple "
-    "mailboxes connect side by side.",
-    "hubspot": "Search and read your CRM; optionally log notes and tasks and "
-    "update records. Read-only vs read & write is chosen at consent time, and "
-    "chosen properties can be hidden from agents entirely.",
-    "notion": "Search and read the pages and databases you share with the "
-    "connection, and create new pages. You choose exactly which pages it can "
-    "see.",
-    "attio": "Read your Attio CRM — objects, records, and lists — to prep "
-    "meetings and answer pipeline questions, and log notes as you work.",
-    "google_drive": "Search, browse, and read files across your Drive. "
-    "Multiple accounts connect side by side.",
-    "monday": "Work with your monday.com boards — read items, summarize and "
-    "aggregate board data, create items, and post updates. One-click sign-in "
-    "runs entirely on this Mac against monday.com's own agent service; agents "
-    "get a small curated set of its tools, never the full catalog.",
-    "asana": "Keep up with your Asana work — search and read tasks and "
-    "projects, create tasks, and comment. Connects with a personal access "
-    "token from the Asana developer console.",
+    "telegram": "在 Telegram 里与你的同事对话。发给机器人的消息会到达 "
+    "agent，回复也会发回同一个会话——只有你允许列表中的发送者能通过。",
+    "slack": "把你的同事接入 Slack：在频道里 @ 它，或私聊它，"
+    "回复会落在原话题里。可以连接任意数量的工作区，"
+    "每个都自带一份「谁可以和 agent 对话」的允许列表。",
+    "email": "在任意 IMAP 账号上收发、搜索邮件——Gmail、iCloud、"
+    "Fastmail 或你自己的服务器——使用应用专用密码而非账号密码。",
+    "gmail": "在你的 Gmail 上搜索、摘要并发送。可同时连接多个账号，"
+    "隐私过滤器还能把选定的发件人或标签对 agent 完全隐藏。",
+    "google_calendar": "查看空闲情况、总结你的一周、管理日程。"
+    "可同时连接多个 Google 账号。",
+    "browser": "一个内置浏览器供 agent 驱动，读取网页并在网站上执行操作——"
+    "与你个人浏览器相互独立，操作需经审批。",
+    "github": "处理 issue、PR、仓库文件和 CI 状态。一键即可在你选择的仓库上"
+    "安装 OpenWorker GitHub App；在 issue 或 PR 上 @ agent，它就会从你的桌面"
+    "给出回复。",
+    "outlook": "搜索、摘要并发送 Microsoft 365 邮件，打理你的日历——"
+    "创建和移动会议、回复邀请。可同时连接多个邮箱。",
+    "hubspot": "搜索并读取你的 CRM；可选地记录备注与任务、更新记录。"
+    "只读还是读写由授权时决定，选定的属性还能对 agent 完全隐藏。",
+    "notion": "搜索并读取你与该连接共享的页面和数据库，并创建新页面。"
+    "由你精确指定它能看到哪些页面。",
+    "attio": "读取你的 Attio CRM——对象、记录和列表——为会议做准备、"
+    "回答管线相关的问题，并在工作中记录备注。",
+    "google_drive": "跨你的 Drive 搜索、浏览并读取文件。"
+    "可同时连接多个账号。",
+    "monday": "处理你的 monday.com 看板——读取条目、总结并汇总看板数据、"
+    "创建条目、发布更新。一键登录完全在本机运行，对接 monday.com 自带的 "
+    "agent 服务；agent 只会拿到一小撮精选工具，绝不会是完整目录。",
+    "asana": "跟进你的 Asana 工作——搜索并读取任务与项目、创建任务、"
+    "发表评论。使用来自 Asana 开发者控制台的个人访问令牌连接。",
 }
 
 # What connecting actually grants, as short honest bullets. Write powers always
 # name themselves; reads state their boundary ("…your account can see").
 ACCESS: dict[str, list[str]] = {
     "telegram": [
-        "Reads messages sent to your bot — never your personal chats.",
-        "Sends messages as the bot.",
-        "Only senders on your allow-list are answered.",
+        "读取发给机器人的消息——绝不读你的私人聊天。",
+        "以机器人身份发送消息。",
+        "只回应允许列表中的发送者。",
     ],
     "slack": [
-        "Reads channels the bot is invited to, and its DMs.",
-        "Posts messages and uploads files as the bot.",
-        "Reads files shared in those channels.",
-        "Reads member and channel names to resolve who's talking.",
+        "读取机器人被邀请加入的频道及其私信。",
+        "以机器人身份发布消息、上传文件。",
+        "读取那些频道里共享的文件。",
+        "读取成员和频道名称，以分辨是谁在说话。",
     ],
     "email": [
-        "Reads and searches mail over IMAP.",
-        "Sends mail as your address, and saves attachments locally.",
-        "Signs in with an app password — never your account password.",
+        "通过 IMAP 读取并搜索邮件。",
+        "以你的地址发送邮件，并把附件保存到本地。",
+        "用应用专用密码登录——绝非你的账号密码。",
     ],
     "gmail": [
-        "Reads and searches your mail.",
-        "Sends email as you.",
-        "Never deletes mail or changes account settings.",
+        "读取并搜索你的邮件。",
+        "以你的身份发送邮件。",
+        "绝不删除邮件或更改账号设置。",
     ],
     "google_calendar": [
-        "Reads events and availability across your calendars.",
-        "Creates, updates, and deletes events.",
+        "读取你各个日历的日程和空闲情况。",
+        "创建、更新和删除日程。",
     ],
     "browser": [
-        "Opens and reads web pages in its own browser session.",
-        "Clicks, types, and uploads files only inside that session.",
-        "Never touches your personal browser or its logins.",
+        "在它自己的浏览器会话里打开并读取网页。",
+        "点击、输入、上传文件都只发生在该会话内。",
+        "绝不触碰你的个人浏览器或其中的登录信息。",
     ],
     "github": [
-        "Reads code, issues, pull requests, and CI on repositories you grant.",
-        "Creates issues, replies, and reviews pull requests.",
-        "You pick the repositories on GitHub — one, several, or all.",
+        "读取你授权的仓库中的代码、issue、PR 和 CI。",
+        "创建 issue、回复并审查 PR。",
+        "由你在 GitHub 上挑选仓库——单个、多个或全部。",
     ],
     "outlook": [
-        "Reads and searches your mail.",
-        "Sends mail as you.",
-        "Reads your calendar.",
-        "Creates, changes, and cancels events; responds to invites as you.",
+        "读取并搜索你的邮件。",
+        "以你的身份发送邮件。",
+        "读取你的日历。",
+        "创建、修改和取消日程；以你的身份回复邀请。",
     ],
     "jira": [
-        "Reads and searches issues your account can see.",
-        "Creates, updates, and transitions issues; comments as you.",
+        "读取并搜索你账号可见的 issue。",
+        "创建、更新和流转 issue；以你的身份评论。",
     ],
     "monday": [
-        "Reads boards, items, and updates your account can see.",
-        "Creates items, changes item values, and posts updates as you.",
+        "读取你账号可见的看板、条目和更新。",
+        "创建条目、修改条目值，并以你的身份发布更新。",
     ],
     "asana": [
-        "Reads and searches tasks your account can see.",
-        "Creates tasks as you.",
+        "读取并搜索你账号可见的任务。",
+        "以你的身份创建任务。",
     ],
     "confluence": [
-        "Reads and searches spaces and pages your account can see.",
-        "Creates pages as you.",
+        "读取并搜索你账号可见的空间和页面。",
+        "以你的身份创建页面。",
     ],
     "zendesk": [
-        "Reads and searches tickets your agent account can see.",
-        "Creates tickets as you.",
+        "读取并搜索你的 agent 账号可见的工单。",
+        "以你的身份创建工单。",
     ],
     "linear": [
-        "Reads and searches issues your account can see.",
-        "Creates issues as you.",
+        "读取并搜索你账号可见的 issue。",
+        "以你的身份创建 issue。",
     ],
     "gitlab": [
-        "Reads issues and merge requests within your token's scope.",
-        "Creates issues (needs the api scope; read_api stays read-only).",
+        "读取你令牌权限范围内的 issue 和合并请求。",
+        "创建 issue（需 api 权限；read_api 仍为只读）。",
     ],
     "discord": [
-        "Reads channels the bot can see.",
-        "Sends messages as the bot.",
+        "读取机器人可见的频道。",
+        "以机器人身份发送消息。",
     ],
     "stripe": [
-        "Reads customers, charges, and invoices — read-only.",
-        "A restricted read-only key means write access isn't even possible.",
+        "读取客户、扣款和发票——只读。",
+        "受限的只读密钥意味着写入根本不可能发生。",
     ],
     "hubspot": [
-        "Reads contacts, companies, deals, and tickets.",
-        "Read & write adds: log notes and tasks, update records, create "
-        "contacts — never delete.",
-        "Properties you hide are stripped before an agent ever sees a record.",
+        "读取联系人、公司、商机和工单。",
+        "读写还会增加：记录备注与任务、更新记录、创建联系人——绝不删除。",
+        "你隐藏的属性会在 agent 看到记录之前就被剥离。",
     ],
     "dropbox": [
-        "Reads file names and contents — read-only.",
+        "读取文件名和内容——只读。",
     ],
     "box": [
-        "Reads file names and contents — read-only.",
+        "读取文件名和内容——只读。",
     ],
     "whatsapp": [
-        "Sends messages from your Cloud API number.",
-        "Outbound only — it cannot read your chats.",
+        "从你的 Cloud API 号码发送消息。",
+        "仅限外发——它读不到你的聊天。",
     ],
     "quickbooks": [
-        "Reads customers, invoices, and reports — read-only.",
+        "读取客户、发票和报表——只读。",
     ],
     "docusign": [
-        "Reads envelopes and their signing status.",
-        "Sends documents for signature as you.",
+        "读取信封及其签署状态。",
+        "以你的身份发送待签文件。",
     ],
     "clickup": [
-        "Reads and searches tasks and docs your account can see.",
-        "Creates and updates tasks, and comments, as you.",
+        "读取并搜索你账号可见的任务和文档。",
+        "以你的身份创建、更新任务并发表评论。",
     ],
     "google_drive": [
-        "Reads and searches your files — read-only.",
-        "Never edits or deletes anything in your Drive.",
+        "读取并搜索你的文件——只读。",
+        "绝不编辑或删除你 Drive 中的任何内容。",
     ],
     "canva": [
-        "Browses your designs and exports them — read-only.",
+        "浏览你的设计并导出——只读。",
     ],
     "figma": [
-        "Reads design files and comments; exports assets.",
-        "Comments as you — never edits a design.",
+        "读取设计文件和评论；导出素材。",
+        "以你的身份评论——绝不编辑设计。",
     ],
     "close": [
-        "Reads leads, contacts, and opportunities.",
-        "Creates leads, updates opportunities, and logs notes as you.",
+        "读取线索、联系人和机会。",
+        "以你的身份创建线索、更新机会、记录备注。",
     ],
     "notion": [
-        "Reads only the pages and databases shared with the connection.",
-        "Creates pages — never edits or deletes existing ones.",
+        "只读取与该连接共享的页面和数据库。",
+        "创建页面——绝不编辑或删除既有页面。",
     ],
     "attio": [
-        "Reads objects, records, lists, and notes.",
-        "Logs notes — records are never created or changed.",
+        "读取对象、记录、列表和备注。",
+        "记录备注——绝不创建或更改记录。",
     ],
     "posthog": [
-        "Runs read-only queries on the connected project: events, funnels, "
-        "insights.",
+        "对已连接项目运行只读查询：事件、漏斗、"
+        "洞察。",
     ],
     "mixpanel": [
-        "Runs read-only queries on the connected project.",
+        "对已连接项目运行只读查询。",
     ],
     "amplitude": [
-        "Runs read-only chart queries: active users, event totals.",
+        "运行只读图表查询：活跃用户、事件总量。",
     ],
     "apollo": [
-        "Searches and enriches people and companies, using your Apollo " "credits.",
+        "使用你的 Apollo 额度搜索并补全人物与公司"
+        "信息。",
     ],
     "hunter": [
-        "Finds and verifies email addresses, using your Hunter quota.",
+        "使用你的 Hunter 配额查找并验证邮箱地址。",
     ],
 }
 
 # Experimental / future connectors fall back to this rather than shipping
 # without an access statement.
 _DEFAULT_ACCESS = [
-    "Access is limited to what the credentials you provide allow.",
+    "访问范围仅限于你提供的凭据所允许的。",
 ]
 
 

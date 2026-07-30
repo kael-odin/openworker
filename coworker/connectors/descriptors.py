@@ -108,7 +108,7 @@ def _validate_telegram(creds: dict) -> ValidationResult:
         return ValidationResult(
             True, identity="@" + str(data["result"].get("username", "bot"))
         )
-    return ValidationResult(False, error=data.get("description") or "invalid bot token")
+    return ValidationResult(False, error=data.get("description") or "机器人令牌无效")
 
 
 def _validate_email(creds: dict) -> ValidationResult:
@@ -134,7 +134,7 @@ def _validate_slack(creds: dict) -> ValidationResult:
         return ValidationResult(
             True, identity=f"{data.get('team', '?')} / {data.get('user', 'bot')}"
         )
-    return ValidationResult(False, error=data.get("error") or "invalid bot token")
+    return ValidationResult(False, error=data.get("error") or "机器人令牌无效")
 
 
 def _validate_whoami(
@@ -163,7 +163,7 @@ def _validate_whoami(
     try:
         return ValidationResult(True, identity=str(identity(data)))
     except Exception:
-        return ValidationResult(False, error="unexpected response from API")
+        return ValidationResult(False, error="API 返回了意外的响应")
 
 
 def _validate_notion(creds: dict) -> ValidationResult:
@@ -219,7 +219,7 @@ def _validate_amplitude(creds: dict) -> ValidationResult:
         headers={"Authorization": "Basic " + _b64.b64encode(pair.encode()).decode()},
         # No user identity on this API — name the account by the key's tail so
         # two projects stay tellable-apart in the accounts list.
-        identity=lambda d, k=str(creds.get("api_key", "")): f"key …{k[-6:]}",
+        identity=lambda d, k=str(creds.get("api_key", "")): f"密钥 …{k[-6:]}",
     )
 
 
@@ -228,7 +228,7 @@ def _validate_apollo(creds: dict) -> ValidationResult:
         "GET",
         "https://api.apollo.io/api/v1/auth/health",
         headers={"X-Api-Key": creds.get("api_key", "")},
-        identity=lambda d: str(creds.get("label") or "").strip() or "default",
+        identity=lambda d: str(creds.get("label") or "").strip() or "默认",
     )
 
 
@@ -287,7 +287,7 @@ def _validate_hubspot(creds: dict) -> ValidationResult:
         "GET",
         "https://api.hubapi.com/account-info/v3/details",
         headers={"Authorization": f"Bearer {creds.get('token', '')}"},
-        identity=lambda d: f"portal {d['portalId']}",
+        identity=lambda d: f"门户 {d['portalId']}",
     )
 
 
@@ -411,9 +411,9 @@ def _validate_outlook(creds: dict) -> ValidationResult:
 
 _ALLOWED_FIELD = Field(
     key="allowed_users",
-    label="Allowed user IDs",
+    label="允许的用户 ID",
     required=False,
-    help="Comma-separated IDs allowed to message the bot. Leave empty, then DM the bot and use Capture.",
+    help="以逗号分隔的、允许向机器人发消息的用户 ID。留空后，先私信机器人再使用「捕获」。",
     placeholder="123456789",
 )
 
@@ -422,7 +422,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="telegram",
         title="Telegram",
         icon="✈",
-        blurb="Two-way messaging with a Telegram bot.",
+        blurb="通过 Telegram 机器人进行双向消息通信。",
         auth="bot_token",
         two_way=True,
         channels=True,
@@ -431,18 +431,18 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "bot_token",
-                "Bot token",
+                "机器人令牌",
                 secret=True,
-                help="From @BotFather.",
+                help="来自 @BotFather。",
                 placeholder="123456:ABC-DEF…",
             ),
             _ALLOWED_FIELD,
         ],
         instructions=[
-            "Open Telegram and message @BotFather.",
-            "Send /newbot and pick a name + username.",
-            "Copy the HTTP API token it gives you and paste it below.",
-            "After connecting, DM your new bot once, then use Capture to grab your user ID.",
+            "打开 Telegram 并给 @BotFather 发消息。",
+            "发送 /newbot，选择名称和用户名。",
+            "复制它给出的 HTTP API 令牌并粘贴到下方。",
+            "连接后，先私信你的新机器人一次，再使用「捕获」获取你的用户 ID。",
         ],
         validate=_validate_telegram,
     ),
@@ -450,7 +450,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="slack",
         title="Slack",
         icon="💬",
-        blurb="Two-way messaging — one-click via OpenWorker Cloud, or a manual Slack app (Socket Mode).",
+        blurb="双向消息通信——通过 OpenWorker Cloud 一键连接，或手动配置 Slack 应用（Socket 模式）。",
         auth="socket_app",
         two_way=True,
         channels=True,
@@ -464,77 +464,77 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "bot_token",
-                "Bot token",
+                "机器人令牌",
                 secret=True,
-                help="Bot User OAuth Token.",
+                help="Bot User OAuth 令牌。",
                 placeholder="xoxb-…",
             ),
             Field(
                 "app_token",
-                "App token",
+                "应用令牌",
                 secret=True,
-                help="App-level token for Socket Mode.",
+                help="用于 Socket 模式的应用级令牌。",
                 placeholder="xapp-…",
             ),
             _ALLOWED_FIELD,
         ],
         instructions=[
-            "Go to api.slack.com/apps → Create New App (from scratch).",
-            "Settings → Socket Mode: enable it and generate an app-level token (xapp-) with connections:write.",
-            "Features → Interactivity & Shortcuts: turn Interactivity ON (no Request URL needed in Socket Mode) — required for Approve/Deny buttons.",
-            "OAuth & Permissions: add bot scopes chat:write, files:write, app_mentions:read, im:history, channels:history, groups:history, users:read, channels:read, groups:read (files:write lets the agent send files; the last three resolve sender/channel display names).",
-            "Install to workspace and copy the Bot User OAuth Token (xoxb-).",
-            "Paste both tokens below and Connect, then invite the bot to a channel or DM it.",
+            "前往 api.slack.com/apps → Create New App（从零开始创建）。",
+            "Settings → Socket Mode：启用它并生成一个带 connections:write 权限的应用级令牌（xapp-）。",
+            "Features → Interactivity & Shortcuts：开启 Interactivity（Socket 模式下无需 Request URL）——这是「批准/拒绝」按钮所必需的。",
+            "OAuth & Permissions：添加机器人权限 chat:write、files:write、app_mentions:read、im:history、channels:history、groups:history、users:read、channels:read、groups:read（files:write 让 agent 能发送文件；最后三项用于解析发送者/频道显示名）。",
+            "安装到工作区并复制 Bot User OAuth 令牌（xoxb-）。",
+            "将两个令牌都粘贴到下方并连接，然后邀请机器人到某个频道或私信它。",
         ],
         validate=_validate_slack,
     ),
     ConnectorDescriptor(
         name="email",
-        title="Email (IMAP)",
+        title="邮件 (IMAP)",
         icon="✉",
-        blurb="Read, search, and send mail from any IMAP account — Gmail, iCloud, Fastmail, or custom.",
+        blurb="从任意 IMAP 账户读取、搜索和发送邮件——Gmail、iCloud、Fastmail 或自定义账户。",
         auth="app_password",
         two_way=False,
         logo="email",
         fields=[
-            Field("address", "Email address", placeholder="you@gmail.com"),
+            Field("address", "邮箱地址", placeholder="you@gmail.com"),
             Field(
                 "app_password",
-                "App password",
+                "应用专用密码",
                 secret=True,
-                help="Gmail/iCloud: generate an app password (requires 2-step verification). Not your account password.",
+                help="Gmail/iCloud：生成应用专用密码（需开启两步验证）。不是你的账户登录密码。",
             ),
             Field(
                 "display_name",
-                "Display name",
+                "显示名称",
                 required=False,
-                help="Shown as the From name on sent mail.",
+                help="作为已发送邮件的发件人名称显示。",
             ),
             Field(
                 "imap_host",
-                "IMAP host (advanced)",
+                "IMAP 主机（高级）",
                 required=False,
-                help="Only needed for providers we don't auto-detect.",
+                help="仅在我们无法自动识别的服务商时需要。",
                 placeholder="imap.example.com",
             ),
             Field(
-                "imap_port", "IMAP port (advanced)", required=False, placeholder="993"
+                "imap_port", "IMAP 端口（高级）", required=False, placeholder="993"
             ),
             Field(
                 "smtp_host",
-                "SMTP host (advanced)",
+                "SMTP 主机（高级）",
                 required=False,
                 placeholder="smtp.example.com",
             ),
             Field(
-                "smtp_port", "SMTP port (advanced)", required=False, placeholder="587"
+                "smtp_port", "SMTP 端口（高级）", required=False, placeholder="587"
             ),
         ],
         instructions=[
-            "Gmail: turn on 2-Step Verification, then create an app password at myaccount.google.com/apppasswords.",
-            "iCloud: generate an app-specific password at account.apple.com → Sign-In and Security.",
-            "Enter your address and the app password below. Gmail, iCloud, and Fastmail servers are detected automatically; for other providers fill in the IMAP/SMTP hosts.",
-            "Note: Google Workspace and Microsoft 365 accounts often have IMAP or app passwords disabled by the org admin.",
+            "Gmail：开启两步验证，然后在 myaccount.google.com/apppasswords 创建应用专用密码。",
+            "iCloud：在 account.apple.com → 登录与安全中生成应用专用密码。",
+            "在下方输入邮箱地址和应用专用密码。Gmail、iCloud 和 Fastmail 的服务器会自动识别；其他服务商请填写 IMAP/SMTP 主机。",
+            "注意：Google Workspace 和 Microsoft 365 账户通常会被组织管理员禁用 IMAP 或应用专用密码。",
         ],
         validate=_validate_email,
     ),
@@ -542,7 +542,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="gmail",
         title="Gmail",
         icon="✉",
-        blurb="Search, summarize, draft, and send email.",
+        blurb="搜索、摘要、起草并发送邮件。",
         auth="oauth",
         two_way=False,
         brand_color="#ea4335",
@@ -551,14 +551,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Google OAuth token with Gmail scopes.",
+                help="带 Gmail 权限范围的 Google OAuth 令牌。",
             ),
         ],
         instructions=[
-            "Use a Google OAuth access token with Gmail readonly and send scopes.",
-            "Paste the access token below.",
+            "使用带 Gmail 只读和发送权限范围的 Google OAuth 访问令牌。",
+            "将访问令牌粘贴到下方。",
         ],
         available=True,
         managed=True,
@@ -569,7 +569,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="google_calendar",
         title="Google Calendar",
         icon="◷",
-        blurb="Read availability, summarize schedules, and create events.",
+        blurb="读取空闲情况、摘要日程安排并创建活动。",
         auth="oauth",
         two_way=False,
         brand_color="#4285f4",
@@ -577,14 +577,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Google OAuth token with Calendar scopes.",
+                help="带 Calendar 权限范围的 Google OAuth 令牌。",
             ),
         ],
         instructions=[
-            "Use a Google OAuth access token with Calendar read/write scopes.",
-            "Paste the access token below.",
+            "使用带 Calendar 读/写权限范围的 Google OAuth 访问令牌。",
+            "将访问令牌粘贴到下方。",
         ],
         available=True,
         managed=True,
@@ -592,16 +592,16 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
     ),
     ConnectorDescriptor(
         name="browser",
-        title="Browser",
+        title="浏览器",
         icon="⌕",
-        blurb="Let agents navigate, read, and act on websites with approval.",
+        blurb="让 agent 在审批后导航、阅读和操作网站。",
         auth="none",
         two_way=False,
         brand_color="#0ea5e9",
         logo="browser",
         fields=[],
         instructions=[
-            "No setup required. Browser tools are available to Cowork sessions."
+            "无需设置。浏览器工具可供 Cowork 会话使用。"
         ],
         available=True,
     ),
@@ -609,7 +609,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="github",
         title="GitHub",
         icon="⌘",
-        blurb="Work with issues, pull requests, repository files, and CI status.",
+        blurb="处理 issue、pull request、仓库文件和 CI 状态。",
         auth="token",
         # Managed relay makes GitHub two-way: @-mentions and the agent label
         # reach the desktop through the cloud relay (github-relay-spec §2.3);
@@ -620,14 +620,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "token",
-                "Personal access token",
+                "个人访问令牌",
                 secret=True,
-                help="Fine-grained or classic GitHub token.",
+                help="细粒度或经典 GitHub 令牌。",
             ),
         ],
         instructions=[
-            "Create a GitHub personal access token with access to the target repositories.",
-            "For write actions, include Issues or Pull Requests write permissions as needed.",
+            "创建一个能访问目标仓库的 GitHub 个人访问令牌。",
+            "对于写操作，按需包含 Issue 或 Pull Request 的写入权限。",
         ],
         available=True,
         # One-click managed path: install the GitHub App — no tokens typed.
@@ -637,8 +637,8 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="outlook",
         title="Outlook",
         icon="◎",
-        blurb="Microsoft 365 mail and calendar: search, draft, and send email; "
-        "manage events and respond to invites.",
+        blurb="Microsoft 365 邮件和日历：搜索、起草并发送邮件；"
+        "管理活动并响应邀请。",
         auth="oauth",
         two_way=False,
         brand_color="#0078d4",
@@ -647,14 +647,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Microsoft Graph access token.",
+                help="Microsoft Graph 访问令牌。",
             ),
         ],
         instructions=[
-            "One click connects via OpenWorker Cloud (recommended).",
-            "Manual: paste a Microsoft Graph access token with Mail and Calendar scopes.",
+            "一键通过 OpenWorker Cloud 连接（推荐）。",
+            "手动方式：粘贴带邮件和日历权限范围的 Microsoft Graph 访问令牌。",
         ],
         validate=_validate_outlook,
         available=True,
@@ -667,7 +667,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="jira",
         title="Jira",
         icon="◆",
-        blurb="Search, summarize, create, and update issues.",
+        blurb="搜索、摘要、创建和更新 issue。",
         auth="api_token",
         two_way=False,
         brand_color="#0052cc",
@@ -677,16 +677,16 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "base_url",
-                "Atlassian site URL",
+                "Atlassian 站点 URL",
                 secret=False,
-                help="Example: https://example.atlassian.net",
+                help="示例：https://example.atlassian.net",
             ),
-            Field("email", "Account email", secret=False),
-            Field("api_token", "API token", secret=True, help="Atlassian API token."),
+            Field("email", "账户邮箱", secret=False),
+            Field("api_token", "API 令牌", secret=True, help="Atlassian API 令牌。"),
         ],
         instructions=[
-            "One click connects via Atlassian sign-in in your browser (recommended).",
-            "Manual: create an Atlassian API token and paste your site URL, account email, and token below.",
+            "一键通过浏览器中的 Atlassian 登录连接（推荐）。",
+            "手动方式：创建一个 Atlassian API 令牌，并在下方粘贴你的站点 URL、账户邮箱和令牌。",
         ],
         available=True,
     ),
@@ -694,7 +694,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="monday",
         title="monday.com",
         icon="▦",
-        blurb="Read boards and items, track work, create items and post updates.",
+        blurb="读取看板和条目、跟踪工作、创建条目并发布更新。",
         auth="oauth",
         two_way=False,
         brand_color="#6161ff",
@@ -703,8 +703,8 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         mcp_url="https://mcp.monday.com/mcp",
         fields=[],
         instructions=[
-            "One click connects via monday.com sign-in in your browser.",
-            "Sign-in is fully local — tokens stay on this Mac.",
+            "一键通过浏览器中的 monday.com 登录连接。",
+            "登录完全在本地完成——令牌保留在本机上。",
         ],
         available=True,
     ),
@@ -712,7 +712,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="confluence",
         title="Confluence",
         icon="◫",
-        blurb="Search spaces, read pages, and draft documentation.",
+        blurb="搜索空间、阅读页面并起草文档。",
         auth="api_token",
         two_way=False,
         brand_color="#172b4d",
@@ -720,16 +720,16 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "base_url",
-                "Atlassian site URL",
+                "Atlassian 站点 URL",
                 secret=False,
-                help="Example: https://example.atlassian.net",
+                help="示例：https://example.atlassian.net",
             ),
-            Field("email", "Account email", secret=False),
-            Field("api_token", "API token", secret=True, help="Atlassian API token."),
+            Field("email", "账户邮箱", secret=False),
+            Field("api_token", "API 令牌", secret=True, help="Atlassian API 令牌。"),
         ],
         instructions=[
-            "Create an Atlassian API token for your account.",
-            "Paste your site URL, account email, and API token below.",
+            "为你的账户创建一个 Atlassian API 令牌。",
+            "在下方粘贴你的站点 URL、账户邮箱和 API 令牌。",
         ],
         available=True,
     ),
@@ -737,7 +737,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="zendesk",
         title="Zendesk",
         icon="◇",
-        blurb="Search tickets, summarize customer context, and draft replies.",
+        blurb="搜索工单、摘要客户上下文并起草回复。",
         auth="api_token",
         two_way=False,
         brand_color="#03363d",
@@ -745,16 +745,16 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "subdomain",
-                "Zendesk subdomain",
+                "Zendesk 子域名",
                 secret=False,
-                help="For example, 'acme' for acme.zendesk.com.",
+                help="例如 acme.zendesk.com 填「acme」。",
             ),
-            Field("email", "Agent email", secret=False),
-            Field("api_token", "API token", secret=True),
+            Field("email", "客服邮箱", secret=False),
+            Field("api_token", "API 令牌", secret=True),
         ],
         instructions=[
-            "Create a Zendesk API token.",
-            "Paste your subdomain, agent email, and API token below.",
+            "创建一个 Zendesk API 令牌。",
+            "在下方粘贴你的子域名、客服邮箱和 API 令牌。",
         ],
         available=True,
     ),
@@ -762,7 +762,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="linear",
         title="Linear",
         icon="⟋",
-        blurb="Search, read, and create Linear issues.",
+        blurb="搜索、阅读和创建 Linear issue。",
         auth="api_token",
         two_way=False,
         brand_color="#5e6ad2",
@@ -770,15 +770,15 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "api_key",
-                "API key",
+                "API 密钥",
                 secret=True,
-                help="Personal API key from Linear settings.",
+                help="来自 Linear 设置的个人 API 密钥。",
                 placeholder="lin_api_…",
             ),
         ],
         instructions=[
-            "In Linear, open Settings → Security & access → Personal API keys.",
-            "Create a key and paste it below.",
+            "在 Linear 中打开 Settings → Security & access → Personal API keys。",
+            "创建一个密钥并粘贴到下方。",
         ],
         validate=_validate_linear,
     ),
@@ -786,7 +786,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="gitlab",
         title="GitLab",
         icon="▲",
-        blurb="Work with issues and merge requests on GitLab.com or self-hosted.",
+        blurb="处理 GitLab.com 或自托管实例上的 issue 和 merge request。",
         auth="token",
         two_way=False,
         brand_color="#fc6d26",
@@ -796,20 +796,20 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
                 "base_url",
                 "GitLab URL",
                 required=False,
-                help="Leave empty for gitlab.com.",
+                help="gitlab.com 留空即可。",
                 placeholder="https://gitlab.example.com",
             ),
             Field(
                 "token",
-                "Personal access token",
+                "个人访问令牌",
                 secret=True,
-                help="Token with read_api scope (api for write actions).",
+                help="带 read_api 权限范围的令牌（写操作需 api 权限）。",
                 placeholder="glpat-…",
             ),
         ],
         instructions=[
-            "Create a GitLab personal access token with the read_api scope (api for write actions).",
-            "For self-hosted GitLab, enter your instance URL; leave empty for gitlab.com.",
+            "创建一个带 read_api 权限范围的 GitLab 个人访问令牌（写操作需 api 权限）。",
+            "自托管 GitLab 请填写实例 URL；gitlab.com 留空即可。",
         ],
         validate=_validate_gitlab,
     ),
@@ -817,7 +817,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="discord",
         title="Discord",
         icon="✦",
-        blurb="Read channels and send messages through a Discord bot.",
+        blurb="通过 Discord 机器人读取频道并发送消息。",
         auth="bot_token",
         two_way=False,
         brand_color="#5865f2",
@@ -825,15 +825,15 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "bot_token",
-                "Bot token",
+                "机器人令牌",
                 secret=True,
-                help="From the Bot tab of your Discord application.",
+                help="来自你的 Discord 应用的 Bot 标签页。",
             ),
         ],
         instructions=[
-            "Go to discord.com/developers/applications → New Application → Bot.",
-            "Copy the bot token and paste it below.",
-            "Use the OAuth2 URL generator to invite the bot to your server with Read/Send Messages permissions.",
+            "前往 discord.com/developers/applications → New Application → Bot。",
+            "复制机器人令牌并粘贴到下方。",
+            "使用 OAuth2 URL 生成器，以「读取/发送消息」权限邀请机器人加入你的服务器。",
         ],
         validate=_validate_discord,
     ),
@@ -841,7 +841,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="stripe",
         title="Stripe",
         icon="≋",
-        blurb="Read-only access to customers, charges, and invoices.",
+        blurb="对客户、扣款和发票的只读访问。",
         auth="api_token",
         two_way=False,
         brand_color="#635bff",
@@ -849,22 +849,22 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "api_key",
-                "Restricted API key",
+                "受限 API 密钥",
                 secret=True,
-                help="Read-only restricted key recommended.",
+                help="建议使用只读受限密钥。",
                 placeholder="rk_live_…",
             ),
         ],
         instructions=[
-            "In the Stripe Dashboard, create a restricted API key with read access to Customers, Charges, and Invoices.",
-            "Paste the key below. The connector only exposes read tools.",
+            "在 Stripe Dashboard 中创建一个受限 API 密钥，具备对客户、扣款和发票的读取权限。",
+            "将密钥粘贴到下方。此连接器仅提供只读工具。",
         ],
     ),
     ConnectorDescriptor(
         name="asana",
         title="Asana",
         icon="⊙",
-        blurb="Search and read tasks and projects; create, update, and comment.",
+        blurb="搜索和阅读任务与项目；创建、更新和评论。",
         auth="token",
         two_way=False,
         brand_color="#f06a6a",
@@ -878,14 +878,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "token",
-                "Personal access token",
+                "个人访问令牌",
                 secret=True,
-                help="From the Asana developer console.",
+                help="来自 Asana 开发者控制台。",
             ),
         ],
         instructions=[
-            "In Asana, open My Settings → Apps → Manage developer apps.",
-            "Create a personal access token and paste it below.",
+            "在 Asana 中打开 My Settings → Apps → Manage developer apps。",
+            "创建一个个人访问令牌并粘贴到下方。",
         ],
         validate=_validate_asana,
     ),
@@ -893,7 +893,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="hubspot",
         title="HubSpot",
         icon="⊚",
-        blurb="Search CRM records; log notes and tasks, update records. No deletes.",
+        blurb="搜索 CRM 记录；记录备注和任务、更新记录。不支持删除。",
         auth="token",
         two_way=False,
         brand_color="#ff7a59",
@@ -901,16 +901,16 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "token",
-                "Private app token",
+                "私有应用令牌",
                 secret=True,
-                help="Access token of a HubSpot private app.",
+                help="HubSpot 私有应用的访问令牌。",
                 placeholder="pat-…",
             ),
         ],
         instructions=[
-            "In HubSpot, go to Settings → Integrations → Private Apps and create an app.",
-            "Grant CRM object read scopes (add the .write scopes for notes, tasks, and updates).",
-            "Copy the access token and paste it below.",
+            "在 HubSpot 中前往 Settings → Integrations → Private Apps 并创建一个应用。",
+            "授予 CRM 对象读取权限（备注、任务和更新需额外添加 .write 权限）。",
+            "复制访问令牌并粘贴到下方。",
         ],
         validate=_validate_hubspot,
         managed=True,
@@ -919,7 +919,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="dropbox",
         title="Dropbox",
         icon="▣",
-        blurb="Search, browse, and read files in Dropbox.",
+        blurb="在 Dropbox 中搜索、浏览和读取文件。",
         auth="oauth",
         two_way=False,
         brand_color="#0061ff",
@@ -927,14 +927,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Dropbox token with files.metadata.read and files.content.read scopes.",
+                help="带 files.metadata.read 和 files.content.read 权限范围的 Dropbox 令牌。",
             ),
         ],
         instructions=[
-            "Create an app in the Dropbox App Console with files.metadata.read and files.content.read scopes.",
-            "Generate an access token and paste it below. Managed sign-in will replace this manual step later.",
+            "在 Dropbox App Console 中创建一个带 files.metadata.read 和 files.content.read 权限范围的应用。",
+            "生成访问令牌并粘贴到下方。托管登录日后将替代此手动步骤。",
         ],
         validate=_validate_dropbox,
     ),
@@ -942,7 +942,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="box",
         title="Box",
         icon="▢",
-        blurb="Search, browse, and read files in Box.",
+        blurb="在 Box 中搜索、浏览和读取文件。",
         auth="oauth",
         two_way=False,
         brand_color="#0061d5",
@@ -950,14 +950,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Box developer token or OAuth access token.",
+                help="Box 开发者令牌或 OAuth 访问令牌。",
             ),
         ],
         instructions=[
-            "Create a Box app at app.box.com/developers/console.",
-            "Generate a developer token (or OAuth access token) and paste it below. Managed sign-in will replace this manual step later.",
+            "在 app.box.com/developers/console 创建一个 Box 应用。",
+            "生成开发者令牌（或 OAuth 访问令牌）并粘贴到下方。托管登录日后将替代此手动步骤。",
         ],
         validate=_validate_box,
     ),
@@ -965,7 +965,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="whatsapp",
         title="WhatsApp",
         icon="◌",
-        blurb="Send WhatsApp messages through Meta's official Cloud API (outbound only).",
+        blurb="通过 Meta 官方 Cloud API 发送 WhatsApp 消息（仅出站）。",
         auth="token",
         two_way=False,
         brand_color="#25d366",
@@ -973,21 +973,21 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "Access token",
+                "访问令牌",
                 secret=True,
-                help="From your Meta app's WhatsApp setup page (a system-user token for long-lived access).",
+                help="来自你的 Meta 应用的 WhatsApp 设置页（长期访问请用系统用户令牌）。",
             ),
             Field(
                 "phone_number_id",
-                "Phone number ID",
-                help="The Cloud API phone number ID (not the phone number itself).",
+                "电话号码 ID",
+                help="Cloud API 的电话号码 ID（不是电话号码本身）。",
             ),
         ],
         instructions=[
-            "Create a Meta app at developers.facebook.com and add the WhatsApp product.",
-            "Copy the access token and the phone number ID from the API setup page.",
-            "The free test number can message up to 5 verified recipients without business verification.",
-            "Free-form messages only reach people who messaged your number in the last 24 hours; outside that window only approved templates are delivered.",
+            "在 developers.facebook.com 创建一个 Meta 应用并添加 WhatsApp 产品。",
+            "从 API 设置页复制访问令牌和电话号码 ID。",
+            "免费测试号码最多可向 5 个已验证收件人发消息，无需企业验证。",
+            "自由格式消息仅能发送给过去 24 小时内给你发过消息的人；超出该时间窗口只能投递已审批的模板消息。",
         ],
         validate=_validate_whatsapp,
     ),
@@ -995,7 +995,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="quickbooks",
         title="QuickBooks",
         icon="◴",
-        blurb="Read-only access to customers, invoices, and financial reports.",
+        blurb="对客户、发票和财务报表的只读访问。",
         auth="oauth",
         two_way=False,
         brand_color="#2ca01c",
@@ -1003,27 +1003,27 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Intuit OAuth token with the com.intuit.quickbooks.accounting scope. Expires hourly.",
+                help="带 com.intuit.quickbooks.accounting 权限范围的 Intuit OAuth 令牌。每小时过期。",
             ),
             Field(
                 "realm_id",
-                "Company ID (realm ID)",
-                help="Shown during OAuth authorization and in the developer playground.",
+                "公司 ID（realm ID）",
+                help="在 OAuth 授权时和开发者沙盒中显示。",
             ),
             Field(
                 "environment",
-                "Environment",
+                "环境",
                 required=False,
-                help="production (default) or sandbox.",
+                help="production（默认）或 sandbox。",
                 placeholder="production",
             ),
         ],
         instructions=[
-            "Create an app at developer.intuit.com and authorize it against your company (the OAuth playground works for testing).",
-            "Copy the access token and the company ID (realm ID) and paste them below.",
-            "Intuit access tokens expire after about an hour. Managed sign-in will replace this manual step later.",
+            "在 developer.intuit.com 创建一个应用，并针对你的公司完成授权（OAuth 沙盒可用于测试）。",
+            "复制访问令牌和公司 ID（realm ID）并粘贴到下方。",
+            "Intuit 访问令牌约一小时后过期。托管登录日后将替代此手动步骤。",
         ],
         validate=_validate_quickbooks,
     ),
@@ -1037,7 +1037,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="datadog",
         title="Datadog",
         icon="◍",
-        blurb="Pull firing alerts, monitors, and the incident timeline.",
+        blurb="拉取正在触发的告警、监控和事件时间线。",
         auth="none",
         two_way=False,
         fields=[],
@@ -1050,7 +1050,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="salesforce",
         title="Salesforce",
         icon="☁",
-        blurb="Read and update cases, accounts, and opportunities in the CRM.",
+        blurb="在 CRM 中读取和更新案例、客户和商机。",
         auth="none",
         two_way=False,
         fields=[],
@@ -1063,7 +1063,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="docusign",
         title="Docusign",
         icon="✍",
-        blurb="Track agreements, check envelope status, and send documents for signature.",
+        blurb="跟踪协议、查看信封状态并发送文档以供签名。",
         auth="oauth",
         two_way=False,
         brand_color="#4c00ff",
@@ -1071,14 +1071,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Access token from a Docusign app (JWT or authorization-code grant).",
+                help="来自 Docusign 应用的访问令牌（JWT 或授权码模式）。",
             ),
         ],
         instructions=[
-            "Create an app in the Docusign developer console and complete an OAuth grant.",
-            "Paste the access token below; the account and API base are discovered automatically.",
+            "在 Docusign 开发者控制台创建一个应用并完成 OAuth 授权。",
+            "将访问令牌粘贴到下方；账户和 API 地址会自动发现。",
         ],
         validate=_validate_docusign,
         available=True,
@@ -1087,7 +1087,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="clickup",
         title="ClickUp",
         icon="⌃",
-        blurb="Search tasks and docs; create and update items.",
+        blurb="搜索任务和文档；创建和更新条目。",
         auth="api_token",
         two_way=False,
         brand_color="#7b68ee",
@@ -1095,15 +1095,15 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "api_token",
-                "Personal API token",
+                "个人 API 令牌",
                 secret=True,
-                help="ClickUp → Settings → Apps → API Token.",
+                help="ClickUp → Settings → Apps → API Token。",
                 placeholder="pk_…",
             ),
         ],
         instructions=[
-            "In ClickUp, open Settings → Apps and generate a personal API token.",
-            "Paste it below.",
+            "在 ClickUp 中打开 Settings → Apps 并生成个人 API 令牌。",
+            "将其粘贴到下方。",
         ],
         validate=_validate_clickup,
         available=True,
@@ -1112,7 +1112,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="google_drive",
         title="Google Drive",
         icon="◬",
-        blurb="Search, browse, and read files in Google Drive.",
+        blurb="在 Google Drive 中搜索、浏览和读取文件。",
         auth="oauth",
         two_way=False,
         brand_color="#4285f4",
@@ -1120,14 +1120,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Google OAuth token with Drive read scopes.",
+                help="带 Drive 读取权限范围的 Google OAuth 令牌。",
             ),
         ],
         instructions=[
-            "Use a Google OAuth access token with Drive readonly scope.",
-            "Paste the access token below.",
+            "使用带 Drive 只读权限范围的 Google OAuth 访问令牌。",
+            "将访问令牌粘贴到下方。",
         ],
         validate=_validate_google_drive,
         available=True,
@@ -1142,7 +1142,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="canva",
         title="Canva",
         icon="◠",
-        blurb="Browse, create, and export designs.",
+        blurb="浏览、创建和导出设计。",
         auth="oauth",
         two_way=False,
         brand_color="#00c4cc",
@@ -1150,14 +1150,14 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "OAuth access token",
+                "OAuth 访问令牌",
                 secret=True,
-                help="Access token from a Canva Connect integration.",
+                help="来自 Canva Connect 集成的访问令牌。",
             ),
         ],
         instructions=[
-            "Create a Connect integration at canva.com/developers and complete an OAuth grant.",
-            "Paste the access token below.",
+            "在 canva.com/developers 创建一个 Connect 集成并完成 OAuth 授权。",
+            "将访问令牌粘贴到下方。",
         ],
         validate=_validate_canva,
         available=True,
@@ -1166,7 +1166,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="figma",
         title="Figma",
         icon="◐",
-        blurb="Read design files and comments; export assets.",
+        blurb="读取设计文件和评论；导出素材。",
         auth="api_token",
         two_way=False,
         brand_color="#f24e1e",
@@ -1174,15 +1174,15 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "access_token",
-                "Personal access token",
+                "个人访问令牌",
                 secret=True,
-                help="Figma → Settings → Security → Personal access tokens.",
+                help="Figma → Settings → Security → Personal access tokens。",
                 placeholder="figd_…",
             ),
         ],
         instructions=[
-            "In Figma, open Settings → Security and generate a personal access token.",
-            "Paste it below.",
+            "在 Figma 中打开 Settings → Security 并生成个人访问令牌。",
+            "将其粘贴到下方。",
         ],
         validate=_validate_figma,
         available=True,
@@ -1191,7 +1191,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="descript",
         title="Descript",
         icon="≣",
-        blurb="Read and edit audio and video projects through their transcripts.",
+        blurb="通过转写文稿读取和编辑音视频项目。",
         auth="none",
         two_way=False,
         fields=[],
@@ -1204,7 +1204,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="clay",
         title="Clay",
         icon="⌒",
-        blurb="Enrich people and companies; run outbound research workflows.",
+        blurb="丰富人员和公司信息；运行外联研究工作流。",
         auth="none",
         two_way=False,
         fields=[],
@@ -1217,7 +1217,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="close",
         title="Close",
         icon="❋",
-        blurb="Read and update leads, contacts, and opportunities in the CRM.",
+        blurb="在 CRM 中读取和更新线索、联系人和商机。",
         auth="api_token",
         two_way=False,
         brand_color="#276392",
@@ -1225,15 +1225,15 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         fields=[
             Field(
                 "api_key",
-                "API key",
+                "API 密钥",
                 secret=True,
-                help="Close → Settings → Developer → API Keys.",
+                help="Close → Settings → Developer → API Keys。",
                 placeholder="api_…",
             ),
         ],
         instructions=[
-            "In Close, open Settings → Developer → API Keys and create a key.",
-            "Paste it below.",
+            "在 Close 中打开 Settings → Developer → API Keys 并创建一个密钥。",
+            "将其粘贴到下方。",
         ],
         validate=_validate_close,
         available=True,
@@ -1242,23 +1242,23 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="notion",
         title="Notion",
         icon="◰",
-        blurb="Search pages, read content, query databases, create pages.",
+        blurb="搜索页面、阅读内容、查询数据库、创建页面。",
         auth="oauth",
         two_way=False,
         fields=[
             Field(
                 "access_token",
-                "Integration secret",
+                "集成密钥",
                 secret=True,
-                help="From an internal integration at notion.so/my-integrations; "
-                "share the pages it should see with the integration.",
+                help="来自 notion.so/my-integrations 的内部集成；"
+                "把需要它访问的页面共享给该集成。",
                 placeholder="ntn_…",
             ),
         ],
         instructions=[
-            "One click connects via OpenWorker Cloud (recommended).",
-            "Manual: create an internal integration at notion.so/my-integrations,",
-            "copy its secret, and share the relevant pages with the integration.",
+            "一键通过 OpenWorker Cloud 连接（推荐）。",
+            "手动方式：在 notion.so/my-integrations 创建一个内部集成，",
+            "复制其密钥，并将相关页面共享给该集成。",
         ],
         validate=_validate_notion,
         brand_color="#1f2328",
@@ -1273,20 +1273,20 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="attio",
         title="Attio",
         icon="◵",
-        blurb="Read your Attio CRM: objects, records, notes.",
+        blurb="读取你的 Attio CRM：对象、记录、备注。",
         auth="oauth",
         two_way=False,
         fields=[
             Field(
                 "access_token",
-                "API key",
+                "API 密钥",
                 secret=True,
-                help="Workspace Settings → Developers → API keys.",
+                help="Workspace Settings → Developers → API keys。",
             ),
         ],
         instructions=[
-            "One click connects via OpenWorker Cloud (recommended).",
-            "Manual: create an API key under Workspace Settings → Developers.",
+            "一键通过 OpenWorker Cloud 连接（推荐）。",
+            "手动方式：在 Workspace Settings → Developers 下创建一个 API 密钥。",
         ],
         validate=_validate_attio,
         brand_color="#2d7ff9",
@@ -1298,7 +1298,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="posthog",
         title="PostHog",
         icon="◫",
-        blurb="Query product analytics: events, funnels, saved insights.",
+        blurb="查询产品分析：事件、漏斗、已保存的洞察。",
         auth="api_token",
         two_way=False,
         fields=[
@@ -1306,26 +1306,26 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
                 "base_url",
                 "PostHog URL",
                 required=False,
-                help="Leave empty for US cloud; set for EU cloud or self-hosted.",
+                help="美国云留空即可；欧盟云或自托管请填写。",
                 placeholder="https://us.posthog.com",
             ),
             Field(
                 "api_key",
-                "Personal API key",
+                "个人 API 密钥",
                 secret=True,
-                help="Settings → Personal API keys (read access is enough).",
+                help="Settings → Personal API keys（只读权限即可）。",
                 placeholder="phx_…",
             ),
             Field(
                 "project_id",
-                "Project ID",
-                help="Settings → Project → Project ID. Add more projects as extra accounts.",
+                "项目 ID",
+                help="Settings → Project → Project ID。更多项目作为额外账户添加。",
             ),
         ],
         instructions=[
-            "In PostHog, open Settings → Personal API keys and create a key.",
-            "Copy your Project ID from Settings → Project.",
-            "One project per account — connect again to add another project.",
+            "在 PostHog 中打开 Settings → Personal API keys 并创建一个密钥。",
+            "从 Settings → Project 复制你的项目 ID。",
+            "每个账户对应一个项目——再次连接即可添加另一个项目。",
         ],
         validate=_validate_posthog,
         brand_color="#f54e00",
@@ -1336,21 +1336,21 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="mixpanel",
         title="Mixpanel",
         icon="◭",
-        blurb="Query Mixpanel events and segmentation.",
+        blurb="查询 Mixpanel 事件和分群分析。",
         auth="api_token",
         two_way=False,
         fields=[
-            Field("username", "Service account username", secret=False),
-            Field("secret", "Service account secret", secret=True),
+            Field("username", "服务账号用户名", secret=False),
+            Field("secret", "服务账号密钥", secret=True),
             Field(
                 "project_id",
-                "Project ID",
-                help="Add more projects as extra accounts.",
+                "项目 ID",
+                help="更多项目作为额外账户添加。",
             ),
         ],
         instructions=[
-            "In Mixpanel, open Organization Settings → Service Accounts and create one.",
-            "Copy the username, the secret, and your Project ID (Project Settings).",
+            "在 Mixpanel 中打开 Organization Settings → Service Accounts 并创建一个。",
+            "复制用户名、密钥和你的项目 ID（Project Settings）。",
         ],
         validate=_validate_mixpanel,
         brand_color="#7856ff",
@@ -1361,18 +1361,18 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="amplitude",
         title="Amplitude",
         icon="∿",
-        blurb="Query Amplitude charts data: active users, event totals.",
+        blurb="查询 Amplitude 图表数据：活跃用户、事件总量。",
         auth="api_token",
         two_way=False,
         fields=[
             Field(
-                "api_key", "API key", secret=True, help="Project Settings → API Keys."
+                "api_key", "API 密钥", secret=True, help="Project Settings → API Keys。"
             ),
-            Field("secret_key", "Secret key", secret=True),
+            Field("secret_key", "密钥", secret=True),
         ],
         instructions=[
-            "In Amplitude, open Settings → Projects → your project → API Keys.",
-            "Copy the API key and secret key. One project per account.",
+            "在 Amplitude 中打开 Settings → Projects → 你的项目 → API Keys。",
+            "复制 API 密钥和密钥。每个账户对应一个项目。",
         ],
         validate=_validate_amplitude,
         brand_color="#1e61f0",
@@ -1383,24 +1383,24 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="apollo",
         title="Apollo.io",
         icon="☄",
-        blurb="Enrich people and companies; search the B2B database.",
+        blurb="丰富人员和公司信息；搜索 B2B 数据库。",
         auth="api_token",
         two_way=False,
         fields=[
             Field(
-                "api_key", "API key", secret=True, help="Settings → Integrations → API."
+                "api_key", "API 密钥", secret=True, help="Settings → Integrations → API。"
             ),
             Field(
                 "label",
-                "Account label",
+                "账户标签",
                 required=False,
-                help="Name this account (used if you connect more than one).",
+                help="为此账户命名（连接多个账户时使用）。",
                 placeholder="work",
             ),
         ],
         instructions=[
-            "In Apollo, open Settings → Integrations → API and create an API key.",
-            "Enrichment and search endpoints require a paid Apollo plan.",
+            "在 Apollo 中打开 Settings → Integrations → API 并创建一个 API 密钥。",
+            "丰富和搜索接口需要付费的 Apollo 套餐。",
         ],
         validate=_validate_apollo,
         brand_color="#fbbf24",
@@ -1411,16 +1411,16 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="hunter",
         title="Hunter",
         icon="✉",
-        blurb="Find and verify professional email addresses by domain.",
+        blurb="按域名查找和验证职业邮箱地址。",
         auth="api_token",
         two_way=False,
         fields=[
             Field(
-                "api_key", "API key", secret=True, help="hunter.io → API → API keys."
+                "api_key", "API 密钥", secret=True, help="hunter.io → API → API keys。"
             ),
         ],
         instructions=[
-            "In Hunter, open API → API keys and copy your key.",
+            "在 Hunter 中打开 API → API keys 并复制你的密钥。",
         ],
         validate=_validate_hunter,
         brand_color="#fa5320",
@@ -1431,7 +1431,7 @@ DESCRIPTORS: list[ConnectorDescriptor] = [
         name="pagerduty",
         title="PagerDuty",
         icon="◔",
-        blurb="See who's on-call and review active incidents before paging.",
+        blurb="在呼叫前查看值班人员和活跃事件。",
         auth="none",
         two_way=False,
         fields=[],
