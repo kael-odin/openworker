@@ -10,6 +10,7 @@ import { ConnectorBadge } from "../../connectors/ConnectorIcon";
 import type { DetailProps } from "./ConnectorsSection";
 import { ToolsDisclosure } from "./ToolsDisclosure";
 import { FOOT, GRP, GRP_H, PILL_ACCENT, ROW, TAG_ACCENT, TAG_WARN, XBTN } from "./ui";
+import { useT } from "../../i18n/I18nProvider";
 
 // The Gmail detail page (UX-DECISIONS §21): connected mailboxes (multi-account,
 // Default badge, per-account disconnect) + "Never show agents" privacy filters.
@@ -21,6 +22,7 @@ const LABEL = "text-[12.5px] text-muted w-24 shrink-0";
 export function GmailDetail({ c, cloud, slack: _slack, onChanged }: DetailProps) {
   const [busy, setBusy] = useState(false);
   const accounts = (c.accounts ?? []) as GmailAccount[]; // email-keyed (pre-generic-layer shape)
+  const { t } = useT();
 
   const addAccount = async () => {
     setBusy(true);
@@ -31,19 +33,19 @@ export function GmailDetail({ c, cloud, slack: _slack, onChanged }: DetailProps)
   return (
     <div data-testid="gmail-detail">
       <div className="flex items-center gap-3.5 mb-5">
-        <ConnectorBadge connector={c} size={44} title="Gmail" />
+        <ConnectorBadge connector={c} size={44} title={t("conn.gmail_title")} />
         <div className="min-w-0 flex-1">
-          <h2 className="text-[20px] font-semibold tracking-tight leading-tight">Gmail</h2>
+          <h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("conn.gmail_title")}</h2>
           <div className="text-[12.5px] text-muted flex items-center gap-1.5">
             {c.connected ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-ok" />
                 <span data-testid="gmail-status">
-                  {accounts.length} account{accounts.length === 1 ? "" : "s"}
+                  {t(accounts.length === 1 ? "conn.account_n_one" : "conn.account_n", { n: accounts.length })}
                 </span>
               </>
             ) : (
-              <span>Not connected</span>
+              <span>{t("conn.not_connected")}</span>
             )}
           </div>
         </div>
@@ -54,28 +56,28 @@ export function GmailDetail({ c, cloud, slack: _slack, onChanged }: DetailProps)
           disabled={busy || !cloud?.signed_in || c.managed_paused}
           title={
             c.managed_paused
-              ? "One-click Google sign-in is coming soon"
+              ? t("conn.gcal_coming_soon")
               : cloud?.signed_in
                 ? ""
-                : "Sign in to OpenWorker Cloud first"
+                : t("conn.signin_first")
           }
         >
-          {c.managed_paused ? "＋ Add account · Coming soon" : busy ? "Check your browser…" : "＋ Add account"}
+          {c.managed_paused ? t("conn.gcal_coming_soon") : busy ? t("conn.check_browser") : t("conn.add_account")}
         </button>
       </div>
 
       {!c.connected && (
         <div className={GRP}>
           <div className={ROW + " text-[12.5px] text-muted"}>
-            Sign in with Google — each mailbox stays separate, agents say which one they use.
-            {cloud?.signed_in ? "" : " Requires cloud sign-in."}
+            {t("conn.gmail_sub")}
+            {cloud?.signed_in ? "" : t("conn.requires_cloud")}
           </div>
         </div>
       )}
 
       {accounts.length > 0 && (
         <>
-          <div className={GRP_H + " !mt-0"}>Accounts</div>
+          <div className={GRP_H + " !mt-0"}>{t("conn.accounts")}</div>
           <div className={GRP} data-testid="gmail-accounts">
             {accounts.map((a) => (
               <AccountRow key={a.email} a={a} onChanged={onChanged} />
@@ -88,8 +90,7 @@ export function GmailDetail({ c, cloud, slack: _slack, onChanged }: DetailProps)
 
       <ToolsDisclosure c={c} onChanged={onChanged} />
       <div className={FOOT + " mt-2"}>
-        Filters are enforced on this computer, before an agent sees results. Hidden counts show
-        on the tool card and in Activity — never the content.
+        {t("conn.gmail_foot")}
       </div>
     </div>
   );
@@ -97,12 +98,13 @@ export function GmailDetail({ c, cloud, slack: _slack, onChanged }: DetailProps)
 
 function AccountRow({ a, onChanged }: { a: GmailAccount; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
+  const { t } = useT();
   return (
     <div className={ROW} data-testid={`gmail-account-${a.email}`}>
       <span className="min-w-0 flex-1 flex items-center gap-2">
         <span className="text-[13px] font-medium truncate">{a.email}</span>
-        {a.default && <span className={TAG_ACCENT}>Default</span>}
-        {a.needs_reauth && <span className={TAG_WARN}>⚠ Sign in again</span>}
+        {a.default && <span className={TAG_ACCENT}>{t("conn.default")}</span>}
+        {a.needs_reauth && <span className={TAG_WARN}>⚠ {t("conn.signin_again")}</span>}
       </span>
       {!a.default && (
         <button
@@ -113,12 +115,12 @@ function AccountRow({ a, onChanged }: { a: GmailAccount; onChanged: () => void }
             onChanged();
           }}
         >
-          Make default
+          {t("conn.make_default")}
         </button>
       )}
       <button
         className={XBTN}
-        title="Disconnect this mailbox"
+        title={t("conn.disconnect_mailbox")}
         data-testid={`gmail-disconnect-${a.email}`}
         disabled={busy}
         onClick={async () => {
@@ -136,14 +138,15 @@ function AccountRow({ a, onChanged }: { a: GmailAccount; onChanged: () => void }
 
 function FiltersGroup({ c, onChanged }: Pick<DetailProps, "c" | "onChanged">) {
   const filters = c.filters ?? { senders: [], labels: [] };
+  const { t } = useT();
   return (
     <>
-      <div className={GRP_H}>Never show agents</div>
+      <div className={GRP_H}>{t("conn.never_show_agents")}</div>
       <div className={GRP} data-testid="gmail-filters">
         <ChipListRow
-          label="Senders"
+          label={t("conn.senders")}
           testid="gmail-filter-senders"
-          placeholder="name@example.com or @domain.com"
+          placeholder={t("conn.senders_ph")}
           values={filters.senders}
           onSave={async (senders) => {
             await setGmailFilters({ senders });
@@ -151,9 +154,9 @@ function FiltersGroup({ c, onChanged }: Pick<DetailProps, "c" | "onChanged">) {
           }}
         />
         <ChipListRow
-          label="Labels"
+          label={t("conn.labels")}
           testid="gmail-filter-labels"
-          placeholder="Label name, e.g. Personal"
+          placeholder={t("conn.labels_ph")}
           values={filters.labels}
           onSave={async (labels) => {
             await setGmailFilters({ labels });
@@ -162,7 +165,7 @@ function FiltersGroup({ c, onChanged }: Pick<DetailProps, "c" | "onChanged">) {
         />
       </div>
       <div className={FOOT}>
-        Matching email is silently left out of what agents read — no trace they could probe.
+        {t("conn.filters_foot")}
       </div>
     </>
   );
@@ -182,6 +185,7 @@ function ChipListRow({
   onSave: (next: string[]) => Promise<void>;
 }) {
   const [draft, setDraft] = useState("");
+  const { t } = useT();
   const add = async () => {
     const v = draft.trim();
     if (!v) return;
@@ -200,7 +204,7 @@ function ChipListRow({
             {v}
             <button
               className={XBTN}
-              title="remove"
+              title={t("conn.remove")}
               onClick={() => onSave(values.filter((x) => x !== v))}
             >
               ×

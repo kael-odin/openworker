@@ -31,17 +31,30 @@ import { CloudSignInInline, CloudStatusPending } from "./connectors/CloudSignIn"
 import { ModelChecklist } from "./ModelChecklist";
 import { ProviderCards, ProviderForm, useProviderSetup } from "../providers/ProviderSetup";
 import { Toggle } from "./Toggle";
+import { useT, currentLang } from "../i18n/I18nProvider";
+import zh from "../i18n/zh.json";
+import en from "../i18n/en.json";
+
+type Dict = Record<string, string>;
+const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
+const EN: Dict = en as Dict;
+function tt(key: string, params?: Record<string, string | number>): string {
+  const d = DICTS[currentLang()] ?? DICTS.zh;
+  let raw = d[key] ?? EN[key] ?? key;
+  if (params) for (const [k, v] of Object.entries(params)) raw = raw.replace(`{${k}}`, String(v));
+  return raw;
+}
 
 // "2h ago"-style label for the providers' Last-used line (null when never used).
 const relTime = (epoch?: number | null): string | null => {
   if (!epoch) return null;
   const secs = Math.max(0, Math.floor(Date.now() / 1000 - epoch));
-  if (secs < 90) return "just now";
+  if (secs < 90) return tt("mtab.just_now");
   const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return tt("mtab.m_ago", { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 48) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 48) return tt("mtab.h_ago", { n: hrs });
+  return tt("mtab.d_ago", { n: Math.floor(hrs / 24) });
 };
 
 // Shared tab bodies for the Settings and Integrations pages (the old top-tab ManageModal was retired
@@ -79,11 +92,12 @@ export function ModelsTab() {
   const [settings, setSettings] = useState<ModelSettings | null>(null);
   const refreshSettings = () => getSettings().then(setSettings).catch(() => setSettings(null));
   const ps = useProviderSetup({ onSaved: refreshSettings });
+  const { t } = useT();
   useEffect(() => {
     refreshSettings();
   }, []);
 
-  if (!settings) return <div className="text-[13px] text-muted">Loading…</div>;
+  if (!settings) return <div className="text-[13px] text-muted">{t("mtab.loading")}</div>;
 
   const info = ps.info;
   const knownNames = ps.providers.map((p) => p.name);
@@ -108,10 +122,10 @@ export function ModelsTab() {
               className="text-[12.5px] text-danger/80 hover:text-danger hover:underline underline-offset-2"
               data-testid="set-remove-key"
               onClick={() => {
-                if (window.confirm(`Remove the ${info?.title} key from this computer?`)) ps.removeKey();
+                if (window.confirm(t("mtab.remove_key", { title: info?.title || "" }))) ps.removeKey();
               }}
             >
-              Remove key…
+              {t("mtab.remove_key_btn")}
             </button>
           ) : null
         }
@@ -119,17 +133,15 @@ export function ModelsTab() {
 
       {ps.sel === "openai" && settings.source === "env" && (
         <p className="text-[12px] text-muted mt-3 leading-relaxed">
-          A key is set via <code>OPENAI_API_KEY</code> in this server's environment. You can override
-          it above; the stored key is used only when the environment variable is absent.
+          {t("mtab.openai_env_pre")}<code>{t("mtab.openai_env_code")}</code>{t("mtab.openai_env_post")}
         </p>
       )}
 
       {info?.configured ? (
         <div className="mt-6">
-          <div className={SEC_H + " mb-1.5"}>Models</div>
+          <div className={SEC_H + " mb-1.5"}>{t("mtab.models")}</div>
           <p className="text-[12px] text-muted mb-2.5 leading-relaxed">
-            Ticked models show in the composer's picker; the black badge marks the default for new
-            sessions.
+            {t("mtab.models_sub")}
           </p>
           <ModelChecklist
             provider={ps.sel}
@@ -146,9 +158,9 @@ export function ModelsTab() {
         // key unlocks is part of deciding to get one at all (owner ask, 2026-07-04).
         (info?.suggested_models?.length || 0) > 0 && (
           <div className="mt-6" data-testid="model-preview">
-            <div className={SEC_H + " mb-1.5"}>Included models</div>
+            <div className={SEC_H + " mb-1.5"}>{t("mtab.included_models")}</div>
             <p className="text-[12px] text-muted mb-2.5 leading-relaxed">
-              Curated, agent-capable models this provider serves — add your key above to enable them.
+              {t("mtab.included_models_sub")}
             </p>
             <div className="space-y-1">
               {(info?.suggested_models || []).map((m) => {
@@ -183,6 +195,7 @@ function ComposerPickerCard({
   providers: ProviderInfo[];
   onChanged: () => void;
 }) {
+  const { t } = useT();
   const names = providers.map((p) => p.name);
   const provOf = (id: string) => {
     const i = id.indexOf(":");
@@ -194,10 +207,9 @@ function ComposerPickerCard({
   };
   return (
     <div className="mt-6" data-testid="composer-picker">
-      <div className={SEC_H + " mb-1.5"}>In the composer's picker</div>
+      <div className={SEC_H + " mb-1.5"}>{t("mtab.composer_picker")}</div>
       <p className="text-[12px] text-muted mb-2.5 leading-relaxed">
-        The models offered when starting a session; the black badge marks the default. Add more
-        from a provider's card above.
+        {t("mtab.composer_picker_sub")}
       </p>
       <div className="mlist">
         {settings.models.map((id) => {
@@ -209,7 +221,7 @@ function ComposerPickerCard({
                   type="checkbox"
                   checked
                   disabled={isDefault}
-                  title={isDefault ? "The default model is always shown — make another model default first" : "Remove from the picker"}
+                  title={isDefault ? t("mtab.default_title_default") : t("mtab.remove_from_picker")}
                   onChange={() => removeModel(id).then((r) => r.ok && onChanged())}
                 />
                 <span className="mlist-name" title={id}>
@@ -218,10 +230,10 @@ function ComposerPickerCard({
               </label>
               <span className="text-[11px] text-faint mr-2 shrink-0">{tag(id)}</span>
               {isDefault ? (
-                <span className="mlist-default">default</span>
+                <span className="mlist-default">{t("mtab.default_badge")}</span>
               ) : (
                 <button className="mlist-make" onClick={() => setDefaultModel(id).then(() => onChanged())}>
-                  Make default
+                  {t("mtab.make_default")}
                 </button>
               )}
             </div>
@@ -234,11 +246,11 @@ function ComposerPickerCard({
 
 // Curated OAuth quick-adds: remote MCP servers with browser sign-in (OAuth 2.1 + DCR) —
 // no keys to paste, tokens stay in the local secret store. First: Granola.
-const MCP_PRESETS: { name: string; label: string; blurb: string; config: Record<string, any> }[] = [
+const MCP_PRESETS: { name: string; label: string; blurbKey: string; config: Record<string, any> }[] = [
   {
     name: "granola",
     label: "Granola",
-    blurb: "Meeting notes & transcripts — sign in with your Granola account.",
+    blurbKey: "mtab.preset_granola",
     config: { type: "http", url: "https://mcp.granola.ai/mcp", auth: "oauth" },
   },
 ];
@@ -247,6 +259,7 @@ export function McpTab() {
   const [servers, setServers] = useState<McpServer[]>([]);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useT();
 
   const refresh = () => getMcpServers().then(setServers).catch(() => setServers([]));
   useEffect(() => {
@@ -258,8 +271,8 @@ export function McpTab() {
   const authorizing = servers.some((s) => s.status === "authorizing");
   useEffect(() => {
     if (!authorizing) return;
-    const t = window.setInterval(refresh, 2000);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(refresh, 2000);
+    return () => window.clearInterval(timer);
   }, [authorizing]);
 
   const toggle = async (s: McpServer) => {
@@ -274,22 +287,21 @@ export function McpTab() {
   return (
     <div className="space-y-3">
       <p className="text-[12.5px] text-muted leading-relaxed">
-        External tool servers (stdio or HTTP), shared across all agents. Enabled servers' tools are
-        permission-gated. Changes apply to new sessions —{" "}
+        {t("mtab.mcp_sub_pre")}{" "}
         <button
           className="text-accent font-medium hover:underline"
           onClick={() => reloadMcp().then(refresh)}
         >
-          reload now
+          {t("mtab.reload_now")}
         </button>
         .
       </p>
 
       {servers.length === 0 && !adding ? (
         <div className={CARD + " p-4 text-[13px] text-muted"}>
-          No MCP servers configured.{" "}
+          {t("mtab.no_mcp")}{" "}
           <button className="text-accent font-medium" onClick={() => setAdding(true)}>
-            Add a server
+            {t("mtab.add_server")}
           </button>
         </div>
       ) : (
@@ -311,7 +323,7 @@ export function McpTab() {
         <div key={p.name} className={CARD + " p-3.5 flex items-center gap-3"} data-testid={`mcp-preset-${p.name}`}>
           <div className="flex-1 min-w-0">
             <div className="text-[14px] font-medium">{p.label}</div>
-            <div className="text-[11.5px] text-faint">{p.blurb}</div>
+            <div className="text-[11.5px] text-faint">{t(p.blurbKey)}</div>
           </div>
           <button
             className={BTN_ACCENT}
@@ -321,7 +333,7 @@ export function McpTab() {
               refresh();
             }}
           >
-            Connect
+            {t("mtab.connect")}
           </button>
         </div>
       ))}
@@ -341,7 +353,7 @@ export function McpTab() {
         />
       ) : servers.length > 0 ? (
         <button className={BTN_ACCENT} onClick={() => setAdding(true)}>
-          + Add server
+          {t("mtab.add_server_btn")}
         </button>
       ) : null}
       {error && <div className="text-[12.5px] text-danger">{error}</div>}
@@ -363,6 +375,7 @@ function McpRow({
   const [tools, setTools] = useState<{ name: string; description: string }[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolErr, setToolErr] = useState<string | null>(null);
+  const { t } = useT();
 
   const isOauth = server.auth === "oauth";
   const authorizing = server.status === "authorizing";
@@ -385,36 +398,36 @@ function McpRow({
     const res = await getMcpTools(server.name);
     setBusy(false);
     if (res.ok) setTools(res.tools);
-    else setToolErr(res.error || "failed to connect");
+    else setToolErr(res.error || t("mtab.failed_connect"));
   };
 
   return (
     <div className={CARD + " p-3.5"}>
       <div className="flex items-center gap-3">
-        <Toggle checked={server.enabled} onChange={onToggle} title="Enable this server" />
+        <Toggle checked={server.enabled} onChange={onToggle} title={t("mtab.enable_server")} />
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-medium">{server.name}</div>
           <div className="text-[11.5px] text-faint">
-            {server.transport} · {authorizing ? "signing in…" : server.status.replace("_", " ")}
-            {server.tool_count != null ? ` · ${server.tool_count} tools` : ""}
-            {server.requires_approval ? " · asks" : ""}
-            {isOauth ? " · oauth" : ""}
+            {server.transport} · {authorizing ? t("mtab.status_signing_in") : server.status.replace("_", " ")}
+            {server.tool_count != null ? t("mtab.tools_n", { n: server.tool_count }) : ""}
+            {server.requires_approval ? t("mtab.asks") : ""}
+            {isOauth ? t("mtab.oauth") : ""}
           </div>
         </div>
         {isOauth &&
           (server.status === "needs_auth" ? (
             <button className={BTN_ACCENT} onClick={signIn} data-testid={`mcp-signin-${server.name}`}>
-              Sign in
+              {t("mtab.signin")}
             </button>
           ) : authorizing ? (
-            <span className="text-[12px] text-muted shrink-0">waiting for browser…</span>
+            <span className="text-[12px] text-muted shrink-0">{t("mtab.waiting_browser")}</span>
           ) : server.status === "connected" ? (
             <button
               className="text-[12px] text-muted hover:text-ink shrink-0"
               onClick={signOut}
               data-testid={`mcp-signout-${server.name}`}
             >
-              sign out
+              {t("mtab.signout")}
             </button>
           ) : null)}
         <button
@@ -422,10 +435,10 @@ function McpRow({
           onClick={loadTools}
           disabled={busy}
         >
-          {busy ? "…" : tools ? "hide tools" : "tools"}
+          {busy ? "…" : tools ? t("mtab.hide_tools") : t("mtab.tools")}
         </button>
         <button className={BTN_DANGER} onClick={onRemove}>
-          remove
+          {t("mtab.remove")}
         </button>
       </div>
       {server.last_error && server.status !== "connected" && (
@@ -434,14 +447,14 @@ function McpRow({
       {toolErr && <div className="text-[12.5px] text-danger mt-1.5">{toolErr}</div>}
       {tools && (
         <div className="mt-2.5 pt-2.5 border-t border-line flex flex-wrap gap-1.5">
-          {tools.length === 0 && <div className="text-[12px] text-faint">No tools.</div>}
-          {tools.map((t) => (
+          {tools.length === 0 && <div className="text-[12px] text-faint">{t("mtab.no_tools")}</div>}
+          {tools.map((tool) => (
             <span
-              key={t.name}
-              title={t.description}
+              key={tool.name}
+              title={tool.description}
               className="font-mono text-[11.5px] px-1.5 py-0.5 rounded-md bg-paper border border-line"
             >
-              {t.name}
+              {tool.name}
             </span>
           ))}
         </div>
@@ -460,6 +473,7 @@ function AddForm({
   onError: (e: string | null) => void;
 }) {
   const [text, setText] = useState(EXAMPLE);
+  const { t } = useT();
 
   const save = async () => {
     onError(null);
@@ -467,7 +481,7 @@ function AddForm({
     try {
       parsed = JSON.parse(text);
     } catch (e: any) {
-      onError("Invalid JSON: " + e.message);
+      onError(t("mtab.invalid_json") + e.message);
       return;
     }
     // Accept either {mcpServers:{...}}, {name:{...}}, or a single bare config.
@@ -477,7 +491,7 @@ function AddForm({
         ? Object.entries(map)
         : null;
     if (!entries || entries.length === 0) {
-      onError('Paste a `{ "<name>": { … } }` object (or a full mcpServers block).');
+      onError(t("mtab.paste_hint"));
       return;
     }
     for (const [name, config] of entries) {
@@ -488,7 +502,7 @@ function AddForm({
 
   return (
     <div className="space-y-2">
-      <div className="text-[12.5px] text-muted">Paste server JSON (name → config):</div>
+      <div className="text-[12.5px] text-muted">{t("mtab.paste_json")}</div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -498,10 +512,10 @@ function AddForm({
       />
       <div className="flex items-center gap-3">
         <button className={BTN_ACCENT} onClick={save}>
-          Add
+          {t("mtab.add")}
         </button>
         <button className="text-[12.5px] text-muted hover:text-ink" onClick={onCancel}>
-          cancel
+          {t("mtab.cancel")}
         </button>
       </div>
     </div>
@@ -528,6 +542,7 @@ export function UnauthorizedBlock({
   onChanged: () => void;
   teamId?: string;
 }) {
+  const { t } = useT();
   const items = (c.unauthorized ?? []).filter(
     (m) => teamId === undefined || m.team_id === teamId,
   );
@@ -542,14 +557,14 @@ export function UnauthorizedBlock({
       data-testid={teamId ? `unauthorized-${c.name}-${teamId}` : `unauthorized-${c.name}`}
     >
       <div className={SEC_H + " mb-2"}>
-        Messages from senders you haven't allowed · {items.length}
+        {t("mtab.unauth_title", { n: items.length })}
       </div>
       <div className="space-y-2">
         {items.map((m) => (
           <div key={m.id} className="rounded-xl border border-line bg-paper p-2.5">
             <div className="flex items-center gap-2 text-[12px] text-muted">
               <span className="font-medium text-ink">{m.user_name || m.user_id}</span>
-              <span>in {m.chat_name || m.chat_id}</span>
+              <span>{t("mtab.in_chat")} {m.chat_name || m.chat_id}</span>
               <span className="ml-auto shrink-0">{relTime(m.ts) || ""}</span>
             </div>
             <div className="text-[12.5px] mt-1 break-words">{m.text}</div>
@@ -557,26 +572,26 @@ export function UnauthorizedBlock({
               <button
                 className="text-[11.5px] px-2 py-1 rounded-md bg-accent text-white"
                 data-testid={`parked-allow-deliver-${m.id}`}
-                title="Add the sender to the allow-list and deliver this message now"
+                title={t("mtab.allow_deliver_title")}
                 onClick={() => act(m.id, "allow_deliver")}
               >
-                Allow & deliver
+                {t("mtab.allow_deliver")}
               </button>
               <button
                 className={BTN_BORDERED}
                 data-testid={`parked-allow-${m.id}`}
-                title="Add the sender to the allow-list; this message is discarded"
+                title={t("mtab.allow_only_title")}
                 onClick={() => act(m.id, "allow")}
               >
-                Allow only
+                {t("mtab.allow_only")}
               </button>
               <button
                 className="text-[11.5px] px-2 py-1 rounded-md text-faint hover:text-danger"
                 data-testid={`parked-dismiss-${m.id}`}
-                title="Throw this message away"
+                title={t("mtab.dismiss_title")}
                 onClick={() => act(m.id, "dismiss")}
               >
-                Dismiss
+                {t("mtab.dismiss")}
               </button>
             </div>
           </div>
@@ -591,6 +606,7 @@ export function UnauthorizedBlock({
 // session's Sources ▸ Channels panel; here the owner can see and revoke.
 export function ListeningSessionsBlock({ c }: { c: Connector }) {
   const [subs, setSubs] = useState<Subscription[] | null>(null);
+  const { t } = useT();
   const load = () => getSubscriptions().then(setSubs).catch(() => setSubs([]));
   useEffect(() => {
     load();
@@ -600,10 +616,10 @@ export function ListeningSessionsBlock({ c }: { c: Connector }) {
   const mine = (subs ?? []).filter((s) => platformOf(s.channel) === c.name);
   return (
     <div className="border-t border-line px-3.5 py-3" data-testid={`listening-${c.name}`}>
-      <div className={SEC_H + " mb-2"}>Sessions listening to {c.title} channels · {mine.length}</div>
+      <div className={SEC_H + " mb-2"}>{t("mtab.listening_title", { title: c.title, n: mine.length })}</div>
       {mine.length === 0 ? (
         <div className="text-[12px] text-faint">
-          None yet — open a session's Sources ▸ Channels to subscribe it to a channel.
+          {t("mtab.listening_none")}
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -618,7 +634,7 @@ export function ListeningSessionsBlock({ c }: { c: Connector }) {
               </span>
               <button
                 className="ml-auto text-faint hover:text-danger shrink-0"
-                title="Unsubscribe this session"
+                title={t("mtab.unsubscribe_session")}
                 onClick={async () => {
                   await unsubscribeChannel(s.session_id, s.channel);
                   load();
@@ -651,6 +667,7 @@ export function AllowlistBlock({
   allowed?: string[];
   allowedNames?: Record<string, string | null>;
 }) {
+  const { t } = useT();
   const allowedUsers = allowed ?? c.allowed_users;
   const names = allowedNames ?? c.allowed_user_names;
   const recent = (c.recent ?? []).filter(
@@ -661,10 +678,10 @@ export function AllowlistBlock({
   return (
     <div className="border-t border-line px-3.5 py-3 grid grid-cols-2 gap-5">
       <div>
-        <div className={SEC_H + " mb-2"}>Allowed to message</div>
+        <div className={SEC_H + " mb-2"}>{t("mtab.allowed_to_message")}</div>
         <div className="flex flex-wrap gap-1.5">
           {allowedUsers.length === 0 && (
-            <span className="text-[12px] text-faint">nobody yet — Allow a recent sender →</span>
+            <span className="text-[12px] text-faint">{t("mtab.nobody_yet")}</span>
           )}
           {allowedUsers.map((u) => (
             <span
@@ -678,7 +695,7 @@ export function AllowlistBlock({
               {names?.[u] || u}
               <button
                 className="w-4 h-4 grid place-items-center text-faint hover:text-danger"
-                title="remove"
+                title={t("mtab.remove_user")}
                 onClick={async () => {
                   await disallowUser(c.name, u, teamId);
                   onChanged();
@@ -691,9 +708,9 @@ export function AllowlistBlock({
         </div>
       </div>
       <div>
-        <div className={SEC_H + " mb-2"}>Recent senders</div>
+        <div className={SEC_H + " mb-2"}>{t("mtab.recent_senders")}</div>
         {unknownRecent.length === 0 ? (
-          <div className="text-[12px] text-faint">None yet. Message the bot once and it'll show here.</div>
+          <div className="text-[12px] text-faint">{t("mtab.recent_none")}</div>
         ) : (
           <div className="space-y-1.5">
             {unknownRecent.map((r) => (
@@ -702,7 +719,7 @@ export function AllowlistBlock({
                   {initials(r.user_name || "?")}
                 </span>
                 <span className="min-w-0 truncate" title={`id ${r.user_id}`}>
-                  {r.user_name || "unknown"} <span className="text-faint">· {r.chat_type}</span>
+                  {r.user_name || t("mtab.unknown")} <span className="text-faint">· {r.chat_type}</span>
                 </span>
                 <button
                   className="ml-auto text-[11.5px] px-2 py-0.5 rounded-md bg-accent text-white shrink-0"
@@ -711,7 +728,7 @@ export function AllowlistBlock({
                     onChanged();
                   }}
                 >
-                  Allow
+                  {t("mtab.allow")}
                 </button>
               </div>
             ))}
@@ -723,6 +740,7 @@ export function AllowlistBlock({
 }
 
 export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () => void }) {
+  const { t } = useT();
   const toggle = async (toolName: string, enabled: boolean) => {
     await updateConnectorTools(c.name, { [toolName]: enabled });
     onChanged();
@@ -730,12 +748,12 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
   if (!c.tools?.length)
     return (
       <div className="border-t border-line px-3.5 py-3 text-[12.5px] text-muted">
-        No tools for this connector yet.
+        {t("mtab.no_tools_connector")}
       </div>
     );
   return (
     <div className="border-t border-line px-3.5 py-3">
-      <div className={SEC_H + " mb-2"}>Tools exposed to OpenWorker</div>
+      <div className={SEC_H + " mb-2"}>{t("mtab.tools_exposed")}</div>
       <div className="space-y-1.5">
         {c.tools.map((tool) => (
           <label
@@ -751,7 +769,7 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
             <span className="min-w-0">
               <span className="block text-[13px]">{tool.label}</span>
               <span className="block text-[11.5px] text-faint">
-                {tool.name} · {tool.kind} · asks approval
+                {t("mtab.tool_meta", { name: tool.name, kind: tool.kind })}
               </span>
               <span className="block text-[11.5px] text-faint">{tool.description}</span>
             </span>
@@ -781,6 +799,7 @@ export function ConnectSetup({
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(false); // managed flow: browser is open
   const [error, setError] = useState<string | null>(null);
+  const { t } = useT();
 
   const submit = async () => {
     setBusy(true);
@@ -788,7 +807,7 @@ export function ConnectSetup({
     const res = await connectConnector(c.name, values);
     setBusy(false);
     if (res.ok) onConnected();
-    else setError(res.error || "could not connect");
+    else setError(res.error || t("mtab.err_connect"));
   };
 
   const oneClick = async () => {
@@ -797,7 +816,7 @@ export function ConnectSetup({
     // Completion arrives via the tab's poll: the broker form-POSTs the profile
     // to the sidecar, the connector flips to connected, this card closes itself.
     if (res.ok) setWaiting(true);
-    else setError(res.error || "could not start managed connect");
+    else setError(res.error || t("mtab.err_managed"));
   };
 
   const mcpOneClick = async () => {
@@ -806,7 +825,7 @@ export function ConnectSetup({
     // Completion likewise arrives via the poll — the sidecar flips the connector
     // to connected once the local OAuth flow lands.
     if (res.ok) setWaiting(true);
-    else setError(res.error || "could not start the connect");
+    else setError(res.error || t("mtab.err_mcp"));
   };
 
   return (
@@ -815,10 +834,10 @@ export function ConnectSetup({
         /* MCP-backed one-click needs no cloud sign-in — the OAuth flow is local. */
         <div className="space-y-2" data-testid="mcp-connect">
           <button className={BTN_ACCENT} onClick={mcpOneClick} disabled={waiting}>
-            {waiting ? "Check your browser…" : `Connect ${c.title} with one click`}
+            {waiting ? t("mtab.check_browser") : t("mtab.connect_one_click", { title: c.title })}
           </button>
           {c.fields.length > 0 && (
-            <div className="text-[11.5px] text-faint">or connect manually:</div>
+            <div className="text-[11.5px] text-faint">{t("mtab.or_manual")}</div>
           )}
         </div>
       )}
@@ -829,22 +848,22 @@ export function ConnectSetup({
             // a visibly-parked button, and the manual path below stays fully live.
             <>
               <button className={BTN_ACCENT + " opacity-50"} disabled data-testid="managed-coming-soon">
-                {`Connect ${c.title} with one click`}
+                {t("mtab.connect_one_click", { title: c.title })}
                 <span className="ml-2 text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-white/25">
-                  Coming soon
+                  {t("mtab.coming_soon_badge")}
                 </span>
               </button>
               <div className="text-[11.5px] text-faint">
-                One-click sign-in is coming soon — connect manually below for now:
+                {t("mtab.managed_paused_note")}
               </div>
             </>
           ) : cloud?.signed_in ? (
             <button className={BTN_ACCENT} onClick={oneClick} disabled={waiting}>
-              {waiting ? "Check your browser…" : `Connect ${c.title} with one click`}
+              {waiting ? t("mtab.check_browser") : t("mtab.connect_one_click", { title: c.title })}
             </button>
           ) : cloud ? (
             <CloudSignInInline
-              blurb={`Sign-in unlocks the one-click ${c.title} connect — or connect manually below.`}
+              blurb={t("mtab.signin_blurb", { title: c.title })}
             />
           ) : (
             // Status unknown (fetch pending/failed): never show the sign-in ask to a
@@ -852,7 +871,7 @@ export function ConnectSetup({
             <CloudStatusPending />
           )}
           {!c.managed_paused && cloud?.signed_in && (
-            <div className="text-[11.5px] text-faint">or connect manually:</div>
+            <div className="text-[11.5px] text-faint">{t("mtab.manual_or")}</div>
           )}
         </div>
       )}
@@ -867,7 +886,7 @@ export function ConnectSetup({
         <label className="conn-field" key={f.key}>
           <span className="conn-field-label">
             {f.label}
-            {!f.required && <em> (optional)</em>}
+            {!f.required && <em>{t("mtab.optional")}</em>}
           </span>
           <input
             type={f.secret ? "password" : "text"}
@@ -881,7 +900,7 @@ export function ConnectSetup({
       ))}
       <div>
         <button className={BTN_ACCENT} onClick={submit} disabled={busy}>
-          {busy ? "Validating…" : "Connect"}
+          {busy ? t("mtab.validating") : t("mtab.connect_btn")}
         </button>
       </div>
       {error && <div className="text-[12.5px] text-danger">{error}</div>}
