@@ -8,6 +8,7 @@ import {
   type RecentChannel,
 } from "../api";
 import { Icon } from "./Icon";
+import { useT } from "../i18n/I18nProvider";
 
 // A workspace roster hit for the typeahead: type a channel NAME, we resolve the
 // id (conversations.list, cached on the desktop) and compose the address.
@@ -40,6 +41,7 @@ export function ChannelPicker({
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement | null>(null);
+  const { t } = useT();
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
@@ -84,7 +86,7 @@ export function ChannelPicker({
       return;
     }
     setSearching(true);
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       const rows = await Promise.all(
         teams.map(async (tm) => {
           try {
@@ -105,7 +107,7 @@ export function ChannelPicker({
       setRoster(rows.flat().slice(0, 12));
       setSearching(false);
     }, 250);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [value, open, teams]);
 
   // Filter as the user types (name, address, or last-message text); full list on focus.
@@ -143,7 +145,7 @@ export function ChannelPicker({
       <input
         ref={inputRef}
         className="chan-input w-full"
-        placeholder="slack:C0123 or channel link"
+        placeholder={t("subs.placeholder")}
         value={display}
         title={value || undefined}
         onChange={(e) => {
@@ -205,7 +207,7 @@ export function ChannelPicker({
               className="px-3 py-1.5 text-[12px] text-faint"
               data-testid="roster-searching"
             >
-              searching your workspace’s channels…
+              {t("subs.searching")}
             </div>
           )}
           {/* Live workspace-roster hits: type the NAME, we resolved the id. */}
@@ -235,7 +237,7 @@ export function ChannelPicker({
               )}
               {!r.is_member && (
                 <span className="block text-[11px] text-warnInk">
-                  invite @ocw to this channel in Slack so it can listen
+                  {t("subs.invite_hint")}
                 </span>
               )}
             </button>
@@ -261,6 +263,7 @@ export function SubscriptionsChip({
   const [recent, setRecent] = useState<RecentChannel[]>([]);
   const [draft, setDraft] = useState("");
   const ref = useRef<HTMLDivElement | null>(null);
+  const { t } = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -288,23 +291,23 @@ export function SubscriptionsChip({
     <div className="sub-chip-wrap" ref={ref}>
       <button
         className={"wschip sub-chip" + (open ? " active" : "")}
-        title="Channels this session listens to"
+        title={t("subs.title")}
         onClick={() => setOpen((v) => !v)}
       >
         <Icon name="plug" size={12} /> {channels.length || "+"}
       </button>
       {open && (
         <div className="sub-pop" onMouseDown={(e) => e.stopPropagation()}>
-          <div className="sub-pop-head">Channels this session listens to</div>
+          <div className="sub-pop-head">{t("subs.title")}</div>
           {channels.length === 0 ? (
-            <div className="dim sub-pop-empty">Not subscribed to any channel.</div>
+            <div className="dim sub-pop-empty">{t("subs.empty")}</div>
           ) : (
             channels.map((c) => {
               const nm = recent.find((r) => r.channel === c)?.name;
               return (
               <div className="sub-pop-row" key={c}>
                 <span className="sub-pop-chan" title={c}>{nm ? `#${nm}` : c}</span>
-                <button className="sub-pop-x" title="Unsubscribe" onClick={() => remove(c)}>
+                <button className="sub-pop-x" title={t("subs.unsubscribe")} onClick={() => remove(c)}>
                   ×
                 </button>
               </div>
@@ -314,7 +317,7 @@ export function SubscriptionsChip({
           <div className="sub-pop-add">
             <ChannelPicker value={draft} onChange={setDraft} recent={recent} onSubmit={add} />
             <button className="btn-primary sm" disabled={!draft.trim()} onClick={add}>
-              Add
+              {t("subs.add")}
             </button>
           </div>
         </div>

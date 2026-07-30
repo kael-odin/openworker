@@ -1,19 +1,20 @@
 import { useState } from "react";
 import { addModel, getSettings, removeModel, setDefaultModel } from "../api";
+import { useT } from "../i18n/I18nProvider";
 
 // Cloud-account providers dispatch by a family segment baked into the model id
 // (`bedrock:claude/…`, `vertex:openweight/…`). The add-model row shows a dropdown so
 // users pick the family instead of memorizing the prefix; curated matrix ids already
 // carry theirs.
-const MODEL_FAMILIES: Record<string, { value: string; label: string }[]> = {
+const MODEL_FAMILIES: Record<string, { value: string; labelKey: string }[]> = {
   bedrock: [
-    { value: "claude", label: "Claude family" },
-    { value: "other", label: "Other models" },
+    { value: "claude", labelKey: "models.family_claude" },
+    { value: "other", labelKey: "models.family_other" },
   ],
   vertex: [
-    { value: "gemini", label: "Gemini family" },
-    { value: "claude", label: "Claude family" },
-    { value: "openweight", label: "Open-weight" },
+    { value: "gemini", labelKey: "models.family_gemini" },
+    { value: "claude", labelKey: "models.family_claude" },
+    { value: "openweight", labelKey: "models.family_openweight" },
   ],
 };
 
@@ -39,6 +40,7 @@ export function ModelChecklist({
   onChanged: (next: { models: string[]; model: string }) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const { t } = useT();
   const families = MODEL_FAMILIES[provider];
   const [family, setFamily] = useState(families?.[0]?.value || "");
 
@@ -94,7 +96,7 @@ export function ModelChecklist({
                 type="checkbox"
                 checked={checked(id)}
                 disabled={isDefault}
-                title={isDefault ? "The default model is always shown — make another model default first" : undefined}
+                title={isDefault ? t("models.default_title") : undefined}
                 onChange={(e) => tick(id, e.target.checked)}
               />
               <span className="mlist-name" title={id}>
@@ -102,10 +104,10 @@ export function ModelChecklist({
               </span>
             </label>
             {isDefault ? (
-              <span className="mlist-default">default</span>
+              <span className="mlist-default">{t("models.default_badge")}</span>
             ) : (
               <button className="mlist-make" onClick={() => makeDefault(id)}>
-                Make default
+                {t("models.make_default")}
               </button>
             )}
           </div>
@@ -116,18 +118,18 @@ export function ModelChecklist({
           <select
             value={family}
             onChange={(e) => setFamily(e.target.value)}
-            aria-label="Model family"
+            aria-label={t("models.family_aria")}
             data-testid="mlist-family"
           >
             {families.map((f) => (
               <option key={f.value} value={f.value}>
-                {f.label}
+                {t(f.labelKey)}
               </option>
             ))}
           </select>
         )}
         <input
-          placeholder="Add another model…"
+          placeholder={t("models.add_placeholder")}
           value={draft}
           spellCheck={false}
           autoComplete="off"
@@ -135,7 +137,7 @@ export function ModelChecklist({
           onKeyDown={(e) => e.key === "Enter" && add()}
         />
         <button className="btn-primary sm" onClick={add} disabled={!draft.trim()}>
-          Add
+          {t("models.add")}
         </button>
       </div>
     </div>

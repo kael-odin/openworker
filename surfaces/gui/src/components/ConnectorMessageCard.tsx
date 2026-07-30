@@ -17,20 +17,34 @@ import { useState, type CSSProperties } from "react";
 import type { MessageSource } from "../api";
 import { ConnectorBadge, hexToRgba, NEUTRAL } from "../connectors/ConnectorIcon";
 import { resolveConnector } from "../connectors/registry";
+import { currentLang } from "../i18n/I18nProvider";
+import zh from "../i18n/zh.json";
+import en from "../i18n/en.json";
+
+type Dict = Record<string, string>;
+const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
+const EN: Dict = en as Dict;
+
+function tt(key: string, params?: Record<string, string | number>): string {
+  const d = DICTS[currentLang()] ?? DICTS.zh;
+  const raw = d[key] ?? EN[key] ?? key;
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
+}
 
 /** Coarse relative time from epoch seconds: "just now" / "5m ago" / "2h ago" / "3d ago" / a date. */
 function relativeTime(tsSeconds: number): string {
   if (!tsSeconds || !isFinite(tsSeconds)) return "";
   const then = tsSeconds * 1000;
   const diff = Date.now() - then;
-  if (diff < 0) return "just now";
-  if (diff < 45_000) return "just now";
+  if (diff < 0) return tt("connector.just_now");
+  if (diff < 45_000) return tt("connector.just_now");
   const mins = Math.round(diff / 60_000);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return tt("connector.minutes_ago", { n: mins });
   const hrs = Math.round(diff / 3_600_000);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return tt("connector.hours_ago", { n: hrs });
   const days = Math.round(diff / 86_400_000);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return tt("connector.days_ago", { n: days });
   return new Date(then).toLocaleDateString();
 }
 
@@ -85,7 +99,7 @@ export function ConnectorMessageCard({
             </span>
             <span className="text-faint">·</span>
             <span className="text-[12.5px] font-medium">{source.sender_name}</span>
-            <span className="text-[11px] text-faint ml-0.5">via {entry.label}</span>
+            <span className="text-[11px] text-faint ml-0.5">{tt("connector.via", { label: entry.label })}</span>
           </>
         )}
         <time className="ml-auto text-[11px] text-faint whitespace-nowrap" title={clockTime(source.ts)}>
