@@ -45,8 +45,8 @@ def buttons_for(item) -> list[Button]:
     notification, …) — the caller then sends plain text with an "open the app" hint."""
     if item.kind == KIND_APPROVAL:
         return [
-            Button("Approve", encode(item.id, "allow")),
-            Button("Deny", encode(item.id, "deny")),
+            Button("批准", encode(item.id, "allow")),
+            Button("拒绝", encode(item.id, "deny")),
         ]
     if item.kind == KIND_QUESTION and getattr(item, "options", None):
         # One button per option; the resolution IS the chosen option text (what the agent gets).

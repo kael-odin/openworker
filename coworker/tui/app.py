@@ -33,10 +33,10 @@ def _short(value: Any, limit: int = 80) -> str:
 
 class ApprovalScreen(ModalScreen[ApprovalOutcome]):
     BINDINGS = [
-        Binding("y", "decide('once')", "Approve"),
-        Binding("n", "decide('deny')", "Deny"),
-        Binding("a", "decide('always_tool')", "Always tool"),
-        Binding("c", "decide('always_command')", "Always cmd"),
+        Binding("y", "decide('once')", "批准"),
+        Binding("n", "decide('deny')", "拒绝"),
+        Binding("a", "decide('always_tool')", "一直允许此工具"),
+        Binding("c", "decide('always_command')", "一直允许此命令"),
     ]
 
     def __init__(self, request: PermissionRequest) -> None:
@@ -47,15 +47,15 @@ class ApprovalScreen(ModalScreen[ApprovalOutcome]):
         r = self.request
         args = ", ".join(f"{k}={_short(v)}" for k, v in (r.arguments or {}).items())
         with Vertical(id="approval"):
-            yield Label("Permission required", id="approval-title")
-            yield Static(f"tool:   {r.tool_name}")
-            yield Static(f"args:   {args or '(none)'}")
-            yield Static(f"reason: {r.reason}")
+            yield Label("需要权限", id="approval-title")
+            yield Static(f"工具：  {r.tool_name}")
+            yield Static(f"参数：  {args or '（无）'}")
+            yield Static(f"原因：  {r.reason}")
             with Horizontal(id="approval-buttons"):
-                yield Button("Approve (y)", id="once", variant="success")
-                yield Button("Deny (n)", id="deny", variant="error")
-                yield Button("Always tool (a)", id="always_tool")
-                yield Button("Always cmd (c)", id="always_command")
+                yield Button("批准 (y)", id="once", variant="success")
+                yield Button("拒绝 (n)", id="deny", variant="error")
+                yield Button("一直允许此工具 (a)", id="always_tool")
+                yield Button("一直允许此命令 (c)", id="always_command")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(ApprovalOutcome(event.button.id))
@@ -75,7 +75,7 @@ class CoworkerApp(App):
     """
     BINDINGS = [
         Binding("ctrl+c", "quit", "Quit"),
-        Binding("escape", "interrupt", "Interrupt"),
+        Binding("escape", "interrupt", "中断"),
     ]
 
     def __init__(

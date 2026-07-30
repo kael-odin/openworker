@@ -90,7 +90,7 @@ def test_plan_mode_blocks_writes(tmp_path):
         "write_file", {"path": "x.py", "content": "x"}, _meta(reg, "write_file")
     )
     assert not d.allowed and not d.needs_user
-    assert "read-only" in d.reason
+    assert "只读" in d.reason
 
 
 def test_shell_allowlist(tmp_path):

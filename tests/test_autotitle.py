@@ -25,7 +25,7 @@ class TitleAwareProvider(ProviderClient):
         self.title_calls: list[list[dict]] = []
 
     def complete(self, *, model, messages, tools=None, **settings):
-        if messages and "title chat sessions" in str(messages[0].get("content", "")):
+        if messages and "为聊天会话起标题" in str(messages[0].get("content", "")):
             self.title_calls.append([dict(m) for m in messages])
             item = self._titles.pop(0)
             if isinstance(item, Exception):

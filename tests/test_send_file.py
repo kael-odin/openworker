@@ -149,7 +149,7 @@ def test_thread_send_message_grant_never_covers_send_file(tmp_path):
     allowed = engine.evaluate(
         "send_message", {"target": target, "text": "hi"}, msg_meta
     )
-    assert allowed.allowed and "standing rule" in allowed.reason
+    assert allowed.allowed and "常驻规则" in allowed.reason
 
     asked = engine.evaluate(
         "send_file", {"target": target, "path": "report.pdf"}, file_meta

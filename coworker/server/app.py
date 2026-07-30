@@ -1494,7 +1494,7 @@ def create_app(manager: SessionManager) -> FastAPI:
             # item so the answer can also come from the Inbox / a reconnect / after a restart.
             item = manager.inbox.add_approval(
                 session_id,
-                f"Run `{_request.tool_name}`?",
+                f"运行 `{_request.tool_name}`？",
                 body="\n".join(
                     p
                     for p in (
@@ -1558,7 +1558,7 @@ def create_app(manager: SessionManager) -> FastAPI:
             # The engine has already emitted DIRECTORY_REQUESTED. Park, await, then apply the grant.
             item = manager.inbox.add_directory(
                 session_id,
-                "Grant access to a folder?",
+                "授权访问某个文件夹？",
                 body=str(args.get("reason", "")),
                 inbox=_route(),
                 visibility=_visibility(),
@@ -1576,16 +1576,16 @@ def create_app(manager: SessionManager) -> FastAPI:
                 await manager.inbox.wait(item.id)
             )  # {granted, path, writable}
             if not resp.get("granted"):
-                return {"granted": False, "reason": "the user declined the request"}
+                return {"granted": False, "reason": "用户拒绝了该请求"}
             path = (resp.get("path") or args.get("path") or "").strip()
             if not path:
-                return {"granted": False, "error": "no directory was provided"}
+                return {"granted": False, "error": "未提供任何目录"}
             writable = bool(resp.get("writable", args.get("writable", False)))
             res = manager.add_root(session_id, path, writable)
             if not res.get("ok"):
                 return {
                     "granted": False,
-                    "error": res.get("error", "could not grant access"),
+                    "error": res.get("error", "无法授权访问"),
                 }
             primary = next(
                 (
@@ -1607,7 +1607,7 @@ def create_app(manager: SessionManager) -> FastAPI:
             # The engine has already emitted PLAN_PROPOSED. Park, await the verdict.
             item = manager.inbox.add_plan(
                 session_id,
-                "Approve the plan?",
+                "批准该计划？",
                 body=str(_args.get("plan", "")),
                 inbox=_route(),
                 visibility=_visibility(),

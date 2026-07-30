@@ -755,7 +755,7 @@ class SessionManager:
         async def approve(request):
             item = self.inbox.add_approval(
                 session_id,
-                f"Run `{request.tool_name}`?",
+                f"运行 `{request.tool_name}`？",
                 body=_approval_body(request),
                 inbox=self.inbox_routing.route_for(session_id, agent),
                 tool_call_id=getattr(request, "tool_call_id", None),
@@ -773,7 +773,7 @@ class SessionManager:
         async def request(args, tool_call_id=None):
             item = self.inbox.add_directory(
                 session_id,
-                "Grant access to a folder?",
+                "授权访问某个文件夹？",
                 body=str(args.get("reason", "")),
                 inbox=self.inbox_routing.route_for(session_id, agent),
                 data={
@@ -787,16 +787,16 @@ class SessionManager:
                 await self.mirror_inbox_item(item)
             resp = _parse_inbox_json(await self.inbox.wait(item.id))
             if not resp.get("granted"):
-                return {"granted": False, "reason": "the user declined the request"}
+                return {"granted": False, "reason": "用户拒绝了该请求"}
             path = (resp.get("path") or args.get("path") or "").strip()
             if not path:
-                return {"granted": False, "error": "no directory was provided"}
+                return {"granted": False, "error": "未提供任何目录"}
             writable = bool(resp.get("writable", args.get("writable", False)))
             res = self.add_root(session_id, path, writable)
             if not res.get("ok"):
                 return {
                     "granted": False,
-                    "error": res.get("error", "could not grant access"),
+                    "error": res.get("error", "无法授权访问"),
                 }
             return {"granted": True, "path": path, "writable": writable}
 
@@ -806,7 +806,7 @@ class SessionManager:
         async def approve(args, tool_call_id=None):
             item = self.inbox.add_plan(
                 session_id,
-                "Approve the plan?",
+                "批准该计划？",
                 body=str(args.get("plan", "")),
                 inbox=self.inbox_routing.route_for(session_id, agent),
                 tool_call_id=tool_call_id,
@@ -2551,7 +2551,7 @@ class SessionManager:
             # the Slack mirror renders only Approve/Deny buttons.
             item = self.inbox.add_approval(
                 session_id,
-                f"Run `{request.tool_name}`?",
+                f"运行 `{request.tool_name}`？",
                 body=_approval_body(request),
                 inbox=self.inbox_routing.route_for(session_id, task.agent),
                 tool_call_id=getattr(request, "tool_call_id", None),
@@ -3272,10 +3272,9 @@ class SessionManager:
 
     # -- LLM auto-titles (FB-010) -------------------------------------------------
     _AUTOTITLE_PROMPT = (
-        "You title chat sessions. Given the user's opening message(s), reply with ONLY "
-        "a 4-5 word title for the session — no quotes or punctuation wrapping it. If "
-        'the opening is merely a greeting or small-talk with no topic ("hey", '
-        '"how are you", "hi there"), reply with exactly: small-talk'
+        "你负责为聊天会话起标题。根据用户的开场消息，仅以 4-5 个词回复一个会话标题——"
+        "不要加引号或标点包裹。如果开场只是寒暄或闲聊、没有实质话题"
+        "（「嘿」「你好吗」「在吗」），则精确回复：闲聊"
     )
 
     def _maybe_autotitle(self, session_id: str) -> None:
@@ -3355,6 +3354,7 @@ class SessionManager:
             if title.lower().strip(".!,;:'\"").replace(" ", "-").replace("_", "-") in (
                 "small-talk",
                 "smalltalk",
+                "闲聊",
             ):
                 return
             if not title or len(title) > 80:

@@ -130,32 +130,32 @@ class PermissionEngine:
         # Discuss / plan modes: read-only.
         if self.mode in READ_ONLY_MODES and consequential:
             return Decision(
-                False, f"{self.mode.value} mode is read-only", needs_user=False
+                False, f"{self.mode.value} 模式为只读", needs_user=False
             )
 
         # Path scoping for writes that name a path (all modes): must land in a writable root.
         if is_write:
             path = arguments.get("path")
             if path is not None and not self._under_writable_root(path):
-                return Decision(False, f"path is not in a writable directory: {path}")
+                return Decision(False, f"路径不在可写目录内：{path}")
 
         # Non-consequential tools always run.
         if not consequential:
-            return Decision(True, "low risk")
+            return Decision(True, "低风险")
 
         # Full access.
         if self.mode is Mode.AUTO:
-            return Decision(True, "full access")
+            return Decision(True, "完全访问")
 
         # interactive / custom: allowlists.
         if is_shell:
             command = str(arguments.get("command", ""))
             if self._command_allowed(command):
-                return Decision(True, "command on allowlist")
+                return Decision(True, "命令在白名单中")
             if command and command in self.session_allow_commands:
-                return Decision(True, "command allowed for session")
+                return Decision(True, "该会话已允许此命令")
         if tool_name in self.session_allow_tools and not is_connector:
-            return Decision(True, "tool allowed for session")
+            return Decision(True, "该会话已允许此工具")
 
         # Task-scoped standing rules (§25): tool + exact target, owned by the automation.
         # Deliberately NOT subject to the connector exclusion above — the exact-target
@@ -168,14 +168,14 @@ class PermissionEngine:
             )
             if target and target in self.task_rules[tool_name]:
                 rule = f"{tool_name} → {target}"
-                return Decision(True, f"allowed by standing rule: {rule}", rule=rule)
+                return Decision(True, f"由常驻规则允许：{rule}", rule=rule)
 
         # Custom mode auto-approves the configured tools.
         if self.mode is Mode.CUSTOM and tool_name in self.auto_allow_tools:
-            return Decision(True, "auto-allowed by config")
+            return Decision(True, "由配置自动允许")
 
         # Otherwise: ask the user.
-        return Decision(False, "requires approval", needs_user=True)
+        return Decision(False, "需要审批", needs_user=True)
 
     # -- session memory ---------------------------------------------------------
     def allow_tool_for_session(self, tool_name: str) -> None:

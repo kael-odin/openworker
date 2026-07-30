@@ -33,7 +33,7 @@ def test_buttons_for_kinds(tmp_path):
     st = InboxStore(tmp_path / "inbox.json")
     appr = st.add_approval("s1", "Run `write_file`?")
     btns = buttons_for(appr)
-    assert [b.label for b in btns] == ["Approve", "Deny"]
+    assert [b.label for b in btns] == ["批准", "拒绝"]
     assert decode(btns[0].value) == (appr.id, "allow")
     assert decode(btns[1].value) == (appr.id, "deny")
 
@@ -48,10 +48,10 @@ def test_buttons_for_kinds(tmp_path):
 
 
 def test_slack_blocks_shape():
-    blocks = _slack_blocks("Run `x`?", [Button("Approve", "v1"), Button("Deny", "v2")])
+    blocks = _slack_blocks("Run `x`?", [Button("批准", "v1"), Button("拒绝", "v2")])
     assert blocks[0]["type"] == "section"
     els = blocks[1]["elements"]
-    assert [e["text"]["text"] for e in els] == ["Approve", "Deny"]
+    assert [e["text"]["text"] for e in els] == ["批准", "拒绝"]
     assert [e["value"] for e in els] == ["v1", "v2"]
     assert [e["action_id"] for e in els] == ["ocw_0", "ocw_1"]
     # no buttons → just the section, no actions block

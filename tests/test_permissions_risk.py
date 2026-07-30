@@ -73,7 +73,7 @@ def test_read_only_modes_block_consequential(tmp_path, mode):
         args = {"path": "a.py", "content": "x"} if name == "write_file" else {}
         d = eng.evaluate(name, args, meta)
         assert not d.allowed and not d.needs_user
-        assert "read-only" in d.reason
+        assert "只读" in d.reason
 
 
 def test_external_asks_in_interactive_allows_in_auto(tmp_path):

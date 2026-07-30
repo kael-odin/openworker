@@ -221,8 +221,8 @@ export function ApprovalCard({
   const title = humanizeApprovalTitle(item.name, item.args);
   const scope = scopeNote(item.name, item.args, item.category);
   const grants = item.name === "create_scheduled_task" ? permissionLines(item.args) : [];
-  // "requires approval" is the engine's default boilerplate — only surface a real reason.
-  const reason = item.reason && item.reason !== "requires approval" ? item.reason : "";
+  // "需要审批" is the engine's default boilerplate — only surface a real reason.
+  const reason = item.reason && item.reason !== "需要审批" ? item.reason : "";
   const offerStanding = !!(runTask && item.standingTarget);
   const dock = compact ? " approval-dock" : "";
 

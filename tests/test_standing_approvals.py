@@ -151,7 +151,7 @@ def test_task_rules_cover_connector_tools(tmp_path):
         "discord_send_message", {"channel_id": "C8", "content": "x"}, meta
     ).allowed
     hit = e.evaluate("discord_send_message", {"channel_id": "C9", "content": "x"}, meta)
-    assert hit.allowed and "standing rule" in hit.reason
+    assert hit.allowed and "常驻规则" in hit.reason
 
 
 def test_read_only_modes_ignore_task_rules(tmp_path):

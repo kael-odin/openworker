@@ -64,7 +64,7 @@ def test_persona_detail_endpoint(tmp_path, monkeypatch):
     detail = client.get("/v1/personas/ops").json()
     # identity + capabilities (from the manifest/entry)
     assert detail["id"] == "ops"
-    assert detail["name"] == "Ops Coworker"
+    assert detail["name"] == "Ops 协作伙伴"
     assert detail["enabled"] is False  # non-default personas ship disabled (opt-in)
     assert (
         detail["workspace"] == "deliverable"

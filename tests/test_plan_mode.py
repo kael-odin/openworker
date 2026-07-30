@@ -77,7 +77,7 @@ def test_plan_mode_blocks_writes_without_asking(tmp_path):
     finished = next(e for e in events if e.type == EventType.TOOL_FINISHED)
     assert finished.data["status"] == "denied"
     assert any(
-        m.get("role") == "tool" and "plan mode is read-only" in m["content"]
+        m.get("role") == "tool" and "plan 模式为只读" in m["content"]
         for m in engine.messages
     )
 
@@ -198,7 +198,7 @@ def test_discuss_mode_blocks_writes_without_plan_pressure(tmp_path):
     events = _collect(engine, "tweak x.py")
     assert not (tmp_path / "x.py").exists()
     assert any(
-        m.get("role") == "tool" and "discuss mode is read-only" in m["content"]
+        m.get("role") == "tool" and "discuss 模式为只读" in m["content"]
         for m in engine.messages
     )
 

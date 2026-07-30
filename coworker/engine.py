@@ -192,7 +192,7 @@ class TurnEngine:
             return None
         from .providers.matrix import model_labels
 
-        text = f"Model switched to {model_labels().get(model, model)}"
+        text = f"已切换到模型 {model_labels().get(model, model)}"
         try:
             caps = self.provider.capabilities(model)
         except Exception:
@@ -1017,7 +1017,7 @@ def _assistant_message(turn: AssistantTurn, model: Optional[str] = None) -> dict
 
 
 def _tool_result_message(tool_call: ToolCall, result: Any) -> dict[str, Any]:
-    content = result if isinstance(result, str) else json.dumps(result, default=str)
+    content = result if isinstance(result, str) else json.dumps(result, default=str, ensure_ascii=False)
     return {
         "role": "tool",
         "tool_call_id": tool_call.id,
@@ -1030,7 +1030,7 @@ def _tool_error_message(tool_call: ToolCall, reason: str) -> dict[str, Any]:
     return {
         "role": "tool",
         "tool_call_id": tool_call.id,
-        "content": json.dumps({"error": "tool call not executed", "reason": reason}),
+        "content": json.dumps({"error": "tool call not executed", "reason": reason}, ensure_ascii=False),
         "ts": time.time(),
     }
 

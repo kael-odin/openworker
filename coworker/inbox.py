@@ -354,7 +354,7 @@ def inbox_approver(store: InboxStore, session_id: str, *, inbox: str = "default"
     async def approve(request: "PermissionRequest") -> "ApprovalOutcome":
         item = store.add_approval(
             session_id,
-            title=f"Run `{request.tool_name}`?",
+            title=f"运行 `{request.tool_name}`？",
             body=request.reason or "",
             inbox=inbox,
         )

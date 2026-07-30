@@ -37,7 +37,7 @@ def test_no_access_errors_are_translated():
         "'The model `gpt-5.6-sol` does not exist or you do not have access to it.'}}"
     )
     msg = friendly_model_error("gpt-5.6-sol", exc)
-    assert msg and "doesn't have access to gpt-5.6-sol" in msg
+    assert msg and "无权使用 gpt-5.6-sol" in msg
 
     # Anthropic's 404 body is type not_found_error + "model: <id>"
     exc = RuntimeError(
@@ -45,7 +45,7 @@ def test_no_access_errors_are_translated():
         "'message': 'model: claude-fable-5'}}"
     )
     msg = friendly_model_error("anthropic:claude-fable-5", exc)
-    assert msg and "doesn't have access to anthropic:claude-fable-5" in msg
+    assert msg and "无权使用 anthropic:claude-fable-5" in msg
 
 
 def test_quota_errors_are_translated():
@@ -54,14 +54,14 @@ def test_quota_errors_are_translated():
         "'You exceeded your current quota, please check your plan and billing details.'}}"
     )
     msg = friendly_model_error("gpt-5.6-sol", exc)
-    assert msg and "out of quota for gpt-5.6-sol" in msg
+    assert msg and "额度已用尽" in msg and "gpt-5.6-sol" in msg
 
     exc = RuntimeError(
         "Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', "
         "'message': 'Your credit balance is too low to access the Anthropic API.'}}"
     )
     msg = friendly_model_error("anthropic:claude-fable-5", exc)
-    assert msg and "out of quota" in msg
+    assert msg and "额度已用尽" in msg
 
 
 def test_unrelated_errors_pass_through_raw():

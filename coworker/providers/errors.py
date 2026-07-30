@@ -39,14 +39,13 @@ def friendly_model_error(model: str, exc: Exception) -> Optional[str]:
     """One actionable sentence for "your account can't use this model" failures, or None."""
     text = str(exc).lower()
     no_access = (
-        f"Your account doesn't have access to {model} — new models can roll out "
-        "gradually or require a plan upgrade. Pick a different model, or check "
-        "the provider's console for availability."
+        f"你的账号无权使用 {model}——新模型可能逐步开放，或需要升级套餐。"
+        "请换一个模型，或到对应服务商控制台查看可用性。"
     )
     if any(marker in text for marker in _NO_QUOTA):
         return (
-            f"Your account is out of quota for {model} — add credits or raise the limit "
-            "in the provider's billing console, or pick a different model."
+            f"你的账号 {model} 额度已用尽——请到服务商的账单控制台充值或提高额度，"
+            "或换一个模型。"
         )
     if any(marker in text for marker in _NO_ACCESS):
         return no_access
