@@ -2,11 +2,14 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import { initTheme } from "./theme";
+import { initLang } from "./i18n";
+import { I18nProvider } from "./i18n/I18nProvider";
 import { platformOS } from "./tauri";
 import "./tailwind.css";
 import "./styles.css";
 
 initTheme();
+initLang();
 // Platform hook for CSS (html[data-platform="windows"] scrollbar styling etc.).
 document.documentElement.dataset.platform = platformOS();
 
@@ -19,6 +22,8 @@ window.addEventListener("drop", (e) => e.preventDefault());
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <I18nProvider>
+      <App />
+    </I18nProvider>
   </React.StrictMode>,
 );

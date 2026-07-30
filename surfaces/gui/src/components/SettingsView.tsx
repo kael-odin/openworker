@@ -33,6 +33,8 @@ import {
   type DictationStatus,
 } from "../tauri";
 import { useThemePref } from "../theme";
+import { useLangPref } from "../i18n";
+import { useT } from "../i18n/I18nProvider";
 import { Icon } from "./Icon";
 import { PanelHead } from "./IntegrationsView";
 import { ModelsTab } from "./ManageTabs";
@@ -59,10 +61,10 @@ const BTN_BORDERED =
   "text-[12.5px] px-3 py-2 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
 
 const SET_TABS: { key: SetTab; label: string; icon: "sliders" | "code" | "mic" | "sparkle" }[] = [
-  { key: "appearance", label: "General", icon: "sliders" },
-  { key: "models", label: "Models", icon: "code" },
-  { key: "voice", label: "Voice input", icon: "mic" },
-  { key: "personas", label: "Personas", icon: "sparkle" },
+  { key: "appearance", label: "settings.tab_general", icon: "sliders" },
+  { key: "models", label: "settings.tab_models", icon: "code" },
+  { key: "voice", label: "settings.tab_voice", icon: "mic" },
+  { key: "personas", label: "settings.tab_personas", icon: "sparkle" },
 ];
 
 export function SettingsView({
@@ -76,7 +78,8 @@ export function SettingsView({
   // deep-link to it (openSettings("personas") callers) so the page never opens on a
   // section with no nav entry.
   const personas = showPersonas();
-  const tabs = personas ? SET_TABS : SET_TABS.filter((t) => t.key !== "personas");
+  const { t } = useT();
+  const tabs = personas ? SET_TABS : SET_TABS.filter((tb) => tb.key !== "personas");
   const wanted = initialTab && (personas || initialTab !== "personas") ? initialTab : "appearance";
   const [tab, setTab] = useState<SetTab>(wanted);
 
@@ -86,18 +89,18 @@ export function SettingsView({
         <div className="px-2 text-[13.5px] font-semibold mb-3 flex items-center gap-2">
           <Icon name="gear" size={16} /> Settings
         </div>
-        {tabs.map((t) => {
-          const active = tab === t.key;
+        {tabs.map((tb) => {
+          const active = tab === tb.key;
           return (
             <button
-              key={t.key}
+              key={tb.key}
               className={
                 "w-full text-left px-2.5 py-2 rounded-lg text-[13px] flex items-center gap-2 " +
                 (active ? "bg-paper text-accent font-medium" : "text-muted hover:bg-paper hover:text-ink")
               }
-              onClick={() => setTab(t.key)}
+              onClick={() => setTab(tb.key)}
             >
-              <Icon name={t.icon} size={15} /> {t.label}
+              <Icon name={tb.icon} size={15} /> {t(tb.label)}
             </button>
           );
         })}
@@ -389,6 +392,8 @@ function PersonasSection({ onOpenPersona }: { onOpenPersona?: (id: string) => vo
 // -- Appearance + app behaviour ------------------------------------------------
 function AppearanceSection() {
   const [theme, setTheme] = useThemePref();
+  const [lang, setLang] = useLangPref();
+  const { t } = useT();
   const [autostart, setAuto] = useState(false);
   const [keepAwake, setKeep] = useState(false);
   const desktop = isTauri();
@@ -409,18 +414,30 @@ function AppearanceSection() {
 
   return (
     <section>
-      <PanelHead title="General" sub="How OpenWorker looks and behaves on this machine." />
+      <PanelHead title={t("settings.general_title")} sub={t("settings.general_sub")} />
 
       <div className={CARD + " p-4 mb-4"}>
-        <div className={FIELD_LABEL}>Theme</div>
-        <div className="seg mt-2.5" role="radiogroup" aria-label="Appearance">
+        <div className={FIELD_LABEL}>{t("settings.theme")}</div>
+        <div className="seg mt-2.5" role="radiogroup" aria-label={t("settings.theme")}>
           {(["light", "dark", "auto"] as const).map((p) => (
             <button key={p} className={p === theme ? "active" : ""} onClick={() => setTheme(p)}>
-              {p === "light" ? "Light" : p === "dark" ? "Dark" : "Auto"}
+              {p === "light" ? t("settings.theme_light") : p === "dark" ? t("settings.theme_dark") : t("settings.theme_auto")}
             </button>
           ))}
         </div>
-        <div className={FIELD_HELP}>Auto follows your Mac&rsquo;s appearance.</div>
+        <div className={FIELD_HELP}>{t("settings.theme_auto_help")}</div>
+      </div>
+
+      <div className={CARD + " p-4 mb-4"}>
+        <div className={FIELD_LABEL}>{t("settings.language")}</div>
+        <div className="seg mt-2.5" role="radiogroup" aria-label={t("settings.language")}>
+          {(["zh", "en"] as const).map((p) => (
+            <button key={p} className={p === lang ? "active" : ""} onClick={() => setLang(p)}>
+              {p === "zh" ? t("settings.language_zh") : t("settings.language_en")}
+            </button>
+          ))}
+        </div>
+        <div className={FIELD_HELP}>{t("settings.language_help")}</div>
       </div>
 
       <SidebarCard />
@@ -431,19 +448,19 @@ function AppearanceSection() {
 
       {desktop && (
         <div className={CARD + " p-4"}>
-          <div className={FIELD_LABEL + " mb-2.5"}>Always-on</div>
+          <div className={FIELD_LABEL + " mb-2.5"}>{t("settings.always_on")}</div>
           <label className="flex items-start gap-3 py-2">
             <input type="checkbox" className="mt-0.5" checked={autostart} onChange={(e) => toggleAuto(e.target.checked)} />
             <span>
-              <span className="block text-[13px] text-ink">Open at login</span>
-              <span className="block text-[12px] text-muted">Launch OpenWorker automatically when you sign in.</span>
+              <span className="block text-[13px] text-ink">{t("settings.open_at_login")}</span>
+              <span className="block text-[12px] text-muted">{t("settings.open_at_login_sub")}</span>
             </span>
           </label>
           <label className="flex items-start gap-3 py-2">
             <input type="checkbox" className="mt-0.5" checked={keepAwake} onChange={(e) => toggleKeep(e.target.checked)} />
             <span>
-              <span className="block text-[13px] text-ink">Keep this system awake</span>
-              <span className="block text-[12px] text-muted">Prevent idle sleep so scheduled tasks fire on time.</span>
+              <span className="block text-[13px] text-ink">{t("settings.keep_awake")}</span>
+              <span className="block text-[12px] text-muted">{t("settings.keep_awake_sub")}</span>
             </span>
           </label>
         </div>
@@ -453,14 +470,14 @@ function AppearanceSection() {
           every build, the browser dev shell runs the same first-run flow) and, on
           desktop, the manual update check (launch also checks automatically). */}
       <div className={CARD + " p-4 mt-4"}>
-        <div className={FIELD_LABEL + " mb-2"}>Setup &amp; updates</div>
+        <div className={FIELD_LABEL + " mb-2"}>{t("settings.setup_updates")}</div>
         <div className="flex items-center gap-2">
           <button className={BTN_BORDERED} onClick={runSetupAgain}>
-            Run setup again
+            {t("settings.run_setup_again")}
           </button>
           {desktop && <UpdateInline />}
         </div>
-        <div className={FIELD_HELP}>Replays the first-run setup: model, first automation, tips.</div>
+        <div className={FIELD_HELP}>{t("settings.run_setup_help")}</div>
       </div>
     </section>
   );
