@@ -13,7 +13,7 @@ const sendApproval = (extra: Partial<ApprovalItem> = {}): ApprovalItem => ({
   kind: "approval",
   name: "send_message",
   args: { target: "slack:T1/C1", text: "digest" },
-  reason: "requires approval",
+  reason: "需要审批",
   category: "messaging",
   ...extra,
 });
