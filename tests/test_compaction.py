@@ -338,7 +338,7 @@ def test_user_messages_capped_across_repeated_compactions():
     assert state.user_messages[-1].startswith("ask")  # newest survive, oldest dropped
 
     block = compacted_block(state)
-    assert f"{state.user_messages_dropped} earlier user messages omitted" in block
+    assert f"已省略 {state.user_messages_dropped} 条更早的用户消息" in block
 
     restored = CompactionState.from_dict(state.as_dict())
     assert restored is not None

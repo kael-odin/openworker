@@ -1653,7 +1653,7 @@ class SessionManager:
 
     def _save_prefs(self) -> None:
         self._prefs_path().write_text(
-            json.dumps(self._prefs, indent=2), encoding="utf-8"
+            json.dumps(self._prefs, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
     # -- direct-message routing -------------------------------------------------
@@ -2455,7 +2455,7 @@ class SessionManager:
         if self._people.get(key) != name:
             self._people[key] = name
             try:
-                self._people_path.write_text(json.dumps(self._people))
+                self._people_path.write_text(json.dumps(self._people, ensure_ascii=False))
             except OSError:
                 pass
 

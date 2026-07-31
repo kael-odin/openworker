@@ -827,6 +827,7 @@ function CompactionCard() {
 // the popover. Some people would rather not watch a meter at all, hence the toggle.
 function ContextBarCard() {
   const [shown, setShown] = useState<boolean | null>(null);
+  const { t } = useT();
 
   useEffect(() => {
     getSettings()
@@ -842,7 +843,7 @@ function ContextBarCard() {
   if (shown === null) return null;
   return (
     <div className={CARD + " p-4 mb-4"} data-testid="context-bar-card">
-      <div className={FIELD_LABEL}>Composer</div>
+      <div className={FIELD_LABEL}>{t("settings.context_bar_title")}</div>
       <label className="flex items-start gap-3 py-2">
         <input
           type="checkbox"
@@ -852,11 +853,9 @@ function ContextBarCard() {
           onChange={(e) => save(e.target.checked)}
         />
         <span>
-          <span className="block text-[13px] text-ink">Show the context window bar</span>
+          <span className="block text-[13px] text-ink">{t("settings.context_bar_show")}</span>
           <span className="block text-[12px] text-muted">
-            A small meter showing how full the model&rsquo;s context window is. Turn it off
-            to show this session&rsquo;s token total instead; either way the full breakdown
-            is one click away.
+            {t("settings.context_bar_help")}
           </span>
         </span>
       </label>

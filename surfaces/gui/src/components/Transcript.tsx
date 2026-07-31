@@ -14,6 +14,7 @@ const USER_CLAMP_CHARS = 1200;
 
 function ClampedUserText({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  const { t } = useT();
   if (text.length <= USER_CLAMP_CHARS) return <>{text}</>;
   return (
     <>
@@ -23,7 +24,7 @@ function ClampedUserText({ text }: { text: string }) {
         onClick={() => setOpen((o) => !o)}
         className="block ml-auto mt-1.5 text-[12.5px] font-medium opacity-75 hover:opacity-100"
       >
-        {open ? "less…" : "more…"}
+        {open ? t("transcript.less") : t("transcript.more")}
       </button>
     </>
   );
