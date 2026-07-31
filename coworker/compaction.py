@@ -34,7 +34,11 @@ SUMMARY_MAX_TOKENS = 3_000
 _SPAN_TOOL_RESULT_CLIP = 400
 _SPAN_BUDGET_CHARS = 400_000
 # User messages preserved mechanically in the compacted block ("trimmed of pasted bulk").
+# The list is capped to the newest N across repeated compactions — otherwise it appends
+# forever and the block slowly reclaims the window it freed. Dropped ones stay counted
+# (their intent lives in the summary, which is asked to list user messages too).
 _USER_MESSAGE_CLIP = 600
+_USER_MESSAGES_MAX = 40
 _TRIM_FRACTION = 0.10
 
 
@@ -88,6 +92,9 @@ class CompactionState:
     summary_text: str
     working_state: str
     user_messages: list[str] = field(default_factory=list)
+    # How many older user messages were dropped by the _USER_MESSAGES_MAX cap, across
+    # all compactions of this session — keeps the block's "N earlier omitted" honest.
+    user_messages_dropped: int = 0
     created_at: float = 0.0
     model_used: str = ""
     trimmed: bool = False  # True when this state came from the no-summary trim fallback
@@ -98,6 +105,7 @@ class CompactionState:
             "summary_text": self.summary_text,
             "working_state": self.working_state,
             "user_messages": list(self.user_messages),
+            "user_messages_dropped": self.user_messages_dropped,
             "created_at": self.created_at,
             "model_used": self.model_used,
             "trimmed": self.trimmed,
@@ -112,6 +120,7 @@ class CompactionState:
             summary_text=str(raw.get("summary_text", "")),
             working_state=str(raw.get("working_state", "")),
             user_messages=[str(u) for u in raw.get("user_messages") or []],
+            user_messages_dropped=int(raw.get("user_messages_dropped", 0)),
             created_at=float(raw.get("created_at", 0.0)),
             model_used=str(raw.get("model_used", "")),
             trimmed=bool(raw.get("trimmed", False)),
@@ -289,6 +298,15 @@ def extract_user_messages(
     return out
 
 
+def _cap_user_messages(
+    messages: list[str], *, prior_dropped: int, limit: int = _USER_MESSAGES_MAX
+) -> tuple[list[str], int]:
+    """Newest-`limit` slice plus the running total of everything ever dropped."""
+    if len(messages) <= limit:
+        return messages, prior_dropped
+    return messages[-limit:], prior_dropped + (len(messages) - limit)
+
+
 # -- summarizer ---------------------------------------------------------------
 
 SUMMARY_SYSTEM_PROMPT = """你正在压缩一个 AI 协作伙伴的会话历史，使其能在更小的上下文中继续工作。请为下方对话写一份结构化摘要。这是协作伙伴对这些回合唯一的记忆，因此务必保留所有关键信息。
@@ -418,11 +436,16 @@ def build_state(
         span,
         prior_summary=prior.summary_text if prior is not None else "",
     )
+    users, dropped = _cap_user_messages(
+        prior_users + extract_user_messages(span),
+        prior_dropped=prior.user_messages_dropped if prior is not None else 0,
+    )
     return CompactionState(
         boundary_index=boundary,
         summary_text=summary,
         working_state=extract_working_state(span),
-        user_messages=prior_users + extract_user_messages(span),
+        user_messages=users,
+        user_messages_dropped=dropped,
         created_at=time.time(),
         model_used=model,
     )
@@ -458,11 +481,16 @@ def trim_state(
         + "（更早的回合已被裁剪以适应上下文窗口；没有为它们生成摘要。"
         "如需早期结果，请重新读取文件并重新运行命令。）"
     )
+    users, dropped = _cap_user_messages(
+        prior_users + extract_user_messages(span),
+        prior_dropped=prior.user_messages_dropped if prior is not None else 0,
+    )
     return CompactionState(
         boundary_index=boundary,
         summary_text=summary,
         working_state=extract_working_state(span),
-        user_messages=prior_users + extract_user_messages(span),
+        user_messages=users,
+        user_messages_dropped=dropped,
         created_at=time.time(),
         model_used="",
         trimmed=True,
@@ -481,6 +509,10 @@ def compacted_block(state: CompactionState) -> str:
         parts += ["", state.working_state]
     if state.user_messages:
         parts += ["", "## 压缩区间内的用户消息（逐字保留，按时间顺序）"]
+        if state.user_messages_dropped:
+            parts += [
+                f"（已省略 {state.user_messages_dropped} 条更早的用户消息——其意图已包含在上方的摘要中）"
+            ]
         parts += [f"- {u}" for u in state.user_messages]
     parts += ["", CONTINUATION_CONTRACT, "</compacted-history>"]
     return "\n".join(parts)

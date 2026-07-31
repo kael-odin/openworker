@@ -183,6 +183,9 @@ export function App() {
   // {full model id → context window in tokens} from the curated matrix (verified only);
   // drives the composer usage chip's context-fill meter.
   const [modelContextWindows, setModelContextWindows] = useState<Record<string, number>>({});
+  // Settings: show the composer's context-window fill bar. OFF by default (owner ask),
+  // so an older backend without the field also shows the session total.
+  const [contextBar, setContextBar] = useState(false);
   // Per-session token usage (OPE-42): rebuilt from the transcript on session load,
   // accumulated live from assistant_message events, reset with the transcript.
   const [usage, setUsage] = useState<SessionUsage>(emptyUsage());
@@ -190,6 +193,10 @@ export function App() {
   const [mode, setMode] = useState("interactive");
   const [connected, setConnected] = useState(false);
   const [running, setRunning] = useState(false);
+  // Transient "Compacting context…" indicator (OPE-27): set by the `compacting` event,
+  // cleared by whatever the engine emits next — the summarizer call is otherwise a
+  // multi-second silent stall mid-turn.
+  const [compacting, setCompacting] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [streaming, setStreamingState] = useState("");
   // Ref mirror of `streaming`: the WS handler closure is built once per socket and can't read
@@ -520,6 +527,7 @@ export function App() {
         setModels(s.models || []);
         setModelLabels(s.model_labels || {});
         setModelContextWindows(s.model_context_windows || {});
+        setContextBar(s.context_bar === true);
         setModelReady(s.model_ready);
         if (s.surfaces) setSurfaces(s.surfaces);
       })
@@ -594,6 +602,9 @@ export function App() {
           },
         ]);
       };
+      // Any engine event after `compacting` means the summarizer finished (compacted /
+      // silent no-op / failure prompt) — the transient must never outlive it.
+      if (ev.type !== "compacting") setCompacting(false);
       switch (ev.type) {
         case "ready":
           setConnected(true);
@@ -726,6 +737,9 @@ export function App() {
           // persisted marker into the live transcript (replay renders it from history).
           if (d.model) setModel(d.model);
           setItems((p) => [...p, { kind: "notice", tone: "info", text: d.text || tt("app.notice_model_switched") }]);
+          break;
+        case "compacting":
+          setCompacting(true);
           break;
         case "compacted":
           // Auto-compaction marker (OPE-27): outbound-only — the transcript stays intact,
@@ -1538,7 +1552,11 @@ export function App() {
                       <ThinkingBlock text={reasoningStream} live />
                     </div>
                   )}
+                  {/* Compaction runs between provider turns (nothing streams during it), so
+                      the transient takes over the waiting slot with a specific label. */}
+                  {running && compacting && <WaitingForAgent label={t("app.compacting_context")} />}
                   {running &&
+                    !compacting &&
                     !reasoningStream &&
                     (!streaming || streamMode(streaming, items, running) === "hold") &&
                     !lastItemIsAssistant(items) && <WaitingForAgent />}
@@ -1592,6 +1610,7 @@ export function App() {
               resetKey={sessionId}
               usage={usage}
               contextWindow={modelContextWindows[model]}
+              contextBar={contextBar}
               placeholder={
                 agent === "code"
                   ? t("composer.placeholder_code")
@@ -1704,12 +1723,13 @@ function lastItemIsAssistant(items: Item[]): boolean {
   return false;
 }
 
-function WaitingForAgent() {
+function WaitingForAgent({ label }: { label?: string }) {
+  const { t } = useT();
   return (
     <div className="waiting-transcript">
       <div className="waiting-row" aria-live="polite">
         <span className="waiting-spinner" />
-        <span>Waiting for agent...</span>
+        <span>{label || t("app.waiting_for_agent")}</span>
       </div>
     </div>
   );

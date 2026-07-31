@@ -923,7 +923,7 @@
   "conn.add_portal": "＋ Add portal",
   "conn.hubspot_sub": "Connect a portal — read-only or read & write is chosen at consent; there are no delete tools either way.",
   "conn.portals": "Portals",
-  "conn.hubspot_foot": "Hidden fields never reach an agent; stripped counts land in Activity. To limit what a HUMAN teammate could ask for, use HubSpot permission sets on the connected user.",
+  "conn.hubspot_foot": "Works for any number of portals · tokens stay on this computer",
   "conn.add_a_portal": "Add a portal",
   "conn.sandbox": "Sandbox",
   "conn.read_write": "read & write",
@@ -1000,7 +1000,6 @@
   "conn.hubspot_readwrite": "Read & write",
   "conn.hubspot_readwrite_blurb": "adds: log notes and tasks, update records, create contacts — never delete",
   "conn.connect_hubspot": "Connect HubSpot",
-  "conn.hubspot_foot": "Works for any number of portals · tokens stay on this computer",
   "conn.slack_manual_step1": "Create an app at api.slack.com/apps",
   "conn.slack_manual_step2": "Enable Socket Mode, add bot scopes, install it to your workspace",
   "conn.slack_manual_step3": "Paste both tokens",
@@ -1203,5 +1202,14 @@
   "settings.compaction_cap_help": "The cap makes very-large-context models compact early — quality and speed degrade well before their nominal limit.",
   "settings.compaction_summarizer_model": "Summarizer model",
   "settings.compaction_own_model_default": "Session's own model (default)",
-  "settings.compaction_model_help": "The summary is written by this model. The default follows whatever model the session is using."
+  "settings.compaction_model_help": "The summary is written by this model. The default follows whatever model the session is using.",
+  "app.compacting_context": "Compacting context…",
+  "app.waiting_for_agent": "Waiting for agent...",
+  "transcript.more": "more…",
+  "transcript.less": "less…",
+  "settings.context_bar_title": "Composer",
+  "settings.context_bar_show": "Show the context window bar",
+  "settings.context_bar_help": "A small meter showing how full the model's context window is. Turn it off to show this session's token total instead; either way the full breakdown is one click away.",
+  "composer.usage_bar_title": "Context window {pct}% full · {n} tokens this session",
+  "composer.usage_total_title": "Token usage this session: {n}"
 }

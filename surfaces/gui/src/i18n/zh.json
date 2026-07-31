@@ -923,7 +923,7 @@
   "conn.add_portal": "＋ 添加门户",
   "conn.hubspot_sub": "连接一个门户 —— 授权时选择只读或可读写；无论哪种都没有删除工具。",
   "conn.portals": "门户",
-  "conn.hubspot_foot": "隐藏字段永远不会到达 agent；被剔除的计数会显示在活动记录里。要限制人类同事能索取的数据，请在已连接用户上使用 HubSpot 权限集。",
+  "conn.hubspot_foot": "适用于任意数量的门户 · 令牌仅存于本机",
   "conn.add_a_portal": "添加门户",
   "conn.sandbox": "沙盒",
   "conn.read_write": "可读写",
@@ -1000,7 +1000,6 @@
   "conn.hubspot_readwrite": "可读写",
   "conn.hubspot_readwrite_blurb": "新增：记录笔记和任务、更新记录、创建联系人 —— 永不删除",
   "conn.connect_hubspot": "连接 HubSpot",
-  "conn.hubspot_foot": "适用于任意数量的门户 · 令牌仅存于本机",
   "conn.slack_manual_step1": "在 api.slack.com/apps 创建一个应用",
   "conn.slack_manual_step2": "启用 Socket Mode，添加 bot 权限范围，安装到你的工作区",
   "conn.slack_manual_step3": "粘贴两个令牌",
@@ -1203,5 +1202,14 @@
   "settings.compaction_cap_help": "上限让超大上下文的模型提前压缩——在名义上限之前，质量和速度就已经下降。",
   "settings.compaction_summarizer_model": "摘要模型",
   "settings.compaction_own_model_default": "会话自身的模型（默认）",
-  "settings.compaction_model_help": "摘要由该模型生成。默认跟随会话当前使用的模型。"
+  "settings.compaction_model_help": "摘要由该模型生成。默认跟随会话当前使用的模型。",
+  "app.compacting_context": "正在压缩上下文…",
+  "app.waiting_for_agent": "等待协作伙伴…",
+  "transcript.more": "更多…",
+  "transcript.less": "收起…",
+  "settings.context_bar_title": "输入框",
+  "settings.context_bar_show": "显示上下文窗口占用条",
+  "settings.context_bar_help": "一个小型指示条，显示模型上下文窗口已用多少。关闭后则显示本次会话的 token 总量；无论哪种方式，完整的明细只需一次点击即可查看。",
+  "composer.usage_bar_title": "上下文窗口 {pct}% 已用 · 本次会话 {n} tokens",
+  "composer.usage_total_title": "本次会话 token 使用量：{n}"
 }

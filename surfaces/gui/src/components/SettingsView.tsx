@@ -3,6 +3,7 @@ import {
   getSettings,
   getTrustedWorkspaces,
   setCompactionSettings,
+  setContextBar,
   setOnboarded,
   setPdfSettings,
   setScratchBase,
@@ -459,6 +460,8 @@ function AppearanceSection() {
 
       <SidebarCard />
 
+      <ContextBarCard />
+
       <FilesCard />
 
       <TrustedWorkspacesCard />
@@ -815,6 +818,47 @@ function CompactionCard() {
       <div className={FIELD_HELP}>
         {t("settings.compaction_model_help")}
       </div>
+    </div>
+  );
+}
+
+// -- Composer: context-window bar (owner ask 2026-07-30) ------------------------
+// The chip's bar is context-window occupancy; the session total (unbounded) lives in
+// the popover. Some people would rather not watch a meter at all, hence the toggle.
+function ContextBarCard() {
+  const [shown, setShown] = useState<boolean | null>(null);
+  const { t } = useT();
+
+  useEffect(() => {
+    getSettings()
+      .then((s) => setShown(s.context_bar === true))
+      .catch(() => setShown(false));
+  }, []);
+
+  const save = async (next: boolean) => {
+    setShown(next);
+    await setContextBar(next);
+  };
+
+  if (shown === null) return null;
+  return (
+    <div className={CARD + " p-4 mb-4"} data-testid="context-bar-card">
+      <div className={FIELD_LABEL}>{t("settings.context_bar_title")}</div>
+      <label className="flex items-start gap-3 py-2">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          data-testid="context-bar-toggle"
+          checked={shown}
+          onChange={(e) => save(e.target.checked)}
+        />
+        <span>
+          <span className="block text-[13px] text-ink">{t("settings.context_bar_show")}</span>
+          <span className="block text-[12px] text-muted">
+            {t("settings.context_bar_help")}
+          </span>
+        </span>
+      </label>
     </div>
   );
 }

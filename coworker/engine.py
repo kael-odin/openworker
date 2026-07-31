@@ -312,8 +312,13 @@ class TurnEngine:
             iterations += 1
 
             # Auto-compaction checkpoint (OPE-27): between tool turns and before a new
-            # turn's first call. Deliberately no "wrap up" warning to the model.
-            notice = await self._compact_now()
+            # turn's first call. Deliberately no "wrap up" warning to the model. The
+            # COMPACTING signal precedes the (multi-second) summarizer call so surfaces
+            # can show progress instead of a silent stall.
+            notice = None
+            if self._compaction_due():
+                yield Event(EventType.COMPACTING, {})
+                notice = await self._compact_now()
             if notice:
                 self._append_notice("compacted", notice)
                 yield Event(EventType.COMPACTED, {"text": notice})
@@ -350,6 +355,7 @@ class TurnEngine:
                 # is progress-guarded: each pass moves the boundary forward or gives up,
                 # so a model that keeps overflowing still terminates in the error path.
                 if _compaction.is_context_overflow(exc) and not self._cancel.is_set():
+                    yield Event(EventType.COMPACTING, {})
                     notice = await self._compact_now(force=True)
                     if notice:
                         self._append_notice("compacted", notice)
@@ -427,25 +433,32 @@ class TurnEngine:
         cfg.setdefault("cap_tokens", _compaction.DEFAULT_CAP_TOKENS)
         return cfg
 
-    async def _compact_now(self, *, force: bool = False) -> Optional[str]:
-        """Run the compaction policy when the trigger fires (or `force`, the overflow
-        path). Returns the user-facing notice text when the outbound view changed, else
-        None. Failure policy per spec: retry once (both modes); attended → Retry / Trim
-        prompt; unattended → auto-trim and continue (never park a run on bookkeeping)."""
+    def _compaction_due(self) -> bool:
+        """The trigger check alone — cheap and side-effect free, so the loop can emit
+        the COMPACTING signal before committing to the (slow) summarizer call."""
         cfg = self._compaction_config()
-        if cfg.get("enabled") is False and not force:
-            return None
+        if cfg.get("enabled") is False:
+            return False
+        signal = self._last_context_tokens or _compaction.estimate_tokens(
+            self._outbound_messages()
+        )
+        return _compaction.should_compact(
+            signal,
+            cfg.get("context_window"),
+            threshold_pct=float(cfg["threshold_pct"]),
+            cap_tokens=int(cfg["cap_tokens"]),
+        )
+
+    async def _compact_now(self, *, force: bool = False) -> Optional[str]:
+        """Run the compaction policy. Callers gate on `_compaction_due()` (or `force`,
+        the overflow path). Returns the user-facing notice text when the outbound view
+        changed, else None. Failure policy per spec: retry once (both modes); attended →
+        Retry / Trim prompt; unattended → auto-trim and continue (never park a run on
+        bookkeeping)."""
+        cfg = self._compaction_config()
         pct = float(cfg["threshold_pct"])
         cap = int(cfg["cap_tokens"])
         window = cfg.get("context_window")
-        if not force:
-            signal = self._last_context_tokens or _compaction.estimate_tokens(
-                self._outbound_messages()
-            )
-            if not _compaction.should_compact(
-                signal, window, threshold_pct=pct, cap_tokens=cap
-            ):
-                return None
         keep = int(
             _compaction.KEEP_RECENT_FRACTION
             * _compaction.trigger_tokens(window, threshold_pct=pct, cap_tokens=cap)
