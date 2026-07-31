@@ -313,3 +313,34 @@ def test_is_context_overflow():
     assert is_context_overflow(Exception("Prompt is too long: 210000 tokens > limit"))
     assert not is_context_overflow(Exception("rate limit exceeded"))
     assert not is_context_overflow(Exception("connection reset"))
+
+
+def test_user_messages_capped_across_repeated_compactions():
+    # The mechanical user-message list must not grow forever — newest _USER_MESSAGES_MAX
+    # survive, the rest stay counted so the block's "omitted" note is honest.
+    from coworker.compaction import _USER_MESSAGES_MAX
+
+    msgs = [{"role": "system", "content": "s"}]
+    for i in range(120):
+        msgs.append({"role": "user", "content": f"ask {i}"})
+        msgs.append({"role": "assistant", "content": f"answer {i}"})
+
+    state = None
+    while True:
+        nxt = trim_state(msgs, prior=state, fraction=0.4)
+        if nxt is None:
+            break
+        state = nxt
+
+    assert state is not None
+    assert len(state.user_messages) <= _USER_MESSAGES_MAX
+    assert state.user_messages_dropped > 0
+    assert state.user_messages[-1].startswith("ask")  # newest survive, oldest dropped
+
+    block = compacted_block(state)
+    assert f"{state.user_messages_dropped} earlier user messages omitted" in block
+
+    restored = CompactionState.from_dict(state.as_dict())
+    assert restored is not None
+    assert restored.user_messages_dropped == state.user_messages_dropped
+    assert restored.user_messages == state.user_messages

@@ -256,3 +256,20 @@ def test_compaction_state_survives_save_and_rebuild(tmp_path):
 
     rebuilt = mgr.get_engine(sid, agent="cowork", workspace=str(tmp_path))
     assert rebuilt.compaction_state == engine.compaction_state
+
+
+def test_compacting_signal_precedes_the_compacted_marker(tmp_path):
+    # The transient-progress contract: COMPACTING fires before the (slow) summarizer
+    # call, COMPACTED after — surfaces key the "Compacting context…" spinner on it.
+    provider = CompactingProvider([AssistantTurn(text="done", finish_reason="stop")])
+    engine = make_engine(tmp_path, provider, messages=long_history(), cap=400)
+    events = collect(engine)
+
+    types = [e.type for e in events]
+    assert EventType.COMPACTING in types
+    assert types.index(EventType.COMPACTING) < types.index(EventType.COMPACTED)
+    # The signal is not persisted — only the compacted marker lands in the transcript.
+    assert not any(
+        m.get("role") == "notice" and m.get("kind") == "compacting"
+        for m in engine.messages
+    )
