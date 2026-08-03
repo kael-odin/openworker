@@ -6,3 +6,9 @@ __pycache__/
 build/
 dist/
 .coverage
+
+# Local secrets (live-smoke BYO keys) — never committed
+.env
+
+# Local sibling project (not part of this fork)
+openworker-pro/

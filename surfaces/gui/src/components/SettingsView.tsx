@@ -45,6 +45,7 @@ import { PanelHead } from "./IntegrationsView";
 import { ModelsTab } from "./ManageTabs";
 import { GalleryModal } from "./GalleryModal";
 import { PersonasTab } from "./PersonasTab";
+import { SkillsTab } from "./SkillsTab";
 import { showPersonas } from "../flags";
 
 type Dict = Record<string, string>;
@@ -64,7 +65,7 @@ function tt(key: string, params?: Record<string, string | number>): string {
 // Models + Personas host the existing tab components inside the page shell (field re-skin to follow).
 // "appearance" is the General tab's stable key — callers deep-link with it, so the
 // rename (UX-021) changed only the label. "files" folded into General as a card.
-type SetTab = "appearance" | "models" | "voice" | "personas";
+type SetTab = "appearance" | "models" | "skills" | "voice" | "personas";
 
 const CARD = "rounded-xl2 border border-line bg-panel";
 const FIELD_LABEL = "text-[12.5px] font-medium text-ink";
@@ -75,9 +76,10 @@ const BTN_ACCENT = "text-[12.5px] px-3 py-2 rounded-lg bg-accent text-white shri
 const BTN_BORDERED =
   "text-[12.5px] px-3 py-2 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
 
-const SET_TABS: { key: SetTab; label: string; icon: "sliders" | "code" | "mic" | "sparkle" }[] = [
+const SET_TABS: { key: SetTab; label: string; icon: "sliders" | "code" | "mic" | "sparkle" | "book" }[] = [
   { key: "appearance", label: "settings.tab_general", icon: "sliders" },
   { key: "models", label: "settings.tab_models", icon: "code" },
+  { key: "skills", label: "settings.tab_skills", icon: "book" },
   { key: "voice", label: "settings.tab_voice", icon: "mic" },
   { key: "personas", label: "settings.tab_personas", icon: "sparkle" },
 ];
@@ -85,9 +87,13 @@ const SET_TABS: { key: SetTab; label: string; icon: "sliders" | "code" | "mic" |
 export function SettingsView({
   initialTab,
   onOpenPersona,
+  onCreateSkill,
 }: {
   initialTab?: SetTab;
   onOpenPersona?: (id: string) => void;
+  // Skills doorway (SKILLS-SPEC §5.2): start a new conversation with the description
+  // prefilled — the worker builds the skill and proposes it via save_skill.
+  onCreateSkill?: (description: string) => void;
 }) {
   // Personas is flag-gated (hidden for launch) — filter the tab AND coerce a stale
   // deep-link to it (openSettings("personas") callers) so the page never opens on a
@@ -139,6 +145,8 @@ export function SettingsView({
                 <CompactionCard />
               </div>
             </section>
+          ) : tab === "skills" ? (
+            <SkillsTab onCreateSkill={onCreateSkill} />
           ) : tab === "voice" ? (
             <VoiceInputSection />
           ) : (

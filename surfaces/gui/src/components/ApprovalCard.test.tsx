@@ -110,7 +110,7 @@ describe("ApprovalCard — §35 shapes", () => {
     expect(onApprove).toHaveBeenCalledWith("once");
   });
 
-  it("send_file gets the full external card: destination title, file chip, leaves-the-Mac note", () => {
+  it("send_file gets the full external card: destination title, file chip, leaves-the-computer note", () => {
     render(
       <ApprovalCard
         item={sendApproval({
@@ -218,5 +218,89 @@ describe("InboxItemCard — Allow every time on parked run approvals", () => {
     fireEvent.click(screen.getByText("允许一次"));
     expect(onResolve).toHaveBeenCalledWith("i1", "allow");
     // Old rows without tool data keep the legacy treatment (covered above).
+  });
+});
+
+describe("ApprovalCard — save_skill (SKILLS-SPEC §5.2)", () => {
+  const skillApproval = (extra: Partial<ApprovalItem> = {}): ApprovalItem =>
+    sendApproval({
+      name: "save_skill",
+      category: "skills",
+      args: {
+        name: "weekly-github-report",
+        description: "Create a concise Monday status report from GitHub activity.",
+        instructions: "1. Fetch PRs\n2. Write the report",
+        files: ["fetch_prs.py", "sub/example-report.md"],
+      },
+      standingTarget: undefined,
+      ...extra,
+    });
+
+  it("shows name-first title, description, instructions, and every bundled file", () => {
+    render(<ApprovalCard item={skillApproval()} onApprove={vi.fn()} />);
+    expect(screen.getByText("weekly-github-report")).toBeTruthy(); // bold obj in the title
+    expect(screen.getAllByText(/到你的技能/).length).toBeGreaterThan(0); // title + footer
+    // The corner answers WHERE; the footer answers what approving means (§5.2 review round).
+    expect(screen.getByText("保存到「设置 ▸ 技能」")).toBeTruthy();
+    expect(screen.getByText(/此后每次对话都能使用/)).toBeTruthy();
+    expect(
+      screen.getByText("Create a concise Monday status report from GitHub activity."),
+    ).toBeTruthy();
+    expect(screen.getByText(/Fetch PRs/)).toBeTruthy();
+    const chips = screen.getByTestId("skill-bundle-files");
+    expect(chips.textContent).toContain("fetch_prs.py");
+    expect(chips.textContent).toContain("example-report.md"); // basename, not the path
+  });
+
+  it("uses the §7 button copy and never offers a session-wide always", () => {
+    const onApprove = vi.fn();
+    render(<ApprovalCard item={skillApproval()} onApprove={onApprove} />);
+    expect(screen.queryByText("一直允许")).toBeNull(); // every proposal gets its own review
+    expect(screen.queryByText("拒绝")).toBeNull();
+    fireEvent.click(screen.getByText("添加到我的技能"));
+    expect(onApprove).toHaveBeenCalledWith("once");
+    fireEvent.click(screen.getByText("暂时不用"));
+    expect(onApprove).toHaveBeenCalledWith("deny");
+  });
+});
+
+describe("InboxItemCard — parked save_skill proposals (SKILLS-SPEC §5.2)", () => {
+  const parked = (): InboxItem => ({
+    id: "i9",
+    session_id: "s1",
+    kind: "approval",
+    title: "Run `save_skill`?",
+    body: "",
+    state: "pending",
+    resolution: null,
+    inbox: "default",
+    created_at: "",
+    resolved_at: null,
+    data: {
+      tool: "save_skill",
+      arguments: {
+        name: "weekly-github-report",
+        description: "Create a concise Monday status report from GitHub activity.",
+        instructions: "1. Fetch PRs\n2. Write the report",
+        files: ["fetch_prs.py"],
+      },
+    },
+  });
+
+  it("wears the same review surface and button copy as the live card", () => {
+    const onResolve = vi.fn();
+    render(<InboxItemCard item={parked()} onResolve={onResolve} />);
+    expect(screen.getByText("保存到「设置 ▸ 技能」")).toBeTruthy();
+    expect(
+      screen.getByText("Create a concise Monday status report from GitHub activity."),
+    ).toBeTruthy();
+    expect(screen.getByText(/Fetch PRs/)).toBeTruthy();
+    expect(screen.getByTestId("skill-bundle-files").textContent).toContain("fetch_prs.py");
+    expect(screen.getByText(/此后每次对话都能使用/)).toBeTruthy();
+    expect(screen.queryByText("允许一次")).toBeNull();
+    fireEvent.click(screen.getByText("添加到我的技能"));
+    expect(onResolve).toHaveBeenCalledWith("i9", "allow");
+    fireEvent.click(screen.getByText("暂时不用"));
+    expect(onResolve).toHaveBeenCalledWith("i9", "deny");
   });
 });

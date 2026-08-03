@@ -7,6 +7,18 @@
 
 import type { ConversationMessage } from "./api";
 import type { Attachment, Item } from "./types";
+import { currentLang } from "./i18n/I18nProvider";
+import zh from "./i18n/zh.json";
+import en from "./i18n/en.json";
+
+type Dict = Record<string, string>;
+const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
+function tt(key: string, params?: Record<string, string | number>): string {
+  const d = DICTS[currentLang()] ?? DICTS.zh;
+  const raw = d[key] ?? DICTS.en[key] ?? key;
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
+}
 
 export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
   const items: Item[] = [];
@@ -33,6 +45,9 @@ export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
         continue;
       }
       const user = userItemFromContent(m.content);
+      // Force-run (`/skill …`): `_display` holds the user's literal line; `content` carries
+      // the model-facing framing. Render what the user typed — one truthful bubble.
+      if (typeof m._display === "string" && m._display) user.text = m._display;
       // `ts` (unix seconds) is the server's canonical-message stamp; older sessions have none.
       if (typeof m.ts === "number") user.ts = m.ts;
       if (user.text || user.attachments?.length) items.push(user);
@@ -69,13 +84,13 @@ export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
       // the Transcript only offers the button when it's the transcript tail.
       items.push(
         m.kind === "interrupted"
-          ? { kind: "notice", tone: "warn", text: "Interrupted." }
+          ? { kind: "notice", tone: "warn", text: tt("app.notice_interrupted") }
           : m.kind === "model_switch"
-            ? { kind: "notice", tone: "info", text: m.text || "Model switched" }
+            ? { kind: "notice", tone: "info", text: m.text || tt("app.notice_model_switched") }
             : m.kind === "compacted"
               ? // The subtle "compacted here" divider (OPE-27) — the transcript itself is intact.
-                { kind: "notice", tone: "info", text: m.text || "Context compacted" }
-              : { kind: "notice", tone: "warn", text: "Error: " + (m.text || "unknown"), retriable: true },
+                { kind: "notice", tone: "info", text: m.text || tt("app.notice_compacted") }
+              : { kind: "notice", tone: "warn", text: tt("app.notice_error_prefix") + (m.text || tt("app.notice_unknown")), retriable: true },
       );
     }
     // system messages are omitted; tool-result messages are folded into the tool row above

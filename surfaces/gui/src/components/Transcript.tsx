@@ -193,7 +193,15 @@ function StepRow({ tool, approval }: { tool: ToolItem; approval?: ApprovalItem }
         <span className={"w-3.5 text-center text-[10px] shrink-0 " + (failed ? "text-danger" : running ? "text-accent" : "text-ok")}>
           {running ? <span className="spinner" data-testid="step-running" /> : "●"}
         </span>
-        <LineText line={humanizeTool(tool.name, tool.args)} />
+        <LineText
+          line={
+            // A refused load must not read as a success — "Used skill:" is the trust line
+            // (SKILLS-SPEC §4.1 #4), so a blocked attempt gets honest wording instead.
+            tool.name === "load_skill" && tool.preview?.includes('"error"')
+              ? { pre: t("humanize.tried_skill"), obj: String(tool.args?.name ?? ""), post: t("humanize.not_available") }
+              : humanizeTool(tool.name, tool.args)
+          }
+        />
         {approval && <ApprovalChip resolved={approval.resolved} />}
         {!!tool.standingRule && (
           <span
