@@ -193,7 +193,7 @@ describe("memory save notice", () => {
       />,
     );
     const notice = screen.getByTestId("memory-notice");
-    expect(notice.textContent).toContain("I'll remember that");
+    expect(notice.textContent).toContain("我会记住这一点");
     expect(notice.textContent).toContain("prefers short replies");
 
     fireEvent.click(screen.getByTestId("memory-notice-undo"));
@@ -218,7 +218,7 @@ describe("memory save notice", () => {
       />,
     );
     expect(screen.getByTestId("memory-notice").textContent).toContain(
-      "I've updated what I remember",
+      "我已更新记住的内容",
     );
     fireEvent.click(screen.getByTestId("memory-notice-undo"));
     // Undo restores the previous wording rather than deleting the whole memory.
@@ -233,7 +233,7 @@ describe("memory save notice", () => {
         onUndoMemory={vi.fn()}
       />,
     );
-    expect(screen.getByTestId("memory-notice-undone").textContent).toContain("forgotten");
+    expect(screen.getByTestId("memory-notice-undone").textContent).toContain("已忘记");
     expect(screen.queryByTestId("memory-notice-undo")).toBeNull();
   });
 });

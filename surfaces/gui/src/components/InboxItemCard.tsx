@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import type { InboxItem } from "../api";
 import type { QuestionOption } from "../types";
 import { humanizeApprovalTitle } from "../humanize";
+import { useT } from "../i18n/I18nProvider";
 import {
   approvalActionLabels,
   PreviewBlock,
@@ -9,7 +10,6 @@ import {
   scopeNote,
   TitleText,
 } from "./ApprovalCard";
-import { useT } from "../i18n/I18nProvider";
 
 // One Inbox item, rendered identically in the Inbox list and inline in its own session view
 // (answer-in-context). Resolving either place hits the same item id — first responder wins.
@@ -91,6 +91,7 @@ function specsFor(item: InboxItem): QSpec[] {
 // -- one question (options + free-text escape) --------------------------------
 
 function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) => void }) {
+  const { t } = useT();
   const [selected, setSelected] = useState<string[]>([]);
   const [text, setText] = useState("");
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
@@ -113,7 +114,7 @@ function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) 
 
   const recommendedTag = (
     <span className="text-[10px] uppercase tracking-[0.04em] font-semibold text-ok bg-okSoft border border-okLine rounded-full px-1.5 py-px shrink-0">
-      Recommended
+      {t("inbox.recommended")}
     </span>
   );
 
@@ -190,7 +191,7 @@ function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) 
             disabled={!selected.length}
             onClick={() => onAnswer(selected.join(", "))}
           >
-            Send{selected.length ? ` (${selected.length})` : ""}
+            {selected.length ? t("inbox.send_n", { n: selected.length }) : t("inbox.send")}
           </button>
         </div>
       )}
@@ -198,7 +199,7 @@ function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) 
         <div className="flex items-center gap-2 mt-2.5">
           <input
             className={INPUT}
-            placeholder={options.length ? "Or type your own answer…" : "Your answer…"}
+            placeholder={options.length ? t("inbox.own_answer") : t("inbox.your_answer")}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -206,7 +207,7 @@ function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) 
             }}
           />
           <button className={BTN_PRIMARY} disabled={!text.trim()} onClick={() => onAnswer(text)}>
-            Send
+            {t("inbox.send")}
           </button>
         </div>
       )}
@@ -234,6 +235,10 @@ function QuestionCard({
   // The answer map is keyed by header (falling back to the question text) — the same key the
   // server's answer_result() hands the agent.
   const keyFor = (s: QSpec) => s.header || s.question;
+  const { t } = useT();
+  // Stepper labels: "第 1 题 / 共 2 题", next-question chip "下一题 ›".
+  const questionLabel = (n: number) => t("inbox.question_n", { n });
+  const ofLabel = (cur: number, total: number) => t("inbox.step_of", { cur, total });
 
   const submit = (a: string) => {
     if (!grouped) {
@@ -253,26 +258,24 @@ function QuestionCard({
         {grouped && step > 0 && (
           <button
             className="text-faint hover:text-ink leading-none text-[13px]"
-            title="Previous question"
-            aria-label="Previous question"
+            title={t("inbox.previous_question")}
+            aria-label={t("inbox.previous_question")}
             onClick={() => setStep(step - 1)}
           >
             ‹
           </button>
         )}
         <span className={grouped ? "text-accent" : undefined}>
-          {spec.header || (grouped ? `Question ${step + 1}` : "question")}
+          {spec.header || (grouped ? questionLabel(step + 1) : t("inbox.kind_question"))}
         </span>
         {grouped && (
           <>
             <span>·</span>
-            <span>
-              {step + 1} of {specs.length}
-            </span>
+            <span>{ofLabel(step + 1, specs.length)}</span>
             {next && (
               <>
                 <span>·</span>
-                <span>{(next.header || `Question ${step + 2}`) + " ›"}</span>
+                <span>{questionLabel(step + 2) + " ›"}</span>
               </>
             )}
           </>

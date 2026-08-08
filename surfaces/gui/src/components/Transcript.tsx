@@ -507,13 +507,13 @@ export function Transcript({ items, running, streamingText, onRetry, onUndoMemor
               >
                 {item.undone ? (
                   <span data-testid="memory-notice-undone">
-                    {item.previous ? "Okay — put back the way it was." : "Okay — forgotten."}
+                    {item.previous ? t("app.memory_undone_updated") : t("app.memory_undone_deleted")}
                   </span>
                 ) : (
                   <>
                     <span className="min-w-0">
                       <span className="font-medium">
-                        {item.previous ? "I've updated what I remember" : "I'll remember that"}
+                        {item.previous ? t("app.memory_updated") : t("app.memory_saved")}
                       </span>
                       {item.text ? <span className="text-muted"> — {item.text}</span> : null}
                     </span>
@@ -523,7 +523,7 @@ export function Transcript({ items, running, streamingText, onRetry, onUndoMemor
                         data-testid="memory-notice-undo"
                         onClick={() => onUndoMemory(item.id, item.previous)}
                       >
-                        Undo
+                        {t("app.memory_undo")}
                       </button>
                     )}
                   </>

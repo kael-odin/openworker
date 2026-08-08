@@ -98,7 +98,7 @@ test("rich options render descriptions + Recommended; the preview pane follows h
   await openInbox(page, "How should I format the report?");
 
   await expect(page.getByText("Compact and renders in the app")).toBeVisible();
-  await expect(page.getByText("Recommended")).toBeVisible();
+  await expect(page.getByText("推荐")).toBeVisible();
 
   // The pane opens on the first option holding a preview…
   const pane = page.getByTestId("question-preview");
@@ -125,21 +125,21 @@ test("grouped questions step through the header chips and resolve as one answer 
   // Step 1: "Chart style · 1 of 2 · Distribution ›" — and no free-text row (allow_text: false).
   const stepper = page.getByTestId("question-stepper");
   await expect(stepper).toContainText("Chart style");
-  await expect(stepper).toContainText("1 of 2");
+  await expect(stepper).toContainText("1 / 2");
   await expect(stepper).toContainText("Distribution ›");
-  await expect(page.getByPlaceholder("Or type your own answer…")).not.toBeVisible();
+  await expect(page.getByPlaceholder("或输入你自己的回答…")).not.toBeVisible();
 
   // Answering advances to step 2 (its free-text escape is back — allow_text: true).
   await page.getByRole("button", { name: "Bar", exact: true }).click();
-  await expect(stepper).toContainText("2 of 2");
+  await expect(stepper).toContainText("2 / 2");
   await expect(page.getByText("Which distribution?")).toBeVisible();
-  await expect(page.getByPlaceholder("Or type your own answer…")).toBeVisible();
+  await expect(page.getByPlaceholder("或输入你自己的回答…")).toBeVisible();
 
   // ‹ steps back with the first answer re-askable; answer forward again.
-  await page.getByRole("button", { name: "Previous question" }).click();
-  await expect(stepper).toContainText("1 of 2");
+  await page.getByRole("button", { name: "上一个问题" }).click();
+  await expect(stepper).toContainText("1 / 2");
   await page.getByRole("button", { name: "Bar", exact: true }).click();
-  await expect(stepper).toContainText("2 of 2");
+  await expect(stepper).toContainText("2 / 2");
 
   // The final answer resolves the whole card with a JSON map keyed by header.
   const resolved = page.waitForRequest(
@@ -149,5 +149,5 @@ test("grouped questions step through the header chips and resolve as one answer 
   expect((await resolved).postDataJSON().resolution).toBe(
     JSON.stringify({ "Chart style": "Bar", Distribution: "Stacked" }),
   );
-  await expect(page.getByText("Nothing pending.")).toBeVisible();
+  await expect(page.getByText("暂无待处理项。")).toBeVisible();
 });
