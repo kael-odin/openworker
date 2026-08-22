@@ -1,27 +1,18 @@
 import { useEffect, useState } from "react";
 import { getConnectors } from "../api";
-import { McpTab } from "./ManageTabs";
 import { ConnectorsSection } from "./connectors/ConnectorsSection";
 import { Icon } from "./Icon";
 import { useT } from "../i18n/I18nProvider";
 
-// The Connectors surface (renamed from "Integrations", §26) keeps the left sub-nav, now just
-// Connectors · MCP. The old "Messaging routing" tab (and its ⚠ unrouted badge) moved whole to
-// Inbox ▸ Configure (§28): inbox-delivery config belongs with the Inbox, and Unrouted is
-// "messages that never reached you". The one remaining Activity is the audit log, reached from
-// the account menu.
-type IntTab = "connectors" | "mcp";
-
-// Fixed sub-nav (UX-DECISIONS §21): connector detail lives as a SUBPAGE under
-// Connectors, never as a nav item — the nav must not grow per connector.
-const INT_TABS: { key: IntTab; labelKey: string; icon: "plug" | "code" }[] = [
-  { key: "connectors", labelKey: "int.tab_connectors", icon: "plug" },
-  { key: "mcp", labelKey: "int.tab_mcp", icon: "code" },
-];
+// The Connectors surface (renamed from "Integrations", §26). The separate "MCP
+// servers" tab is retired (UX-034): custom MCP servers now live on the Connectors
+// page itself — a "Custom · MCP" group plus the top "Add custom server" modal —
+// so the sub-nav is a single fixed item. The old "Messaging routing" tab (and its
+// ⚠ unrouted badge) moved whole to Inbox ▸ Configure (§28); the one remaining
+// Activity is the audit log, reached from the account menu.
 
 export function IntegrationsView() {
   const { t } = useT();
-  const [tab, setTab] = useState<IntTab>("connectors");
   // Sub-nav count: how many connectors exist. Polled so the badge stays live.
   const [connCount, setConnCount] = useState<number | null>(null);
 
@@ -40,51 +31,25 @@ export function IntegrationsView() {
         <div className="px-2 text-[13.5px] font-semibold mb-3 flex items-center gap-2">
           <Icon name="plug" size={16} /> {t("int.tab_connectors")}
         </div>
-        {INT_TABS.map((it) => {
-          const active = tab === it.key;
-          return (
-            <button
-              key={it.key}
-              className={
-                "w-full text-left px-2.5 py-2 rounded-lg text-[13px] flex items-center justify-between " +
-                (active
-                  ? "bg-paper text-accent font-medium"
-                  : "text-muted hover:bg-paper hover:text-ink")
-              }
-              onClick={() => setTab(it.key)}
-            >
-              <span className="flex items-center gap-2 min-w-0">
-                <Icon name={it.icon} size={15} /> {t(it.labelKey)}
-              </span>
-              {it.key === "connectors" && connCount != null && (
-                <span className={"text-[11px] shrink-0 " + (active ? "text-accent" : "text-faint")}>
-                  {connCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
+        <button className="w-full text-left px-2.5 py-2 rounded-lg text-[13px] flex items-center justify-between bg-paper text-accent font-medium">
+          <span className="flex items-center gap-2 min-w-0">
+            <Icon name="plug" size={15} /> {t("int.tab_connectors")}
+          </span>
+          {connCount != null && (
+            <span className="text-[11px] shrink-0 text-accent">{connCount}</span>
+          )}
+        </button>
       </nav>
 
       <div className="flex-1 min-w-0 overflow-y-auto hairline-scroll">
         <div className="max-w-4xl mx-auto px-7 py-6">
-          {tab === "connectors" ? (
-            <section>
-              <PanelHead
-                title={t("int.connectors_title")}
-                sub={t("int.connectors_sub")}
-              />
-              <ConnectorsSection />
-            </section>
-          ) : (
-            <section>
-              <PanelHead
-                title={t("int.mcp_title")}
-                sub={t("int.mcp_sub")}
-              />
-              <McpTab />
-            </section>
-          )}
+          <section>
+            <PanelHead
+              title={t("int.connectors_title")}
+              sub={t("int.connectors_sub")}
+            />
+            <ConnectorsSection />
+          </section>
         </div>
       </div>
     </main>

@@ -10,6 +10,25 @@ import { useT } from "../i18n/I18nProvider";
 // the session's artifact list, App un-hides the rail.
 export const OPEN_ARTIFACT_EVENT = "ocw-open-artifact";
 
+// Seventeenth pass: the lead mentions the board ONCE — [Board · 5 items](board:) — and the
+// chip opens the drawer on its Board section. Same event plumbing as artifact chips: App
+// un-hides the rail and bumps the key that expands the section.
+export const OPEN_BOARD_EVENT = "ocw-open-board";
+
+function BoardChip({ label }: { label: string }) {
+  return (
+    <button
+      className="boardlink-chip"
+      data-testid="board-chip"
+      title="Open the board"
+      onClick={() => window.dispatchEvent(new CustomEvent(OPEN_BOARD_EVENT))}
+    >
+      <Icon name="table" size={12} />
+      <span>{label || "Board"}</span>
+    </button>
+  );
+}
+
 function ArtifactChip({ path, title }: { path: string; title: string }) {
   const { t } = useT();
   const file = path.split("/").pop() || path;
@@ -42,14 +61,20 @@ export function Markdown({ text }: { text: string }) {
     <div className="md">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        // artifact: is ours — keep it through the sanitizer (everything else gets the default
-        // http/https/mailto policy).
-        urlTransform={(url) => (url.startsWith("artifact:") ? url : defaultUrlTransform(url))}
+        // artifact:/board: are ours — keep them through the sanitizer (everything else gets
+        // the default http/https/mailto policy).
+        urlTransform={(url) =>
+          url.startsWith("artifact:") || url.startsWith("board:") ? url : defaultUrlTransform(url)
+        }
         components={{
           a: ({ node: _n, href, children, ...props }) => {
             if (href?.startsWith("artifact:")) {
               const title = Array.isArray(children) ? children.join("") : String(children ?? "");
               return <ArtifactChip path={href.slice("artifact:".length)} title={title} />;
+            }
+            if (href?.startsWith("board:")) {
+              const label = Array.isArray(children) ? children.join("") : String(children ?? "");
+              return <BoardChip label={label} />;
             }
             return (
               <a href={href} {...props} target="_blank" rel="noreferrer">

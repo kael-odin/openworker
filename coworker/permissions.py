@@ -88,6 +88,9 @@ class PermissionEngine:
     auto_allow_tools: set[str] = field(default_factory=set)
     session_allow_tools: set[str] = field(default_factory=set)
     session_allow_commands: set[str] = field(default_factory=set)
+    # Session-wide read-only grant (owner ask 2026-08-11): auto-allow shell commands the
+    # conservative classifier (coworker/readonly.py) accepts. User-elected per session.
+    session_readonly: bool = False
     # Task-scoped standing rules (§25): {tool: {allowed targets}}, seeded from the owning
     # ScheduledTask's target-shaped entries. Kept by reference and re-read every check, so a
     # rule minted mid-run ("Allow every time") applies to the run's next call too.
@@ -154,6 +157,11 @@ class PermissionEngine:
                 return Decision(True, "命令在白名单中")
             if command and command in self.session_allow_commands:
                 return Decision(True, "该会话已允许此命令")
+            if self.session_readonly and command:
+                from .readonly import is_readonly_command
+
+                if is_readonly_command(command):
+                    return Decision(True, "只读命令（会话授权）")
         if tool_name in self.session_allow_tools and not is_connector:
             return Decision(True, "该会话已允许此工具")
 
@@ -184,6 +192,9 @@ class PermissionEngine:
     def allow_command_for_session(self, command: str) -> None:
         if command:
             self.session_allow_commands.add(command)
+
+    def allow_readonly_for_session(self) -> None:
+        self.session_readonly = True
 
     # -- helpers ----------------------------------------------------------------
     def _candidate(self, path: str) -> Path:

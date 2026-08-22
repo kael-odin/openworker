@@ -1,9 +1,9 @@
 ---
+ships: false
 id: ops
 name: Ops 协作伙伴
 icon: wrench
 tagline: 运维与排查——运行手册、日志、基础设施
-family: knowledge
 tools: [files, search, shell, todo]
 messaging: true
 connectors: true

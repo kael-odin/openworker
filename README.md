@@ -58,7 +58,7 @@
 
 模型访问权在你手里：选一个 provider，粘贴你的 Key，随时切换。开箱即支持：
 
-**OpenAI · Anthropic · Google Gemini · Inkling（Thinking Machines）· GLM（Z.ai）· DeepSeek · Kimi（Moonshot）· 通义千问 · MiniMax · Mistral · Grok（xAI）** —— 外加通过 **Together** 和 **Fireworks** 的开放权重模型，以及通过 **Ollama** 的完全本地模型。
+**OpenAI · Anthropic · Google Gemini · BytePlus 火山方舟 · 火山方舟 Agent 计划 · Inkling（Thinking Machines）· GLM（Z.ai）· DeepSeek · Kimi（Moonshot）· 通义千问 · MiniMax · Mistral · Grok（xAI）** —— 外加通过 **Together** 和 **Fireworks** 的开放权重模型，以及通过 **Ollama** 的完全本地模型。
 
 一个精选的模型清单标注了我们验证过可用于工具调用的型号。填入任意模型字符串也可用，风险自负。
 
