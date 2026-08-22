@@ -7,6 +7,19 @@
 import { useState } from "react";
 import type { BoardWakeRow, MessageSource } from "../api";
 import { Icon } from "./Icon";
+import { useT, currentLang } from "../i18n/I18nProvider";
+import zh from "../i18n/zh.json";
+import en from "../i18n/en.json";
+
+type Dict = Record<string, string>;
+const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
+// Module-scope helper for the summarize/rowText helpers (non-component paths).
+function tt(key: string, params?: Record<string, string | number>): string {
+  const d = DICTS[currentLang()] ?? DICTS.zh;
+  let raw = d[key] ?? DICTS.en[key] ?? key;
+  if (params) for (const [k, v] of Object.entries(params)) raw = raw.replace(`{${k}}`, String(v));
+  return raw;
+}
 
 function summarize(rows: BoardWakeRow[]): { text: string; attention: boolean } {
   const counts: Record<string, number> = {};
@@ -22,12 +35,23 @@ function summarize(rows: BoardWakeRow[]): { text: string; attention: boolean } {
     else if (row.kind === "comment") bump("comment");
     else if (row.kind === "chat") bump("chat message");
   }
-  const parts = Object.entries(counts).map(
-    ([label, n]) => `${n} ${label}${n === 1 ? "" : "s"}`
+  const keyFor: Record<string, string> = {
+    review: "boardwake.n_review",
+    blocked: "boardwake.n_blocked",
+    canceled: "boardwake.n_canceled",
+    move: "boardwake.n_move",
+    filing: "boardwake.n_filing",
+    claim: "boardwake.n_claim",
+    assignment: "boardwake.n_assignment",
+    comment: "boardwake.n_comment",
+    ["chat message"]: "boardwake.n_chat",
+  };
+  const parts = Object.entries(counts).map(([label, n]) =>
+    tt(keyFor[label] || label, { n })
   );
   // reviews/blocked demand a decision — those tint the collapsed line amber
   const attention = (counts.review || 0) + (counts.blocked || 0) > 0;
-  return { text: parts.join(", ") || "update", attention };
+  return { text: parts.join("，") || tt("boardwake.update"), attention };
 }
 
 function rowText(row: BoardWakeRow): string {
@@ -35,17 +59,17 @@ function rowText(row: BoardWakeRow): string {
   const title = row.title ? ` ${row.title}` : "";
   switch (row.kind) {
     case "moved":
-      return `${item}${title} → ${row.to} by ${row.actor}`;
+      return tt("boardwake.moved", { item, title, to: row.to || "", actor: row.actor || "" });
     case "filed":
-      return `${row.actor} filed ${item}${title}`;
+      return tt("boardwake.filed", { actor: row.actor || "", item, title });
     case "claimed":
-      return `${row.actor} claimed ${item}${title}`;
+      return tt("boardwake.claimed", { actor: row.actor || "", item, title });
     case "assigned":
-      return `${item}${title} assigned to you`;
+      return tt("boardwake.assigned", { item, title });
     case "comment":
-      return `${row.actor} commented on ${item}${title}`;
+      return tt("boardwake.commented", { actor: row.actor || "", item, title });
     case "chat":
-      return `# team chat — ${row.actor}`;
+      return tt("boardwake.chat", { actor: row.actor || "" });
     default:
       return `${item}${title}`;
   }
@@ -60,6 +84,7 @@ function stateDot(row: BoardWakeRow): string {
 }
 
 export function BoardWakeCard({ source }: { source: MessageSource }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [openNotes, setOpenNotes] = useState<Record<number, boolean>>({});
   const rows = source.board?.rows || [];
@@ -76,7 +101,7 @@ export function BoardWakeCard({ source }: { source: MessageSource }) {
         aria-expanded={open}
       >
         <Icon name="table" size={14} />
-        <span className="boardwake-title">Board wake</span>
+        <span className="boardwake-title">{t("boardwake.title")}</span>
         <span className="boardwake-summary">{text}</span>
         <span className="spacer" />
         <span className={"boardwake-chevron" + (open ? " open" : "")}>
@@ -99,8 +124,8 @@ export function BoardWakeCard({ source }: { source: MessageSource }) {
                       onClick={() => setOpenNotes((s) => ({ ...s, [i]: true }))}
                     >
                       {row.kind === "chat" || row.kind === "comment"
-                        ? "show message"
-                        : "show hand-off"}
+                        ? t("boardwake.show_message")
+                        : t("boardwake.show_handoff")}
                     </button>
                   ))}
               </span>

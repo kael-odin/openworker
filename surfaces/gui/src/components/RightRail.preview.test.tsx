@@ -2,7 +2,8 @@
 // identity (App re-renders whenever the nav toggles) must NOT replay "open" while
 // the viewer sits open — that re-collapsed a sidebar the user had just expanded
 // (owner-hit 2026-08-21).
-import { act, render } from "@testing-library/react";
+import { act } from "@testing-library/react";
+import { render } from "../test-utils";
 import { describe, expect, it, vi } from "vitest";
 import { RightRail } from "./RightRail";
 import { OPEN_ARTIFACT_EVENT } from "./Markdown";

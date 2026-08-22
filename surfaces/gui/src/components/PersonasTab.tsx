@@ -197,7 +197,7 @@ export function PersonasTab({ onOpenPersona }: { onOpenPersona?: (id: string) =>
                   data-testid={`persona-disable-warning-${p.id}`}
                 >
                   <span className="min-w-0">
-                    {t("personas.disable_warning", { n: liveCount(p.id) })}
+                    {t(liveCount(p.id) === 1 ? "personas.disable_warning_one" : "personas.disable_warning_other", { n: liveCount(p.id) })}
                   </span>
                   <button
                     className="text-[12px] px-2.5 py-1.5 rounded-lg bg-accent text-white shrink-0"

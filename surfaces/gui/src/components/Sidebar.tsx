@@ -1048,7 +1048,7 @@ export function Sidebar(props: Props) {
           className="w-full text-left px-3 py-2 rounded-lg bg-accent text-white text-[13px] font-medium hover:opacity-95 flex items-center gap-2"
           onClick={() => props.onNewSession(props.agent)}
         >
-          <Icon name="plus" size={15} className="shrink-0" /> New session
+          <Icon name="plus" size={15} className="shrink-0" /> {t("sidebar.new_session")}
         </button>
       </div>
 

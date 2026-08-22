@@ -6,6 +6,7 @@
 import { useState } from "react";
 import type { Item } from "../types";
 import { Icon } from "./Icon";
+import { useT } from "../i18n/I18nProvider";
 
 export function TeamRequestCard({
   item,
@@ -14,13 +15,14 @@ export function TeamRequestCard({
   item: Extract<Item, { kind: "teamreq" }>;
   onRespond: (approved: boolean, feedback?: string, enableChat?: boolean) => void;
 }) {
+  const { t } = useT();
   const [chat, setChat] = useState(!!item.enable_chat);
   return (
     <div className="dirreq-card teamreq-card" data-testid="teamreq-card">
       <div className="teamreq-head">
         <Icon name="diamond" size={15} />
         <span className="teamreq-title">
-          Proposed team — {item.members.length} worker{item.members.length === 1 ? "" : "s"}
+          {t("teamreq.title", { n: item.members.length })}
         </span>
       </div>
       {item.note && <div className="teamreq-note">{item.note}</div>}
@@ -29,7 +31,7 @@ export function TeamRequestCard({
           <span className="teamreq-diamond">◆</span>
           <span className="teamreq-body">
             {m.name && <b className="teamreq-name">{m.name}</b>}
-            {m.name ? " — " : ""}
+            {m.name ? t("teamreq.name_sep") : ""}
             <code>{m.persona}</code>
             {m.model && <span className="teamreq-model"> · {m.model}</span>}
             {m.reason && <span className="teamreq-reason"> — {m.reason}</span>}
@@ -44,29 +46,30 @@ export function TeamRequestCard({
           onChange={(e) => setChat(e.target.checked)}
         />
         <span>
-          Enable <b># team chat</b>
+          {t("teamreq.enable_chat_pre")}
+          <b>{t("teamchat.title")}</b>
         </span>
         <span
           className="teamreq-info"
-          title="A group channel for questions and consensus — @mentions wake the mentioned coworker. Status stays on the board either way."
+          title={t("teamreq.chat_info")}
         >
           i
         </span>
       </label>
       <div className="dirreq-actions">
         <span className="teamreq-grant">
-          Approving grants the lead create, assign &amp; steer — this team only, revocable.
+          {t("teamreq.grant_note")}
         </span>
         <span className="spacer" />
         <button className="btn" onClick={() => onRespond(false)}>
-          Not now
+          {t("teamreq.not_now")}
         </button>
         <button
           className="btn primary"
           data-testid="teamreq-approve"
           onClick={() => onRespond(true, undefined, chat)}
         >
-          Create team &amp; start
+          {t("teamreq.create_start")}
         </button>
       </div>
     </div>

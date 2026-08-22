@@ -16,15 +16,16 @@ export const OPEN_ARTIFACT_EVENT = "ocw-open-artifact";
 export const OPEN_BOARD_EVENT = "ocw-open-board";
 
 function BoardChip({ label }: { label: string }) {
+  const { t } = useT();
   return (
     <button
       className="boardlink-chip"
       data-testid="board-chip"
-      title="Open the board"
+      title={t("board.open_board")}
       onClick={() => window.dispatchEvent(new CustomEvent(OPEN_BOARD_EVENT))}
     >
       <Icon name="table" size={12} />
-      <span>{label || "Board"}</span>
+      <span>{label || t("board.title")}</span>
     </button>
   );
 }

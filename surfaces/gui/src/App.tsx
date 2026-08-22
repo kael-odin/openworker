@@ -1238,7 +1238,7 @@ export function App() {
       setSendGate(null);
       setItems((p) => [
         ...p,
-        { kind: "notice", tone: "warn", text: res.error || "Could not create a temporary folder." },
+        { kind: "notice", tone: "warn", text: res.error || t("app.err_temp_folder") },
       ]);
       prefillComposer(gate.skill ? `/${gate.skill} ${gate.text}` : gate.text, gate.attachments);
       return;
@@ -1250,7 +1250,7 @@ export function App() {
     pendingPromptRef.current = {
       ...gate,
       model,
-      notice: res.git ? "Temporary folder created · git initialized" : "Temporary folder created",
+      notice: res.git ? t("app.temp_created_git") : t("app.temp_created"),
     };
     setSessionId(sid);
   };
@@ -1270,7 +1270,7 @@ export function App() {
     if (!res.ok || !res.path) {
       setItems((p) => [
         ...p,
-        { kind: "notice", tone: "warn", text: res.error || "Could not save as a project." },
+        { kind: "notice", tone: "warn", text: res.error || t("app.err_save_project") },
       ]);
       return;
     }
@@ -1518,7 +1518,7 @@ export function App() {
   // path never shows — "Temporary folder" + the Save as project… affordance instead.
   const subtitleParts = [fullPersonaName(personaOf(agent)?.name, agent), modelDisplay];
   if (isProjectScoped(personaOf(agent)) && workspace)
-    subtitleParts.push(tempWorkspace ? "Temporary folder" : baseName(workspace));
+    subtitleParts.push(tempWorkspace ? t("root.temporary_space") : baseName(workspace));
   const showSaveAsProject = hasHistory && tempWorkspace && isProjectScoped(personaOf(agent));
   const activeInfo = sessions.find((s) => s.session_id === sessionId);
   const activeTitle = activeInfo?.title || t("app.new_session");
@@ -1805,7 +1805,7 @@ export function App() {
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={() => void saveAsProject()}
                     >
-                      Save as project…
+                      {t("app.save_as_project")}
                     </button>
                   </>
                 )}
@@ -2012,7 +2012,7 @@ export function App() {
                     )
                   }
                 >
-                  Ask for a status
+                  {t("app.ask_status")}
                 </button>
               </div>
             )}

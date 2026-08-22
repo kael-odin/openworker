@@ -7,7 +7,13 @@ import { render as rtlRender } from "@testing-library/react";
 import { I18nProvider } from "./i18n/I18nProvider";
 
 export function render(ui: ReactElement) {
-  return rtlRender(<I18nProvider>{ui}</I18nProvider>);
+  const view = rtlRender(<I18nProvider>{ui}</I18nProvider>);
+  // Wrap rerender too — a bare rerender would swap out the whole tree and drop
+  // the I18nProvider, crashing any useT() component on the second render.
+  return {
+    ...view,
+    rerender: (next: ReactElement) => view.rerender(<I18nProvider>{next}</I18nProvider>),
+  };
 }
 
 // Re-export the rest of the RTL surface so tests can keep one import line.

@@ -320,7 +320,7 @@ describe("ApprovalCard — session read-only grant", () => {
     fireEvent.click(screen.getByTestId("allow-readonly-session"));
     expect(onApprove).toHaveBeenCalledWith("readonly_session");
     // The command-scoped grant stays alongside — different scopes, both legitimate.
-    expect(screen.getByText("Always allow this command")).toBeTruthy();
+    expect(screen.getByText("一直允许此命令")).toBeTruthy();
     cleanup();
 
     // Not classified read-only (a write) → the button never renders.

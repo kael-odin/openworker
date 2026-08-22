@@ -246,10 +246,10 @@ function Buttons({
         <button
           className="btn"
           data-testid="allow-readonly-session"
-          title="Auto-allow read-only commands (local reads and pipelines only — no network, writes, or interpreters) for the rest of this session"
+          title={t("approval.readonly_tip")}
           onClick={() => onApprove("readonly_session")}
         >
-          Allow read-only commands
+          {t("approval.allow_readonly_cmds")}
         </button>
       )}
       <span className="spacer" />
