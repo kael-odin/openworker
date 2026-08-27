@@ -30,8 +30,9 @@ export function CloudSignInInline({ blurb }: { blurb?: string }) {
       >
         {waiting ? t("conn.check_browser") : t("conn.signin_cloud")}
       </button>
-<div className="text-[12px] text-faint">
+      <div className="text-[12px] text-faint">
         {blurb || t("conn.signin_blurb_default")}
+      </div>
     </div>
   );
 }

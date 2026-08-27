@@ -58,6 +58,7 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
         </h3>
         <p className="text-[13px] text-muted mb-3">
           {t("sendfolder.sub")}
+        </p>
         {recents
           .filter((w) => w.exists)
           .slice(0, 4)

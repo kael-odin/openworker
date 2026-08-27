@@ -449,8 +449,9 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
   };
   if (!c.tools?.length)
     return (
-<div className="border-t border-line px-3.5 py-3 text-[13px] text-muted">
+      <div className="border-t border-line px-3.5 py-3 text-[13px] text-muted">
         {t("mtab.no_tools_connector")}
+      </div>
     );
   return (
     <div className="border-t border-line px-3.5 py-3">
@@ -469,8 +470,9 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
             />
             <span className="min-w-0">
               <span className="block text-[13px]">{tool.label}</span>
-<span className="block text-[12px] text-faint">
+              <span className="block text-[12px] text-faint">
                 {t("mtab.tool_meta", { name: tool.name, kind: tool.kind })}
+              </span>
               <span className="block text-[12px] text-faint">{tool.description}</span>
             </span>
           </label>
@@ -553,8 +555,9 @@ export function ConnectSetup({
                   {t("mtab.coming_soon_badge")}
                 </span>
               </button>
-<div className="text-[12px] text-faint">
+              <div className="text-[12px] text-faint">
                 {t("mtab.managed_paused_note")}
+              </div>
             </>
           ) : cloud?.signed_in ? (
             <button className={BTN_ACCENT} onClick={oneClick} disabled={waiting}>

@@ -278,16 +278,16 @@ describe("ApprovalCard — §1.9 egress cards", () => {
     const onApprove = vi.fn();
     render(<ApprovalCard item={fetchApproval()} onApprove={onApprove} />);
     // The grant button names exactly what it covers — the spelling the server mints.
-    fireEvent.click(screen.getByText("Always allow bbc.com this session"));
+    fireEvent.click(screen.getByText("本次会话一直允许 bbc.com"));
     expect(onApprove).toHaveBeenCalledWith("always_domain");
-    expect(screen.queryByText("Always allow")).toBeNull(); // no tool-wide button
-    expect(screen.getByText(/leaves this computer → bbc\.com/)).toBeTruthy();
+    expect(screen.queryByText("本次会话一直允许")).toBeNull(); // no tool-wide button
+    expect(screen.getByText(/离开本机 → bbc\.com/)).toBeTruthy();
   });
 
   it("web_fetch with an unparseable url falls back to once/deny only", () => {
     render(<ApprovalCard item={fetchApproval({ args: { url: "not a url" } })} onApprove={vi.fn()} />);
-    expect(screen.queryByText(/Always allow/)).toBeNull();
-    expect(screen.getByText("Allow once")).toBeTruthy();
+    expect(screen.queryByText(/本次会话一直允许/)).toBeNull();
+    expect(screen.getByText("允许一次")).toBeTruthy();
   });
 
   it("web_search offers the searches grant and names the LIVE provider", () => {
@@ -303,16 +303,16 @@ describe("ApprovalCard — §1.9 egress cards", () => {
       />,
     );
     expect(
-      screen.getByText(/Queries go to your configured search provider \(currently: duckduckgo\)\./),
+      screen.getByText(/查询将发送到你配置的搜索服务商（当前：duckduckgo）。/),
     ).toBeTruthy();
-    fireEvent.click(screen.getByText("Always allow searches this session"));
+    fireEvent.click(screen.getByText("本次会话一直允许搜索"));
     expect(onApprove).toHaveBeenCalledWith("always_tool"); // tool-wide IS provider-wide here
-    expect(screen.getByText(/leaves this computer → your search provider/)).toBeTruthy();
+    expect(screen.getByText(/离开本机 → 你的搜索服务商/)).toBeTruthy();
   });
 
   it("Auto-Approve fall-through cards hide every session 'always' (§1.5: grants don't skip the reviewer)", () => {
     render(<ApprovalCard item={fetchApproval()} onApprove={vi.fn()} autoApprove />);
-    expect(screen.queryByText(/Always allow/)).toBeNull();
+    expect(screen.queryByText(/本次会话一直允许/)).toBeNull();
     cleanup();
     render(
       <ApprovalCard
@@ -321,7 +321,7 @@ describe("ApprovalCard — §1.9 egress cards", () => {
         autoApprove
       />,
     );
-    expect(screen.queryByText(/Always allow/)).toBeNull();
+    expect(screen.queryByText(/本次会话一直允许/)).toBeNull();
     cleanup();
     render(
       <ApprovalCard
@@ -330,9 +330,9 @@ describe("ApprovalCard — §1.9 egress cards", () => {
         autoApprove
       />,
     );
-    expect(screen.queryByText("Always allow this command")).toBeNull();
-    expect(screen.getByText("Allow once")).toBeTruthy();
-    expect(screen.getByText("Deny")).toBeTruthy();
+    expect(screen.queryByText("一直允许此命令")).toBeNull();
+    expect(screen.getByText("允许一次")).toBeTruthy();
+    expect(screen.getByText("拒绝")).toBeTruthy();
   });
 });
 

@@ -22,25 +22,13 @@ import type { DetailProps } from "./ConnectorsSection";
 import { SlackHowItWorks } from "./SlackHowItWorks";
 import { ToolsDisclosure } from "./ToolsDisclosure";
 import { FOOT, GRP, GRP_H, PILL_ACCENT, PILL_LINE, ROW, TAG_WARN, XBTN } from "./ui";
-import { useT, currentLang } from "../../i18n/I18nProvider";
-import zh from "../../i18n/zh.json";
-import en from "../../i18n/en.json";
+import { useT } from "../../i18n/I18nProvider";
 
 // The Slack detail page (UX-DECISIONS §21): one group per connected workspace —
 // People (allow-list) · Waiting (parked senders) · Listening (session ↔ channel) ·
 // Disconnect — because Slack ids are workspace-scoped, everything is filed under
 // the workspace it belongs to. Adding a workspace goes through the ONE entry
 // point: the header button → AddConnectionModal (One click | Manual).
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-const EN: Dict = en as Dict;
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  let raw = d[key] ?? EN[key] ?? key;
-  if (params) for (const [k, v] of Object.entries(params)) raw = raw.replace(`{${k}}`, String(v));
-  return raw;
-}
 
 /** Two-letter initials for a person chip. */
 function initials(name: string): string {
@@ -55,20 +43,19 @@ const LABEL = "text-[13px] text-muted w-24 shrink-0";
 /** The relay status line, one honest layer at a time: sign-in → socket → live.
  * Dot color + text; never a synthetic "Slack is down" claim. */
 function relayHealth(slack: SlackStatus | null): { dot: string; text: string } {
-  if (!slack) return { dot: "bg-ok", text: tt("slack.live_relay") };
+  if (!slack) return { dot: "bg-ok", text: "Live · managed relay" };
   if (!slack.signed_in)
-    return { dot: "bg-warnInk", text: tt("slack.signin_needed_relay") };
+    return { dot: "bg-warnInk", text: "Sign-in needed — relaying is paused" };
   if (slack.relay.state === "offline")
-    return { dot: "bg-faint/60", text: tt("slack.offline_relay") };
+    return { dot: "bg-faint/60", text: "Offline — can't reach the relay" };
   if (slack.relay.state === "reconnecting")
-    return { dot: "bg-warnInk", text: tt("slack.reconnecting_relay") };
-  return { dot: "bg-ok", text: tt("slack.live_relay") };
+    return { dot: "bg-warnInk", text: "Reconnecting to the relay…" };
+  return { dot: "bg-ok", text: "Live · managed relay" };
 }
 
 export function SlackDetail({ c, cloud, slack, onChanged }: DetailProps) {
   const [adding, setAdding] = useState(false);
   const [subs, setSubs] = useState<Subscription[]>([]);
-  const { t } = useT();
   const loadSubs = () => getSubscriptions().then(setSubs).catch(() => setSubs([]));
   useEffect(() => {
     loadSubs();
@@ -76,6 +63,7 @@ export function SlackDetail({ c, cloud, slack, onChanged }: DetailProps) {
 
   const relay = c.mode === "relay";
   const workspaces = c.workspaces ?? [];
+  const { t } = useT();
   const changed = () => {
     onChanged();
     loadSubs();
@@ -86,7 +74,7 @@ export function SlackDetail({ c, cloud, slack, onChanged }: DetailProps) {
       <div className="flex items-center gap-3.5 mb-5">
         <ConnectorBadge connector={c} size={44} title={t("slack.title")} />
         <div className="min-w-0 flex-1">
-<h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("slack.title")}</h2>
+          <h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("slack.title")}</h2>
           <div className="text-[13px] text-muted flex items-center gap-1.5">
             {c.connected ? (
               <>
@@ -115,9 +103,10 @@ export function SlackDetail({ c, cloud, slack, onChanged }: DetailProps) {
 
       {!c.connected && (
         <div className={GRP}>
-<div className={ROW + " text-[13px] text-muted"}>
+          <div className={ROW + " text-[13px] text-muted"}>
             {t("slack.sub")}
             {cloud?.signed_in ? "" : t("slack.oneclick_cloud")}
+          </div>
         </div>
       )}
 
@@ -234,7 +223,7 @@ function WorkspaceGroup({
         {empty ? (
           <>
             <div className={ROW}>
-<span className="min-w-0 flex-1 text-[13px] text-muted flex items-center gap-2 flex-wrap">
+              <span className="min-w-0 flex-1 text-[13px] text-muted flex items-center gap-2 flex-wrap">
                 <span>{t("slack.empty")}</span>
                 <PersonPicker teamId={w.team_id} allowed={[]} onChanged={onChanged} />
               </span>
@@ -322,7 +311,7 @@ function PeopleRow({
   // The installer's chip reads "you" — their name may still be unresolved (it's
   // fetched lazily for outbound attribution), so fall back to a literal "You".
   const label = (u: string) =>
-    names?.[u] || (u === installerId ? installerName || "You" : u);
+    names?.[u] || (u === installerId ? installerName || t("slack.you") : u);
   return (
     <div className={ROW}>
       <span className={LABEL}>{t("slack.people")}</span>
@@ -341,11 +330,12 @@ function PeopleRow({
               {initials(label(u))}
             </span>
             {label(u)}
-{u === installerId && <span className="text-[11px] text-faint">{t("slack.you")}</span>}
+            {u === installerId && <span className="text-[11px] text-faint">{t("slack.you")}</span>}
             {protectedIds?.includes(u) ? (
               <span
                 className="text-[11px] text-faint"
                 title={t("slack.owner_title")}
+              >
                 {t("slack.owner")}
               </span>
             ) : (
@@ -369,7 +359,7 @@ function PersonPicker({
   allowed,
   onChanged,
   onPick,
-  buttonLabel,
+  buttonLabel = "＋ Add person",
   testId,
 }: {
   teamId: string | null;
@@ -454,7 +444,7 @@ function PersonPicker({
         >
           <input
             autoFocus
-className="w-full bg-paper border border-line rounded-lg px-2 py-1 text-[13px] outline-none placeholder:text-faint"
+            className="w-full bg-paper border border-line rounded-lg px-2 py-1 text-[13px] outline-none placeholder:text-faint"
             placeholder={t("slack.type_name")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -483,15 +473,19 @@ className="w-full bg-paper border border-line rounded-lg px-2 py-1 text-[13px] o
                   <span className="text-[13px] font-medium">{m.name}</span>{" "}
                   <span className="text-[12px] text-faint">@{m.handle}</span>
                   {m.guest && (
-<span className="ml-1.5 text-[11px] text-warnInk bg-warnSoft/70 border border-warnInk/15 rounded px-1 py-0.5">
+                    <span
+                      className="ml-1.5 text-[11px] text-warnInk bg-warnSoft/70 border border-warnInk/15 rounded px-1 py-0.5"
+                    >
                       {t("slack.guest")}
+                    </span>
                   )}
                 </button>
               ))
             )}
           </div>
-<div className="px-2 pb-1 text-[11px] text-faint">
+          <div className="px-2 pb-1 text-[11px] text-faint">
             {t("slack.dir_foot")}
+          </div>
         </div>
       )}
     </span>
@@ -516,7 +510,7 @@ function ApprovalOwnersRow({
   const { t } = useT();
   const [err, setErr] = useState<string | null>(null);
   const label = (u: string) =>
-    names?.[u] || (u === installerId ? installerName || "You" : u);
+    names?.[u] || (u === installerId ? installerName || t("slack.installer") : u);
   const remove = async (userId: string) => {
     const result = await removeSlackApprovalOwner(userId);
     if (!result.ok) {
@@ -546,7 +540,7 @@ function ApprovalOwnersRow({
               {initials(label(u))}
             </span>
             {label(u)}
-{u === installerId && <span className="text-[11px] text-faint">{t("slack.installer")}</span>}
+            {u === installerId && <span className="text-[11px] text-faint">{t("slack.installer")}</span>}
             {editable && (
               <button className={XBTN} title={t("slack.remove_owner_title")} onClick={() => remove(u)}>
                 ×
@@ -565,7 +559,7 @@ function ApprovalOwnersRow({
           />
         )}
         {!editable && owners.length > 0 && (
-<span className="text-[12px] text-faint">{t("slack.set_by_installer")}</span>
+          <span className="text-[12px] text-faint">{t("slack.set_by_installer")}</span>
         )}
         {err && <span className="basis-full text-[12px] text-warnInk">{err}</span>}
       </span>
@@ -584,7 +578,7 @@ function WaitingRow({ m, onChanged }: { m: ParkedMessage; onChanged: () => void 
       <span className={LABEL}>{t("slack.waiting")}</span>
       <span className="min-w-0 flex-1">
         <span className="font-medium text-[13px]">{m.user_name || m.user_id}</span>{" "}
-<span className="text-[13px] text-muted">{t("slack.in", { chat: m.chat_name || m.chat_id })}</span>
+        <span className="text-[13px] text-muted">{t("slack.in", { chat: m.chat_name || m.chat_id })}</span>
         <span className="block text-[13px] text-muted truncate">“{m.text}”</span>
       </span>
       <button

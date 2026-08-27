@@ -411,7 +411,7 @@ function ConsentCard({
             : t("personas.replaces_same")}
         </div>
       )}
-<div className="text-[13px] text-ink mt-2">
+      <div className="text-[13px] text-ink mt-2">
         {t("personas.consent_can", { summary })}
         {c.connectors === "all"
           ? t("personas.consent_all_connectors")
@@ -445,8 +445,9 @@ function ConsentCard({
         {/* Enable right here (owner ask 2026-08-11) — the old "enable it above" copy
             sent the user hunting back up the list. */}
         {enabled ? (
-<span className="text-[13px] text-muted" data-testid="consent-enabled">
+          <span className="text-[13px] text-muted" data-testid="consent-enabled">
             {t("personas.consent_enabled")}
+          </span>
         ) : (
           <button
             className={BTN_ACCENT}

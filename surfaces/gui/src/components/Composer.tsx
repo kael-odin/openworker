@@ -29,7 +29,7 @@ import { useT } from "../i18n/I18nProvider";
 // feature flag is on, wired in the settings pass — until then the picker omits it.
 // `caution` prefixes the label with a warning triangle; `gated` hides the entry unless the
 // server's auto_approve flag is on. Picker-local extensions of Dropdown's Option.
-type ModeOption = Option & { caution?: boolean; gated?: boolean };
+type ModeOption = Option & { caution?: boolean; gated?: boolean; labelKey?: string; descKey?: string };
 
 // "auto" is the legacy wire value for Bypass approvals (server: Mode.BYPASS_APPROVALS).
 // Auto-approve is `gated`: shown only when getSettings().auto_approve is true (the feature
@@ -57,9 +57,6 @@ const PERMISSION_OPTIONS: ModeOption[] = [
     descKey: "composer.mode_auto_desc",
   },
 ];
-
-const permissionOptions = (t: (k: string) => string): Option[] =>
-  PERMISSION_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey || o.label), description: t(o.descKey || o.description) }));
 
 /** The picker's label for a mode value ("auto-approve" -> "Auto-approve"). Exported so the
  * transcript's mode markers read the same names the user just chose from. */
@@ -844,6 +841,9 @@ function UsageChip({
         aria-expanded={open}
         aria-label={t("composer.usage_chip")}
         title={
+          showBar
+            ? t("composer.usage_bar_title", { pct, n: formatTokens(total) })
+            : t("composer.usage_total_title", { n: formatTokens(total) })
         }
         data-testid="usage-chip"
       >
@@ -968,7 +968,7 @@ function ModeMenu({
   }, [open]);
   const options = PERMISSION_OPTIONS.filter(
     (o) => !o.gated || autoApproveEnabled || o.value === mode,
-  ).map((o) => ({ ...o, label: t(o.labelKey || o.label), description: t(o.descKey || o.description) }));
+  ).map((o) => ({ ...o, label: t(o.labelKey ?? o.label), description: t(o.descKey ?? o.description ?? "") }));
   const current = options.find((o) => o.value === mode) || PERMISSION_OPTIONS.find((o) => o.value === mode);
   return (
     <div className="relative">

@@ -414,7 +414,50 @@ export function retryAnchor(items: Item[]): number {
   return -1;
 }
 
+// One quiet line for a dead MCP server (owner ruling 2026-08-21): the summary names the
+// server; the raw error (stderr excerpts, tracebacks) hides behind a Details disclosure;
+// "Open Connectors" is the fix/remove path. Never a wall of blue text in the transcript.
+function McpNotice({
+  item,
+  onOpenConnectors,
+}: {
+  item: Extract<Item, { kind: "notice" }>;
+  onOpenConnectors?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mcp-notice" data-testid="mcp-notice">
+      <div className="mcp-notice-line">
+        <span aria-hidden>⚠</span>
+        <span className="min-w-0 truncate">{item.text}</span>
+        <button
+          className="mcp-notice-act"
+          data-testid="mcp-notice-details"
+          onClick={() => setOpen((v) => !v)}
+        >
+          Details {open ? "⌃" : "⌄"}
+        </button>
+        {onOpenConnectors && (
+          <button
+            className="mcp-notice-act"
+            data-testid="mcp-notice-connectors"
+            onClick={onOpenConnectors}
+          >
+            Open Connectors
+          </button>
+        )}
+      </div>
+      {open && (
+        <pre className="mcp-notice-detail" data-testid="mcp-notice-detail">
+          {item.detail}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 export function Transcript({ items, running, streamingText, onRetry, onOpenConnectors, onUndoMemory, onAllowAnyway }: Props) {
+  const { t } = useT();
   // §33 grouping: a turn = the maximal run of assistant/tool/resolved-approval items between
   // breakers (user, connector, notices, plan/dir requests…). Trailing assistant texts are the
   // ANSWER and render as bubbles after the group; interior assistant texts are narration and

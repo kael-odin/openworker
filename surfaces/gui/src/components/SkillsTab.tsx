@@ -167,6 +167,7 @@ export function SkillsTab({
 <h2 className="text-[16px] font-semibold">{t("skills.title")}</h2>
           <p className="text-[13px] text-muted mt-1 leading-relaxed">
             {t("skills.sub")}
+          </p>
         </div>
         {/* One add-action, three doors behind it (SKILLS-SPEC §5): the list is the page. */}
         <div className="relative shrink-0">
@@ -199,6 +200,7 @@ export function SkillsTab({
 <div className="text-[13px] font-medium">{t("skills.write_myself")}</div>
                   <div className="text-[12px] text-muted">
                     {t("skills.write_myself_desc")}
+                  </div>
                 </button>
                 <button
                   role="menuitem"
@@ -211,6 +213,7 @@ export function SkillsTab({
 <div className="text-[13px] font-medium">{t("skills.import_file")}</div>
                   <div className="text-[12px] text-muted">
                     {t("skills.import_file_desc")}
+                  </div>
                 </button>
                 <button
                   role="menuitem"
@@ -224,6 +227,7 @@ export function SkillsTab({
 <div className="text-[13px] font-medium">{t("skills.create_with_ow")}</div>
                   <div className="text-[12px] text-muted">
                     {t("skills.create_with_ow_desc")}
+                  </div>
                 </button>
               </div>
             </>
@@ -275,6 +279,7 @@ export function SkillsTab({
 <div className="text-[13px] font-medium mb-1">{t("skills.review_before_install")}</div>
           <p className="text-[13px] text-muted mb-3">
             {t("skills.review_blurb")}
+          </p>
           <div className="text-[13px] mb-1">
             <span className="font-medium">{upload.name}</span>
             <span className="text-muted"> — {upload.description || t("skills.no_description")}</span>

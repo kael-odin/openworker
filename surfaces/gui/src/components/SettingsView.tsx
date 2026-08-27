@@ -117,6 +117,7 @@ export function SettingsView({
       <nav className="page-subnav w-[208px] shrink-0 border-r border-line bg-panel/40 px-3 py-4">
 <div className="px-2 text-[13px] font-semibold mb-3 flex items-center gap-2">
           <Icon name="gear" size={16} /> {t("settings.header")}
+        </div>
         {tabs.map((tb) => {
           const active = tab === tb.key;
           return (
@@ -306,20 +307,22 @@ function VoiceInputSection() {
         <div className={CARD + " p-4 text-[13px] text-muted"}>{t("settings.voice_desktop_only")}</div>
       ) : (
         <div className="space-y-4">
-<div className="rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-[13px] text-green-800">
+          <div className="rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-[13px] text-green-800">
             <span className="font-medium">{t("settings.voice_private")}</span> {t("settings.voice_private_blurb")}
+          </div>
 
           <div className={CARD}>
             <div className="p-4 flex items-start gap-3">
               <Icon name="code" size={18} className="text-accent mt-0.5" />
               <div className="min-w-0 flex-1">
-<div className="text-[13px] font-medium">{t("settings.voice_this_device")}</div>
+                <div className="text-[13px] font-medium">{t("settings.voice_this_device")}</div>
                 <div className="text-[12px] text-muted mt-1">{status?.device_summary || t("settings.voice_checking")}</div>
                 {status?.compatibility_reason && <div className="text-[12px] text-red-600 mt-1.5">{status.compatibility_reason}</div>}
               </div>
               {status && (
                 <span className={"text-[12px] px-2 py-1 rounded-full " + (status.supported ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600")}>
                   {status.supported ? t("settings.voice_compatible") : t("settings.voice_unsupported")}
+                </span>
               )}
             </div>
             <div className="border-t border-line bg-paper/50 px-4 py-3 grid grid-cols-2 gap-3 text-[12px] text-muted">
@@ -874,6 +877,7 @@ function ContextBarCard() {
 function AutoApproveCard() {
   const [on, setOn] = useState<boolean | null>(null);
   const [shadow, setShadow] = useState(false);
+  const { t } = useT();
 
   useEffect(() => {
     getSettings()
@@ -928,6 +932,7 @@ function AutoApproveCard() {
           <span className="block text-[12px] text-muted">
             {t("settings.auto_approve_shadow_help")}
           </span>
+        </span>
       </label>
     </div>
   );

@@ -66,9 +66,10 @@ export function CalendarDetail({ c, cloud, slack: _slack, onChanged }: DetailPro
 
       {!c.connected && (
         <div className={GRP}>
-<div className={ROW + " text-[13px] text-muted"}>
+          <div className={ROW + " text-[13px] text-muted"}>
             {t("conn.gcal_sub")}
             {cloud?.signed_in ? "" : t("conn.requires_cloud")}
+          </div>
         </div>
       )}
 

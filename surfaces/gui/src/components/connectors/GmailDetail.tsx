@@ -35,7 +35,9 @@ export function GmailDetail({ c, cloud, slack: _slack, onChanged }: DetailProps)
       <div className="flex items-center gap-3.5 mb-5">
         <ConnectorBadge connector={c} size={44} title={t("conn.gmail_title")} />
         <div className="min-w-0 flex-1">
-<h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("conn.gmail_title")}</h2>
+          <h2 className="text-[20px] font-semibold tracking-tight leading-tight">
+            {t("conn.gmail_title")}
+          </h2>
           <div className="text-[13px] text-muted flex items-center gap-1.5">
             {c.connected ? (
               <>
@@ -62,15 +64,16 @@ export function GmailDetail({ c, cloud, slack: _slack, onChanged }: DetailProps)
                 : t("conn.signin_first")
           }
         >
-          {c.managed_paused ? t("conn.gcal_coming_soon") : busy ? t("conn.check_browser") : t("conn.add_account")}
+          {c.managed_paused ? t("conn.gcal_coming_soon") : busy ? t("conn.check_browser") : t("conn.gmail_add_account")}
         </button>
       </div>
 
       {!c.connected && (
         <div className={GRP}>
-<div className={ROW + " text-[13px] text-muted"}>
+          <div className={ROW + " text-[13px] text-muted"}>
             {t("conn.gmail_sub")}
             {cloud?.signed_in ? "" : t("conn.requires_cloud")}
+          </div>
         </div>
       )}
 

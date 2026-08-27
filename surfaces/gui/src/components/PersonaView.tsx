@@ -253,10 +253,11 @@ export function PersonaView({
           {rows.length > 0 && (
             <section>
               <div className={`${SEC_H} mb-1.5 flex items-baseline`}>
-<span>{t("personaview.connectors")}</span>
+                <span>{t("personaview.connectors")}</span>
                 <span className="ml-auto flex font-semibold text-[11px] text-faint normal-case tracking-normal">
                   <span className={COL_STATUS}>{t("personaview.col_status")}</span>
                   <span className={COL_ENABLE}>{t("personaview.col_enable")}</span>
+                </span>
               </div>
               <div className={GRP}>
                 {rows.map((r) => (

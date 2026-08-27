@@ -191,8 +191,9 @@ function UserRulesCard({
           {t("memory.rules_save")}
         </button>
         {savedMsg && (
-<span className="text-[13px] text-muted">
+          <span className="text-[13px] text-muted">
             {t("memory.rules_saved_msg")}
+          </span>
         )}
       </div>
     </div>
@@ -236,8 +237,9 @@ function MemoryRow({ entry, onChanged }: { entry: MemoryEntry; onChanged: () => 
           <button className={BTN_ACCENT} onClick={() => void save()}>
             {t("memory.rules_save")}
           </button>
-<button className="text-[13px] text-muted hover:text-ink" onClick={() => setEditing(false)}>
+          <button className="text-[13px] text-muted hover:text-ink" onClick={() => setEditing(false)}>
             {t("memory.cancel")}
+          </button>
         </div>
       </div>
     );

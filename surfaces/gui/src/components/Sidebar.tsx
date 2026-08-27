@@ -62,8 +62,9 @@ function AttnBadge({ n }: { n: number }) {
   if (!n) return null;
   return (
     <span
-className="text-[11px] font-semibold text-ink bg-faint/30 rounded-full px-1.5 leading-[15px] shrink-0"
+      className="text-[11px] font-semibold text-ink bg-faint/30 rounded-full px-1.5 leading-[15px] shrink-0"
       title={t("sidebar.attention_tip", { n })}
+    >
       {n > 99 ? "99+" : n}
     </span>
   );
@@ -84,8 +85,9 @@ function UnseenBadge({ n, failed }: { n: number; failed?: boolean }) {
       : "sidebar.unseen_runs";
   return (
     <span
-className="text-[11px] font-semibold text-ink bg-faint/30 rounded-full px-1.5 leading-[15px] shrink-0"
+      className="text-[11px] font-semibold text-ink bg-faint/30 rounded-full px-1.5 leading-[15px] shrink-0"
       title={t(key, { n })}
+    >
       {n > 99 ? "99+" : n}
     </span>
   );
@@ -691,8 +693,9 @@ title={t("sidebar.delete_again_hint")}
   const pinnedBand = () =>
     pinnedSessions.length > 0 ? (
       <div>
-<div className="px-1.5 text-[11px] uppercase tracking-[0.07em] text-faint font-semibold mb-1">
+        <div className="px-1.5 text-[11px] uppercase tracking-[0.07em] text-faint font-semibold mb-1">
           {t("sidebar.pinned")}
+        </div>
         <div className="space-y-0.5">
           {pinnedSessions.map((s) => cardRow(s))}
         </div>
@@ -705,8 +708,9 @@ title={t("sidebar.delete_again_hint")}
   const scheduledBand = () =>
     automations.length > 0 ? (
       <div data-testid="scheduled-band">
-<div className="px-1.5 text-[11px] uppercase tracking-[0.07em] text-faint font-semibold mb-1">
+        <div className="px-1.5 text-[11px] uppercase tracking-[0.07em] text-faint font-semibold mb-1">
           {t("sidebar.scheduled")}
+        </div>
         <div className="space-y-0.5">
           {automations.map((a) => (
             <button
@@ -735,52 +739,54 @@ title={t("sidebar.delete_again_hint")}
       (p) => (p.enabled && p.surfaced) || agentsWithSessions.has(p.id),
     );
     return (
-    <div className="relative flex items-center justify-between px-1.5 mb-1" data-testid="recent-header">
-<span className="text-[11px] uppercase tracking-[0.07em] text-faint font-semibold">
-        {t("sidebar.recent")}
-      </span>
-      <button
-        className="w-6 h-6 grid place-items-center rounded-md text-faint hover:text-ink hover:bg-chromeHover -mr-1"
-        title={t("sidebar.group_filter_title")}
-        aria-label={t("sidebar.group_filter_title")}
-        onClick={() => setGroupMenuOpen((v) => !v)}
-      >
-        <Icon name="sliders" size={14} />
-      </button>
-      {groupMenuOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setGroupMenuOpen(false)} />
-          <div
-            className="absolute right-0 top-7 z-50 w-56 rounded-xl border border-line bg-panel shadow-xl p-1.5"
-            role="menu"
-            data-testid="group-filter-menu"
-          >
-<div className="px-2 pt-1 pb-1 text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
-              {t("sidebar.group_by")}
-            {([["grouped", t("sidebar.group_persona")], ["flat", t("sidebar.group_chrono")]] as ["flat" | "grouped", string][]).map(
-              ([key, label]) => (
-                <button
-                  key={key}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-left hover:bg-paper"
-                  onClick={() => setGroupBy(key)}
-                >
-                  <span className="flex-1">{label}</span>
-                  {layout === key && <span className="text-accent text-[12px]">✓</span>}
-                </button>
-              ),
-            )}
-            {filterPersonaList.length > 1 && (
-              <>
-                <div className="my-1 border-t border-line" />
-                <div className="px-2 pt-1 pb-1 flex items-center justify-between">
-<span className="text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
-                    {t("sidebar.filter_by_coworker")}
-                  {filterPersonas.size > 0 && (
-                    <button className="text-[11px] text-accent" onClick={() => setFilterPersonas(new Set())}>
-                      {t("sidebar.clear")}
-                    </button>
-                  )}
-                </div>
+      <div className="relative flex items-center justify-between px-1.5 mb-1" data-testid="recent-header">
+        <span className="text-[11px] uppercase tracking-[0.07em] text-faint font-semibold">
+          {t("sidebar.recent")}
+        </span>
+        <button
+          className="w-6 h-6 grid place-items-center rounded-md text-faint hover:text-ink hover:bg-chromeHover -mr-1"
+          title={t("sidebar.group_filter_title")}
+          aria-label={t("sidebar.group_filter_title")}
+          onClick={() => setGroupMenuOpen((v) => !v)}
+        >
+          <Icon name="sliders" size={14} />
+        </button>
+        {groupMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setGroupMenuOpen(false)} />
+            <div
+              className="absolute right-0 top-7 z-50 w-56 rounded-xl border border-line bg-panel shadow-xl p-1.5"
+              role="menu"
+              data-testid="group-filter-menu"
+            >
+              <div className="px-2 pt-1 pb-1 text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
+                {t("sidebar.group_by")}
+              </div>
+              {([["grouped", t("sidebar.group_persona")], ["flat", t("sidebar.group_chrono")]] as ["flat" | "grouped", string][]).map(
+                ([key, label]) => (
+                  <button
+                    key={key}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-left hover:bg-paper"
+                    onClick={() => setGroupBy(key)}
+                  >
+                    <span className="flex-1">{label}</span>
+                    {layout === key && <span className="text-accent text-[12px]">✓</span>}
+                  </button>
+                ),
+              )}
+              {filterPersonaList.length > 1 && (
+                <>
+                  <div className="my-1 border-t border-line" />
+                  <div className="px-2 pt-1 pb-1 flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
+                      {t("sidebar.filter_by_coworker")}
+                    </span>
+                    {filterPersonas.size > 0 && (
+                      <button className="text-[11px] text-accent" onClick={() => setFilterPersonas(new Set())}>
+                        {t("sidebar.clear")}
+                      </button>
+                    )}
+                  </div>
                 <div className="max-h-52 overflow-y-auto">
                   {filterPersonaList.map((p) => {
                     const checked = filterPersonas.has(p.id);
@@ -892,8 +898,9 @@ title={t("sidebar.delete_again_hint")}
             {/* Codex-style Projects: a "+" header affordance, then collapsible folders whose
                 rows carry a right-aligned compact age and truncate to PROJECT_PEEK + "Show more". */}
             <div className="flex items-center justify-between px-1.5 pt-1">
-<span className="text-[11px] uppercase tracking-[0.07em] text-faint font-semibold">
+              <span className="text-[11px] uppercase tracking-[0.07em] text-faint font-semibold">
                 {t("sidebar.projects")}
+              </span>
               <button
                 className="w-5 h-5 grid place-items-center rounded text-faint hover:text-ink hover:bg-panel"
                 title={t("sidebar.new_project")}

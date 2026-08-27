@@ -121,8 +121,9 @@ export function SearchModal({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-placeholder={t("search.placeholder")}
+            placeholder={t("search.placeholder")}
             className="flex-1 bg-transparent outline-none text-[14px] text-ink placeholder:text-faint"
+          />
           <kbd className="text-[11px] text-faint bg-paper border border-line rounded px-1.5 py-0.5 font-sans">
             Esc
           </kbd>

@@ -95,8 +95,9 @@ export function UpdateBanner() {
         {t("update.ready", { version: update.version })}
       </div>
       {phase === "error" && (
-<div className="text-[12px] text-warnInk mt-1.5">
+        <div className="text-[12px] text-warnInk mt-1.5">
           {t("update.err")}
+        </div>
       )}
       <div className="flex items-center gap-2 mt-2.5">
         <button

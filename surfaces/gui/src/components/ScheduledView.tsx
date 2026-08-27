@@ -156,8 +156,9 @@ export function ScheduledView({ onOpenRun, onRunNow, initialOpenId }: Props) {
 
       {empty ? (
         !showForm && (
-<div className={CARD + " p-4 text-[13px] text-muted"}>
+          <div className={CARD + " p-4 text-[13px] text-muted"}>
             <span dangerouslySetInnerHTML={{ __html: t("scheduled.empty_hint") }} />
+          </div>
         )
       ) : (
         <div className="flex flex-col gap-2.5">

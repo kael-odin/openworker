@@ -120,14 +120,14 @@ const { t } = useT();
     const t = setInterval(onChanged, 1000);
     return () => clearInterval(t);
   }, [anyAuthorizing, onChanged]);
-  const presets = MCP_PRESETS.filter((p) => !servers.some((s) => s.name === p.name));
-  if (servers.length === 0 && presets.length === 0) return null;
+  const presets = MCP_PRESETS.filter((p) => !serversProp.some((s) => s.name === p.name));
+  if (serversProp.length === 0 && presets.length === 0) return null;
 
   return (
     <>
       <div className={GRP_H}>{t("mcp.group_title")}</div>
       <div className={GRP} data-testid="custom-mcp-group">
-        {servers.map((s) => (
+        {serversProp.map((s) => (
           <button
             key={s.name}
             data-testid={`mcp-row-${s.name}`}
@@ -326,8 +326,9 @@ export function AddMcpModal({
           <button className={PILL_ACCENT} onClick={tab === "url" ? saveUrl : saveJson}>
             {tab === "url" ? t("mcp.add_test") : t("mcp.add")}
           </button>
-<button className="text-[13px] text-muted hover:text-ink" onClick={onClose}>
+          <button className="text-[13px] text-muted hover:text-ink" onClick={onClose}>
             {t("mcp.cancel")}
+          </button>
         </div>
         {error && <div className="text-[13px] text-danger">{error}</div>}
       </div>
@@ -407,9 +408,10 @@ export function McpServerDetail({
         </div>
         <div className={ROW}>
           <span className="text-[13px] flex-1">
-{t("mcp.test_connection")}
+            {t("mcp.test_connection")}
             <span className="block text-[12px] text-faint">
               {t("mcp.test_sub")}
+            </span>
           </span>
           {server.auth_hint && !isOauth ? (
             <span
@@ -446,9 +448,10 @@ export function McpServerDetail({
           </div>
         )}
         <div className={ROW}>
-<span className="text-[13px] flex-1">{t("mcp.tools")}</span>
+          <span className="text-[13px] flex-1">{t("mcp.tools")}</span>
           <button className="text-[13px] text-muted hover:text-ink" onClick={loadTools} disabled={busy}>
             {busy ? "…" : tools ? t("mcp.hide") : t("mcp.show")}
+          </button>
         </div>
         {toolErr && <div className="px-4 py-2.5 text-[13px] text-danger">{toolErr}</div>}
         {tools && (

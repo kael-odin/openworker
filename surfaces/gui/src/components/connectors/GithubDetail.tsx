@@ -17,9 +17,7 @@ import { AddConnectionModal } from "./AddConnectionModal";
 import type { DetailProps } from "./ConnectorsSection";
 import { ToolsDisclosure } from "./ToolsDisclosure";
 import { FOOT, GRP, GRP_H, PILL_ACCENT, PILL_LINE, ROW, TAG_WARN, XBTN } from "./ui";
-import { useT, currentLang } from "../../i18n/I18nProvider";
-import zh from "../../i18n/zh.json";
-import en from "../../i18n/en.json";
+import { useT } from "../../i18n/I18nProvider";
 
 // The GitHub detail page (github-relay-spec §8), the Slack page's shape: one
 // group per App INSTALLATION (the allow-list scope) — People (sender logins
@@ -30,26 +28,16 @@ import en from "../../i18n/en.json";
 
 const LABEL = "text-[13px] text-muted w-24 shrink-0";
 
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-const EN: Dict = en as Dict;
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  let raw = d[key] ?? EN[key] ?? key;
-  if (params) for (const [k, v] of Object.entries(params)) raw = raw.replace(`{${k}}`, String(v));
-  return raw;
-}
-
 /** The relay status line, one honest layer at a time (the Slack rule). */
 function relayHealth(gh: GithubStatus | null): { dot: string; text: string } {
-  if (!gh) return { dot: "bg-ok", text: tt("gh.live_relay") };
+  if (!gh) return { dot: "bg-ok", text: "Live · managed relay" };
   if (!gh.signed_in)
-    return { dot: "bg-warnInk", text: tt("gh.signin_needed_relay") };
+    return { dot: "bg-warnInk", text: "Sign-in needed — relaying is paused" };
   if (gh.relay.state === "offline")
-    return { dot: "bg-faint/60", text: tt("gh.offline_relay") };
+    return { dot: "bg-faint/60", text: "Offline — can't reach the relay" };
   if (gh.relay.state === "reconnecting")
-    return { dot: "bg-warnInk", text: tt("gh.reconnecting_relay") };
-  return { dot: "bg-ok", text: tt("gh.live_relay") };
+    return { dot: "bg-warnInk", text: "Reconnecting to the relay…" };
+  return { dot: "bg-ok", text: "Live · managed relay" };
 }
 
 export function GithubDetail({ c, cloud, onChanged }: DetailProps) {
@@ -78,7 +66,7 @@ export function GithubDetail({ c, cloud, onChanged }: DetailProps) {
       <div className="flex items-center gap-3.5 mb-5">
         <ConnectorBadge connector={c} size={44} title={t("gh.title")} />
         <div className="min-w-0 flex-1">
-<h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("gh.title")}</h2>
+          <h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("gh.title")}</h2>
           <div className="text-[13px] text-muted flex items-center gap-1.5">
             {c.connected ? (
               <>
@@ -111,9 +99,10 @@ export function GithubDetail({ c, cloud, onChanged }: DetailProps) {
 
       {!c.connected && (
         <div className={GRP}>
-<div className={ROW + " text-[13px] text-muted"}>
+          <div className={ROW + " text-[13px] text-muted"}>
             {t("gh.sub")}
             {cloud?.signed_in ? "" : t("gh.oneclick_cloud")}
+          </div>
         </div>
       )}
 
@@ -131,8 +120,9 @@ export function GithubDetail({ c, cloud, onChanged }: DetailProps) {
       {/* Manual PAT: request/response tools only — no inbound triggers. */}
       {c.connected && !relay && (
         <div className={GRP} data-testid="github-manual-card">
-<div className={ROW + " text-[13px] text-muted"}>
+          <div className={ROW + " text-[13px] text-muted"}>
             {t("gh.manual_card")}
+          </div>
         </div>
       )}
 
@@ -206,8 +196,9 @@ function InstallationGroup({
       <div className={GRP}>
         {empty ? (
           <div className={ROW}>
-<span className="min-w-0 flex-1 text-[13px] text-muted">
+            <span className="min-w-0 flex-1 text-[13px] text-muted">
               {t("gh.empty")}
+            </span>
             <DisconnectBtn id={inst.installation_id} busy={busy} onClick={disconnect} />
           </div>
         ) : (
@@ -295,7 +286,7 @@ function WaitingRow({ m, onChanged }: { m: ParkedMessage; onChanged: () => void 
       <span className={LABEL}>{t("gh.waiting")}</span>
       <span className="min-w-0 flex-1">
         <span className="font-medium text-[13px]">@{m.user_name || m.user_id}</span>{" "}
-<span className="text-[13px] text-muted">{t("gh.in", { chat: m.chat_name || m.chat_id })}</span>
+        <span className="text-[13px] text-muted">{t("gh.in", { chat: m.chat_name || m.chat_id })}</span>
         <span className="block text-[13px] text-muted truncate">“{m.text}”</span>
       </span>
       <button

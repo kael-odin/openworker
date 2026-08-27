@@ -269,19 +269,19 @@ function Buttons({
       {!autoApprove && !offerStanding && item.name === "web_fetch" && fetchHost && (
         <button
           className="btn"
-          title={`Every fetch to ${fetchHost} (and its subdomains) runs without asking for the rest of this session`}
+          title={t("approval.always_allow_domain_title", { host: fetchHost })}
           onClick={() => onApprove("always_domain")}
         >
-          Always allow {fetchHost} this session
+          {t("approval.always_allow_domain", { host: fetchHost })}
         </button>
       )}
       {!autoApprove && !offerStanding && item.name === "web_search" && (
         <button
           className="btn"
-          title="Every web search runs without asking for the rest of this session — the grant ends if you change the search provider"
+          title={t("approval.always_allow_searches_title")}
           onClick={() => onApprove("always_tool")}
         >
-          Always allow searches this session
+          {t("approval.always_allow_searches")}
         </button>
       )}
       {!autoApprove && item.name === "run_shell" && (
@@ -421,8 +421,9 @@ export function ApprovalCard({
           because the card must show the setting as it stands right now. */}
       {item.name === "web_search" && (
         <div className="approval-with">
-          Queries go to your configured search provider
-          {item.searchProvider ? ` (currently: ${item.searchProvider})` : ""}.
+          {item.searchProvider
+            ? t("approval.web_search_provider", { provider: item.searchProvider })
+            : t("approval.scope_web_search")}
         </div>
       )}
 

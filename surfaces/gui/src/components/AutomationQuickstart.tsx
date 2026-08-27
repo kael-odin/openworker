@@ -555,4 +555,36 @@ export function AutomationQuickstart({
                   {t("automation.read_only_rest")}
                 </p>
               ) : null}
-                  never needs approval.
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              className="text-[13px] text-faint hover:text-muted"
+              onClick={() => setPickedKey(null)}
+            >
+              {t("automation.cancel")}
+            </button>
+            {/* A silently-disabled primary reads as a bug — always name the missing piece. */}
+            {gateHint && (
+              <span className="ml-auto text-[12px] text-faint" data-testid="ob-create-hint">
+                {gateHint}
+              </span>
+            )}
+            <button
+              className={
+                (gateHint ? "" : "ml-auto ") +
+                "px-5 py-2 rounded-full bg-ink text-panel text-[13px] disabled:opacity-40"
+              }
+              disabled={busy || !allConnected || (picked.needsChannel && !channel)}
+              onClick={create}
+              data-testid="ob-create"
+            >
+              {busy ? t("automation.creating") : t("automation.create_automation")}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
