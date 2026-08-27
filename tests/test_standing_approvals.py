@@ -415,8 +415,13 @@ async def test_blocked_run_does_not_stall_other_tasks(tmp_path):
     sched = Scheduler(store, runner, tick_seconds=0.05)
     sched.start()
     try:
-        await asyncio.sleep(0.2)
-        # The quick task completed while the blocked one is still suspended.
+        # Wait for quick to complete while blocked stays suspended; guard against
+        # the fixed-sleep flake on slower runners by polling instead of asserting
+        # after one snapshot.
+        for _ in range(20):
+            if store.get(quick.id).run_count == 1 and store.get(blocked.id).run_count == 0:
+                break
+            await asyncio.sleep(0.05)
         assert store.get(quick.id).run_count == 1
         assert store.get(blocked.id).run_count == 0
         gate.set()
