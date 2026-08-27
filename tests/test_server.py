@@ -426,7 +426,9 @@ def test_ws_allows_only_one_inflight_turn_per_session(tmp_path):
             # The fire-and-forget auto-title completion legitimately runs CONCURRENTLY
             # with the chat turn (it fires at turn start, owner catch 2026-08-24) — the
             # invariant under test is one CHAT turn at a time, so exclude title calls.
-            if messages and "title chat sessions" in str(messages[0].get("content", "")):
+            # Match both the English upstream and the localized Chinese prompt.
+            content = str(messages[0].get("content", "")) if messages else ""
+            if "title chat sessions" in content or "为聊天会话起标题" in content:
                 return _text("A Title")
             with self._lock:
                 self.active += 1
