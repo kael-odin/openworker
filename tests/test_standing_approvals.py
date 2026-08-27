@@ -414,14 +414,25 @@ async def test_blocked_run_does_not_stall_other_tasks(tmp_path):
 
     sched = Scheduler(store, runner, tick_seconds=0.05)
     sched.start()
-    await asyncio.sleep(0.2)
-    # The quick task completed while the blocked one is still suspended.
-    assert store.get(quick.id).run_count == 1
-    assert store.get(blocked.id).run_count == 0
-    gate.set()
-    await asyncio.sleep(0.1)
-    assert store.get(blocked.id).run_count == 1
-    await sched.stop()
+    try:
+        await asyncio.sleep(0.2)
+        # The quick task completed while the blocked one is still suspended.
+        assert store.get(quick.id).run_count == 1
+        assert store.get(blocked.id).run_count == 0
+        gate.set()
+        # Wait until the previously-blocked task completes exactly once.
+        # next_run is rewritten to a future wall-clock time (≈ +1 day) on
+        # completion, so a second immediate execution would only happen if the
+        # scheduler's timing window raced; guard against the flaky double-fire
+        # by stopping right after count==1 is observed rather than sleeping a
+        # fixed window.
+        for _ in range(20):
+            if store.get(blocked.id).run_count == 1:
+                break
+            await asyncio.sleep(0.05)
+        assert store.get(blocked.id).run_count == 1
+    finally:
+        await sched.stop()
 
 
 # -- engine events: standing_target on the card, the note on the tool card --------
