@@ -44,7 +44,7 @@ const platformOf = (channel: string) => (channel.includes(":") ? channel.split("
 
 const SEC_H = "text-[11px] uppercase tracking-[0.05em] text-faint font-semibold";
 const TAG_CORE =
-  "text-[10px] px-1.5 py-0.5 rounded-full bg-warnSoft/70 text-warnInk border border-warnInk/15";
+  "text-[11px] px-1.5 py-0.5 rounded-full bg-warnSoft/70 text-warnInk border border-warnInk/15";
 const BTN_ACCENT = "text-[12px] px-2.5 py-1.5 rounded-lg bg-accent text-white shrink-0";
 const BTN_BORDERED =
   "text-[12px] px-2.5 py-1.5 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
@@ -299,7 +299,7 @@ export function AccessSection({
                     <div className="flex items-center gap-2 py-1" key={c.connector}>
                       <ConnectorBadge connector={visualFor(c.connector, "connector", byName)} size={24} />
                       <div className="min-w-0 flex-1">
-                        <div className="text-[12.5px] font-medium leading-tight truncate">
+                        <div className="text-[13px] font-medium leading-tight truncate">
                           <span>{labelFor(c.connector, byName)}</span>
                           {c.detail && <span className="text-faint font-normal"> · {c.detail}</span>}
                         </div>
@@ -365,7 +365,7 @@ export function AccessSection({
                         >
                           <ConnectorBadge connector={visualFor(c.name, "connector", byName)} size={22} />
                           <span className="min-w-0 flex-1">
-                            <span className="block text-[12.5px] font-medium leading-tight">
+                            <span className="block text-[13px] font-medium leading-tight">
                               {c.title}
                             </span>
                             <span className="block text-[11px] text-faint truncate">{c.blurb}</span>
@@ -407,7 +407,7 @@ export function AccessSection({
                       <div className="flex items-center gap-2 py-1" key={r.connector}>
                         <ConnectorBadge connector={visualFor(r.connector, "connector", byName)} size={24} />
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 text-[12.5px] font-medium leading-tight">
+                          <div className="flex items-center gap-1.5 text-[13px] font-medium leading-tight">
                             <span className="truncate">{labelFor(r.connector, byName)}</span>
                             {r.tier === "core" && <span className={TAG_CORE}>{t("access.tag_core")}</span>}
                           </div>
@@ -570,12 +570,12 @@ function ChannelsInline({
           {channels.map((s) => (
             <div className="flex items-center gap-1.5 py-1" key={s.channel}>
               <Icon name="plug" size={13} className="text-muted shrink-0" />
-              <span className="min-w-0 flex-1 text-[12.5px] truncate" title={s.channel}>
+              <span className="min-w-0 flex-1 text-[13px] truncate" title={s.channel}>
                 {s.channel_name ? `#${s.channel_name}` : s.channel}
               </span>
               {s.collision && (
                 <span
-                  className="text-[10.5px] text-warnInk bg-warnSoft/70 border border-warnInk/15 rounded px-1 shrink-0"
+                  className="text-[11px] text-warnInk bg-warnSoft/70 border border-warnInk/15 rounded px-1 shrink-0"
                   title={t("access.channels_collides_title")}
                 >
                   ⚠

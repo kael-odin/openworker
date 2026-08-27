@@ -63,7 +63,7 @@ export function ConnectorsList({
           onClick={() => setAddingMcp(true)}
           data-testid="add-custom-server"
         >
-          + Add custom server
+          + Add custom MCP server
         </button>
         <input
           placeholder={t("conn.search")}
@@ -88,11 +88,11 @@ export function ConnectorsList({
               >
                 <ConnectorBadge connector={c} size={34} title={c.title} />
                 <span className="min-w-0 flex-1">
-                  <span className="font-medium text-[13.5px]">{c.title}</span>
+                  <span className="font-medium text-[13px]">{c.title}</span>
                   <span className="block text-[12px] text-muted">{statusLine(c)}</span>
                 </span>
                 {healthChip(c, slack)}
-                <span className="text-faint text-[15px] shrink-0">›</span>
+                <span className="text-faint text-[14px] shrink-0">›</span>
               </button>
             ))}
           </div>
@@ -118,7 +118,7 @@ export function ConnectorsList({
           >
             <ConnectorBadge connector={c} size={34} title={c.title} />
             <span className="min-w-0 flex-1">
-              <span className="font-medium text-[13.5px]">{c.title}</span>
+              <span className="font-medium text-[13px]">{c.title}</span>
               <span className="block text-[12px] text-muted truncate">{c.blurb}</span>
             </span>
             <span
@@ -134,7 +134,7 @@ export function ConnectorsList({
           </button>
         ))}
         {shown.length === 0 && (
-          <div className={ROW + " text-[12.5px] text-muted"}>{t("conn.nothing_matches")}</div>
+<div className={ROW + " text-[13px] text-muted"}>{t("conn.nothing_matches")}</div>
         )}
       </div>
       {!showAll && !q && available.length > AVAILABLE_FOLD && (

@@ -28,7 +28,7 @@ export function IntegrationsView() {
   return (
     <main className="flex-1 min-w-0 flex bg-paper">
       <nav className="page-subnav w-[208px] shrink-0 border-r border-line bg-panel/40 px-3 py-4">
-        <div className="px-2 text-[13.5px] font-semibold mb-3 flex items-center gap-2">
+<div className="px-2 text-[13px] font-semibold mb-3 flex items-center gap-2">
           <Icon name="plug" size={16} /> {t("int.tab_connectors")}
         </div>
         <button className="w-full text-left px-2.5 py-2 rounded-lg text-[13px] flex items-center justify-between bg-paper text-accent font-medium">
@@ -59,8 +59,8 @@ export function IntegrationsView() {
 export function PanelHead({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="mb-4">
-      <h2 className="text-[18px] font-semibold tracking-tight">{title}</h2>
-      <p className="text-[12.5px] text-muted mt-0.5">{sub}</p>
+      <h2 className="text-[20px] font-semibold tracking-tight">{title}</h2>
+      <p className="text-[13px] text-muted mt-0.5">{sub}</p>
     </div>
   );
 }

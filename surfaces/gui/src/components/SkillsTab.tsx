@@ -23,13 +23,13 @@ import { useT } from "../i18n/I18nProvider";
 // Persona-bundled skills arrive with personas (§10), managed on the persona page, not here.
 
 const CARD = "rounded-xl2 border border-line bg-panel";
-const FIELD_LABEL = "text-[12.5px] font-medium text-ink";
+const FIELD_LABEL = "text-[13px] font-medium text-ink";
 const INPUT =
   "w-full min-w-0 px-3 py-2 rounded-lg border border-line bg-paper text-[13px] text-ink outline-none focus:border-accent";
 const BTN_ACCENT =
-  "text-[12.5px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
+  "text-[13px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
 const BTN_BORDERED =
-  "text-[12.5px] px-3 py-2 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
+  "text-[13px] px-3 py-2 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
 const BADGE =
   "text-[11px] px-2 py-0.5 rounded-full border border-line bg-paper text-muted shrink-0";
 
@@ -164,10 +164,9 @@ export function SkillsTab({
     <section>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-[16px] font-semibold">{t("skills.title")}</h2>
-          <p className="text-[12.5px] text-muted mt-1 leading-relaxed">
+<h2 className="text-[16px] font-semibold">{t("skills.title")}</h2>
+          <p className="text-[13px] text-muted mt-1 leading-relaxed">
             {t("skills.sub")}
-          </p>
         </div>
         {/* One add-action, three doors behind it (SKILLS-SPEC §5): the list is the page. */}
         <div className="relative shrink-0">
@@ -197,10 +196,9 @@ export function SkillsTab({
                     setEditor(emptyEditor());
                   }}
                 >
-                  <div className="text-[13px] font-medium">{t("skills.write_myself")}</div>
-                  <div className="text-[11.5px] text-muted">
+<div className="text-[13px] font-medium">{t("skills.write_myself")}</div>
+                  <div className="text-[12px] text-muted">
                     {t("skills.write_myself_desc")}
-                  </div>
                 </button>
                 <button
                   role="menuitem"
@@ -210,10 +208,9 @@ export function SkillsTab({
                     fileInput.current?.click();
                   }}
                 >
-                  <div className="text-[13px] font-medium">{t("skills.import_file")}</div>
-                  <div className="text-[11.5px] text-muted">
+<div className="text-[13px] font-medium">{t("skills.import_file")}</div>
+                  <div className="text-[12px] text-muted">
                     {t("skills.import_file_desc")}
-                  </div>
                 </button>
                 <button
                   role="menuitem"
@@ -224,10 +221,9 @@ export function SkillsTab({
                     onCreateSkill?.("");
                   }}
                 >
-                  <div className="text-[13px] font-medium">{t("skills.create_with_ow")}</div>
-                  <div className="text-[11.5px] text-muted">
+<div className="text-[13px] font-medium">{t("skills.create_with_ow")}</div>
+                  <div className="text-[12px] text-muted">
                     {t("skills.create_with_ow_desc")}
-                  </div>
                 </button>
               </div>
             </>
@@ -247,7 +243,7 @@ export function SkillsTab({
       />
 
       {error ? (
-        <div className="text-[12.5px] text-red-500 mb-3" role="alert">
+        <div className="text-[13px] text-red-500 mb-3" role="alert">
           {error}
         </div>
       ) : null}
@@ -255,7 +251,7 @@ export function SkillsTab({
         <div
           role="status"
           className={
-            "mb-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-[12.5px] " +
+            "mb-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-[13px] " +
             (notice.tone === "ok"
               ? "bg-tealSoft/70 text-tealInk border-tealInk/20"
               : "bg-warnSoft/70 text-warnInk border-warnInk/20")
@@ -276,10 +272,9 @@ export function SkillsTab({
 
       {upload ? (
         <div className={`${CARD} p-4 mb-4`}>
-          <div className="text-[13px] font-medium mb-1">{t("skills.review_before_install")}</div>
-          <p className="text-[12.5px] text-muted mb-3">
+<div className="text-[13px] font-medium mb-1">{t("skills.review_before_install")}</div>
+          <p className="text-[13px] text-muted mb-3">
             {t("skills.review_blurb")}
-          </p>
           <div className="text-[13px] mb-1">
             <span className="font-medium">{upload.name}</span>
             <span className="text-muted"> — {upload.description || t("skills.no_description")}</span>

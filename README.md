@@ -6,13 +6,15 @@
 
 **[openworker.com](https://openworker.com)** · [下载](#下载) · [Issues](https://github.com/andrewyng/openworker/issues)
 
-> **Beta** — OpenWorker 处于公开测试阶段：完全可用、可自动更新，我们正在持续打磨粗糙的边角。欢迎提 [Issue](https://github.com/andrewyng/openworker/issues)。
+<p align="center"><a href="https://trendshift.io/repositories/91434?utm_source=trendshift-badge&utm_medium=badge&utm_campaign=badge-trendshift-91434" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/91434/daily" alt="andrewyng%2Fopenworker | Trendshift" width="250" height="55"/></a></p>
 
 > **📦 关于本仓库**：这是 [andrewyng/openworker](https://github.com/andrewyng/openworker) 的**中文增强版 fork**（`kael-odin/openworker`），**追平上游**并保持同步。新增**全量中文汉化**与若干能力增强，详见下文[「汉化说明」](#汉化说明)与[「能力增强说明」](#能力增强说明)。
 
+> **Beta** — OpenWorker 处于公开测试阶段：完全可用、可自动更新，我们正在持续打磨粗糙的边角。欢迎提 [Issue](https://github.com/andrewyng/openworker/issues)。
+
 **把日常任务真正做完的 AI。** OpenWorker 是一个开源的 AI 协作伙伴，驻留在你的桌面上，交付的是**完成的工作**而不只是聊天：一份打磨好的文档、一条带数据的 Slack 回复、一个更新好的日程、一个分拣后的收件箱。
 
-它运行在你自己的机器上，不锁定任何模型：自带 OpenAI、Anthropic、Google 或任意开放权重模型的 API Key，或用 Ollama 完全本地运行。你的数据只有在经过*你*选择的模型与集成时才会离开你的机器。
+它运行在你自己的机器上，不锁定任何模型：自带 OpenAI、Anthropic、Google 或任意开放权重模型的 API Key，或用 Ollama 完全本地运行。你的数据只有在经过*你*选择的模型与集成时才会离开你的机器。每一个 agent 动作都受治理与记录 —— 见[「治理即设计」](#治理即设计)。
 
 [![OpenWorker 的工作方式](docs/assets/how-it-works.png)](https://openworker.com)
 
@@ -25,6 +27,36 @@
 <sub>fork 构建未经 Authenticode 代码签名，SmartScreen 会提示 · 支持应用内自动更新</sub>
 
 打开应用，添加一个模型 Key（或指向 Ollama），提一个真实的需求。
+
+## 用例
+
+选一个协作伙伴，指向真实工作，拿到做好的交付件：
+
+- **安全审查** - 扫描代码库及其依赖的真实风险。发现来自确定性扫描器（如 semgrep）加模型推理；提出的修复会被重新扫描并经 diff 复核，批准前修复者从不是唯一检查者。
+- **云态势审计** - 对照常见误配类别审计云配置，起草修复计划。
+- **事件分诊** - 处理安全或运维事件：跨工具聚合上下文、起草时间线、准备报告。
+- **日常工作** - 从 CRM 和收件箱准备客户通话，把散落笔记变成可落地计划，产出文档与电子表格，打理日历与 Slack 线程。
+- **常驻自动化** - 早报、周报、频道常驻值守 —— 定时运行，带完整对话记录。
+
+专业协作伙伴自带该工作的工具、工作风格与检查点。安全协作伙伴优先发布。
+
+## 治理即设计
+
+治理是架构，不是插件 —— agent 无法自我授予新权限，没有 prompt 能说服它绕过闸门。三层防线，全在本仓库：
+
+1. **硬性底线**。一组危险且不可逆的操作永远仅限人工，永远。任何模式 —— 包括完全自动批准 —— 都不会降低这些底线；它们永远升级给你。
+2. **逐级获得的自主权**。动作默认需审批。一次性批准可晋升为常驻规则，再晋升为配置白名单 —— 每一步都显式、可见、可撤销。自动批准模式下，审查模型放行常规动作，不确定的升级给你；连续拒绝触发熔断，暂停审查并交回控制权。审查裁决是判断，非担保 —— 底线与审计轨迹才是兜底。
+3. **能回答「谁做的、为什么」的审计轨迹**。每个工具调用都记录审批溯源 —— 自动批准、用户批准、或拒绝，附带审查推理 —— 并随对话持久化。
+
+无人值守运行永不自批：其请求停泊在收件箱等人工应答。发现漏洞？见 [SECURITY.md](SECURITY.md)。
+
+## 能力
+
+- **产出真实成果** —— 文档、电子表格、报告、网页，都以可直接打开和分享的文件形式落地。
+- **从 Slack 触发** —— 在频道里 @`OpenWorker`；你的桌面会开启一个会话，用你的工具完成工作，再把答案作为线程回复发回去。
+- **用你日常的工具** —— 25+ 集成，包括 GitHub、Slack、Jira、Notion、Linear、HubSpot、Outlook、monday.com、Gmail、Google 日历，外加你的**终端与本地文件**。任何能通过 [MCP](https://modelcontextprotocol.io/) 访问的工具也能接入，并支持按工具粒度的权限控制。
+- **按计划运行** —— 面向周期性工作的自动化：晨报、周报、对一个频道的常驻值守。运行结果会带着完整对话记录进入应用。
+- **行动前先请示** —— 写入、发送、shell 命令都需审批放行。无人值守的运行会把待办事项停泊到收件箱，而不是擅自动手。
 
 ## 工作原理
 
@@ -45,14 +77,6 @@
 │  与终端       │  25+ 连接器    │  任意 provider │  在你的机器上运行
 └───────────────┴────────────────┴───────────────┘
 ```
-
-## 能力
-
-- **产出真实成果** —— 文档、电子表格、报告、网页，都以可直接打开和分享的文件形式落地。
-- **从 Slack 触发** —— 在频道里 @`OpenWorker`；你的桌面会开启一个会话，用你的工具完成工作，再把答案作为线程回复发回去。
-- **用你日常的工具** —— 25+ 集成，包括 GitHub、Slack、Jira、Notion、Linear、HubSpot、Outlook、monday.com、Gmail、Google 日历，外加你的**终端与本地文件**。任何能通过 [MCP](https://modelcontextprotocol.io/) 访问的工具也能接入，并支持按工具粒度的权限控制。
-- **按计划运行** —— 面向周期性工作的自动化：晨报、周报、对一个频道的常驻值守。运行结果会带着完整对话记录进入应用。
-- **行动前先请示** —— 写入、发送、shell 命令都需审批放行。无人值守的运行会把待办事项停泊到收件箱，而不是擅自动手。
 
 ## 自带模型
 
@@ -75,7 +99,7 @@ OpenWorker 本地优先。一切都在你的机器上：agent 循环、你的对
 - **上下文压缩（compaction）文案中文化**：`compaction.py` 的摘要系统 prompt、续作契约、工作状态抽取、压缩块全部中文化 —— 长会话自动生成**中文**摘要，让 agent 在更小的上下文里继续工作。`<compacted-history>` 结构标签与 `"compacted"` 事件类型保持英文（API 协议字段，不翻译）。
 - **测试断言同步**：前后端测试中所有英文断言已同步改为对应中文值，确保汉化不破坏既有契约。`json.dumps` 统一 `ensure_ascii=False`，避免中文被转义成 `\uXXXX` 破坏断言。
 
-**与上游的关系**：本仓库 `upstream` 追踪 `andrewyng/openworker`，`origin` 为本 fork。定期 `git fetch upstream` → `git merge upstream/main` → 推 `origin`，能力与上游保持一致。当前已追平上游 OPE-27 上下文压缩功能。
+**与上游的关系**：本仓库 `upstream` 追踪 `andrewyng/openworker`，`origin` 为本 fork。定期 `git fetch upstream` → `git merge upstream/main` → 推 `origin`，能力与上游保持一致。当前已追平上游 v0.2.1（含权限系统重构、MCP 改进、安全修复等）。
 
 ## 能力增强说明
 

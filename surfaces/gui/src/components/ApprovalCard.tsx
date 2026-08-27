@@ -116,6 +116,18 @@ export function TitleText({ line }: { line: HumanLine }) {
   );
 }
 
+// The host a fetch-card domain grant would cover (§1.9): lowercased, `www.` stripped —
+// pure spelling only, mirroring the server's minting in `allow_domain_for_session`. The
+// button must name exactly what the grant covers. "" when the URL doesn't parse.
+export function grantHost(url: any): string {
+  try {
+    const h = new URL(String(url ?? "")).hostname.toLowerCase();
+    return h.startsWith("www.") ? h.slice(4) : h;
+  } catch {
+    return "";
+  }
+}
+
 // Plain-words scope note (replaces the "local action" badge): where does this act?
 // Shared with the parked-approval card (InboxItemCard) so both dialects match (§35).
 export function scopeNote(
@@ -127,6 +139,11 @@ export function scopeNote(
   // or turn off the skill afterwards.
   if (name === "save_skill") return { text: tt("approval.scope_save_skill"), external: false };
   if (category === "connector") return { text: tt("approval.scope_connector"), external: true };
+  // Egress (§1.9): the request itself reaches the network — never "stays on this computer".
+  if (name === "web_fetch")
+    return { text: tt("approval.scope_web_fetch", { host: grantHost(args?.url) || tt("approval.the_web") }), external: true };
+  if (name === "web_search")
+    return { text: tt("approval.scope_web_search"), external: true };
   if (EXTERNAL.has(name)) {
     const platform = String(args?.target ?? "").split(":")[0];
     const names: Record<string, string> = { slack: "Slack", telegram: "Telegram" };
@@ -136,8 +153,6 @@ export function scopeNote(
   const overwrite = name === "write_file" && args?.overwrite;
   return { text: tt("approval.scope_stays_mac") + (overwrite ? tt("approval.scope_overwrites") : ""), external: false };
 }
-
-// The proposed content/command, straight from the tool call's ARGS — the file/action
 // doesn't exist yet, so no viewer could show it (§35; see UX-018 mock note).
 // Clamps by CHARACTERS as well as lines: a one-paragraph Slack digest has no
 // newlines at all and once ballooned the card to full-transcript height.
@@ -189,16 +204,34 @@ function Buttons({
   runTask,
   primaryLabel,
   denyLabel = tt("approval.deny_label"),
+  autoApprove = false,
 }: {
   item: ApprovalItem;
   onApprove: (decision: ApprovalDecision) => void;
   runTask?: { id: string; title: string } | null;
   primaryLabel: string;
   denyLabel?: string;
+  // Session is in Auto-Approve mode: session grants don't skip the reviewer there (§1.5),
+  // so no session-scoped "always" button is shown at all — a button that lies is worse
+  // than none. Allow once / Deny only.
+  autoApprove?: boolean;
 }) {
   const connector = item.category === "connector";
   const offerStanding = !!(runTask && item.standingTarget);
   const { t } = useT();
+  // §1.9: egress grants are destination-shaped. web_fetch offers the DOMAIN — tool-wide
+  // would cover every future destination, so it's withheld (and server-refused). web_search
+  // has a fixed destination (the configured provider), so tool-wide IS provider-wide and
+  // the button is labelled by what it actually grants: searches.
+  const fetchHost = item.name === "web_fetch" ? grantHost(item.args?.url) : "";
+  const noSessionGrant =
+    autoApprove ||
+    offerStanding ||
+    connector ||
+    item.name === "run_shell" ||
+    item.name === "save_skill" ||
+    item.name === "web_fetch" ||
+    item.name === "web_search";
   return (
     <div className="approval-btns">
       <button className="btn approval-primary" onClick={() => onApprove("once")}>
@@ -224,7 +257,7 @@ function Buttons({
           tool-wide one stays out of the card. */}
       {/* save_skill: no session-wide "always" — every skill proposal gets its own review
           (SKILLS-SPEC §5: one gate, always). */}
-      {!connector && !offerStanding && item.name !== "run_shell" && item.name !== "save_skill" && (
+      {!noSessionGrant && (
         <button
           className="btn"
           title={t("approval.always_tool_title", { verb: toolVerb(item.name).toLowerCase() })}
@@ -233,7 +266,25 @@ function Buttons({
           {t("approval.always_allow")}
         </button>
       )}
-      {item.name === "run_shell" && (
+      {!autoApprove && !offerStanding && item.name === "web_fetch" && fetchHost && (
+        <button
+          className="btn"
+          title={`Every fetch to ${fetchHost} (and its subdomains) runs without asking for the rest of this session`}
+          onClick={() => onApprove("always_domain")}
+        >
+          Always allow {fetchHost} this session
+        </button>
+      )}
+      {!autoApprove && !offerStanding && item.name === "web_search" && (
+        <button
+          className="btn"
+          title="Every web search runs without asking for the rest of this session — the grant ends if you change the search provider"
+          onClick={() => onApprove("always_tool")}
+        >
+          Always allow searches this session
+        </button>
+      )}
+      {!autoApprove && item.name === "run_shell" && (
         <button className="btn" onClick={() => onApprove("always_command")}>
           {t("approval.always_allow_command")}
         </button>
@@ -265,6 +316,7 @@ export function ApprovalCard({
   onApprove,
   runTask,
   compact = false,
+  autoApprove = false,
 }: {
   item: ApprovalItem;
   onApprove: (decision: ApprovalDecision) => void;
@@ -272,6 +324,9 @@ export function ApprovalCard({
   // task-persistent "Allow every time" (in-app only, §25).
   runTask?: { id: string; title: string } | null;
   compact?: boolean;
+  // Session is in Auto-Approve mode — this card is a reviewer fall-through, and session
+  // grants wouldn't skip the reviewer anyway (§1.5), so the "always" buttons are hidden.
+  autoApprove?: boolean;
 }) {
   const [peek, setPeek] = useState(false);
   const { t } = useT();
@@ -282,6 +337,19 @@ export function ApprovalCard({
   const reason = item.reason && item.reason !== "需要审批" ? item.reason : "";
   const offerStanding = !!(runTask && item.standingTarget);
   const dock = compact ? " approval-dock" : "";
+  // OPE-114 §1: the command text cannot tell you the agent wrote this file a moment ago.
+  const provenance = item.provenance ? (
+    <div className="approval-provenance">
+      <Icon name="warning" size={13} />
+      <span>{item.provenance}</span>
+    </div>
+  ) : null;
+  // Quiet, not a warning: the reviewer hesitating is context, not danger.
+  const reviewerUnsure = item.reviewerUnsure ? (
+    <div className="text-[12px] text-muted mt-1" data-testid="approval-reviewer-unsure">
+      reviewer wasn&rsquo;t sure: {item.reviewerUnsure}
+    </div>
+  ) : null;
 
   // §35 compact row: routine workspace writes — one line, preview expands inline from the
   // tool args. Standing/grant flows keep the full card (they carry §25 consent weight).
@@ -297,9 +365,17 @@ export function ApprovalCard({
             </button>
           )}
           <span className="spacer" />
-          <Buttons item={item} onApprove={onApprove} runTask={runTask} primaryLabel={t("approval.allow")} />
+          <Buttons
+            item={item}
+            onApprove={onApprove}
+            runTask={runTask}
+            primaryLabel={t("approval.allow")}
+            autoApprove={autoApprove}
+          />
         </div>
         {peek && content && <PreviewBlock text={content} />}
+        {provenance}
+        {reviewerUnsure}
         {reason && <div className="approval-reason">{reason}</div>}
       </div>
     );
@@ -341,6 +417,14 @@ export function ApprovalCard({
       )}
       {/* save_skill (SKILLS-SPEC §5.2): the arguments ARE the review surface. */}
       {item.name === "save_skill" && <SaveSkillPreview args={item.args} />}
+      {/* web_search (§1.9): name the LIVE destination — "currently", never "default",
+          because the card must show the setting as it stands right now. */}
+      {item.name === "web_search" && (
+        <div className="approval-with">
+          Queries go to your configured search provider
+          {item.searchProvider ? ` (currently: ${item.searchProvider})` : ""}.
+        </div>
+      )}
 
       {grants.length > 0 && (
         <div className="approval-grants" data-testid="approval-grants">
@@ -364,6 +448,8 @@ export function ApprovalCard({
         !["run_shell", "send_message", "send_file", "save_skill"].includes(item.name) &&
         !grants.length &&
         shortArgs(item.args) && <div className="approval-rest">{shortArgs(item.args)}</div>}
+      {provenance}
+      {reviewerUnsure}
       {reason && <div className="approval-reason">{reason}</div>}
 
       {item.resolved ? (
@@ -375,6 +461,7 @@ export function ApprovalCard({
           runTask={runTask}
           primaryLabel={approvalActionLabels(item.name).allow}
           denyLabel={approvalActionLabels(item.name).deny}
+          autoApprove={autoApprove}
         />
       )}
     </div>

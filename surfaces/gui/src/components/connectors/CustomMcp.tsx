@@ -101,7 +101,7 @@ function McpGlyph() {
 }
 
 export function CustomMcpGroup({
-  servers,
+  servers: serversProp,
   onOpen,
   onChanged,
 }: {
@@ -109,7 +109,17 @@ export function CustomMcpGroup({
   onOpen: (name: string) => void;
   onChanged: () => void;
 }) {
-  const { t } = useT();
+const { t } = useT();
+  // A probe in flight ("Testing…" / "Signing in…") settles server-side within seconds,
+  // but this page has no standing MCP poll — the chip froze on Testing forever
+  // (owner-hit 2026-08-21, add-by-URL against a guarded server). While any row is
+  // authorizing, poll the parent's refresh until every row settles.
+  const anyAuthorizing = serversProp.some((s) => s.status === "authorizing");
+  useEffect(() => {
+    if (!anyAuthorizing) return;
+    const t = setInterval(onChanged, 1000);
+    return () => clearInterval(t);
+  }, [anyAuthorizing, onChanged]);
   const presets = MCP_PRESETS.filter((p) => !servers.some((s) => s.name === p.name));
   if (servers.length === 0 && presets.length === 0) return null;
 
@@ -126,18 +136,18 @@ export function CustomMcpGroup({
           >
             <McpGlyph />
             <span className="min-w-0 flex-1">
-              <span className="font-medium text-[13.5px]">{s.name}</span>
+              <span className="font-medium text-[13px]">{s.name}</span>
               <span className="block text-[12px] text-muted truncate">{mcpStatusLine(s)}</span>
             </span>
             {mcpChip(s)}
-            <span className="text-faint text-[15px] shrink-0">›</span>
+            <span className="text-faint text-[14px] shrink-0">›</span>
           </button>
         ))}
         {presets.map((p) => (
           <div key={p.name} className={ROW} data-testid={`mcp-preset-${p.name}`}>
             <McpGlyph />
             <span className="min-w-0 flex-1">
-              <span className="font-medium text-[13.5px]">{p.label}</span>
+<span className="font-medium text-[13px]">{p.label}</span>
               <span className="block text-[12px] text-muted truncate">{t(p.blurbKey)}</span>
             </span>
             <span
@@ -170,6 +180,24 @@ const EXAMPLE = `{
 
 const INPUT =
   "w-full text-[13px] px-3 py-2 rounded-lg border border-line bg-paper text-ink outline-none focus:border-accent";
+
+// A friendly default server name from its URL: walk the hostname's labels left to
+// right, skip the generic ones (mcp/api/data/www…), take the first distinctive label
+// (mcp.linear.app → "linear", data.dlai.link → "dlai"); fall back to the 2nd-level
+// domain. The user can always overtype it.
+const GENERIC_LABELS = new Set(["www", "mcp", "api", "data", "remote", "server", "agent", "app"]);
+function nameFromUrl(raw: string): string {
+  try {
+    const host = new URL(raw).hostname.toLowerCase();
+    const labels = host.split(".").filter(Boolean);
+    if (labels.length < 2) return "";
+    const candidates = labels.slice(0, -1); // drop the TLD
+    const pick = candidates.find((l) => !GENERIC_LABELS.has(l)) || candidates[candidates.length - 1];
+    return pick.replace(/[^a-z0-9-]/g, "");
+  } catch {
+    return "";
+  }
+}
 
 export function AddMcpModal({
   onClose,
@@ -244,7 +272,7 @@ export function AddMcpModal({
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="absolute left-1/2 top-24 -translate-x-1/2 w-[540px] max-w-[92vw] rounded-xl2 border border-line bg-panel shadow-xl p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="text-[15px] font-semibold">{t("mcp.add_title")}</div>
+<div className="text-[14px] font-semibold">{t("mcp.add_title")}</div>
           <button className="text-faint hover:text-ink text-[16px] leading-none" onClick={onClose}>
             ×
           </button>
@@ -259,7 +287,7 @@ export function AddMcpModal({
         </div>
         {tab === "url" ? (
           <>
-            <div className="text-[12.5px] text-muted">{t("mcp.url_sub")}</div>
+<div className="text-[13px] text-muted">{t("mcp.url_sub")}</div>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -270,7 +298,12 @@ export function AddMcpModal({
             />
             <input
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                const u = e.target.value;
+                setUrl(u);
+                // Prefill the name once the URL looks real — never overwrite typing.
+                if (!name.trim()) setName(nameFromUrl(u));
+              }}
               placeholder="https://mcp.example.com/mcp"
               spellCheck={false}
               className={INPUT + " font-mono text-[12px]"}
@@ -279,7 +312,7 @@ export function AddMcpModal({
           </>
         ) : (
           <>
-            <div className="text-[12.5px] text-muted">{t("mcp.json_sub")}</div>
+<div className="text-[13px] text-muted">{t("mcp.json_sub")}</div>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -293,11 +326,10 @@ export function AddMcpModal({
           <button className={PILL_ACCENT} onClick={tab === "url" ? saveUrl : saveJson}>
             {tab === "url" ? t("mcp.add_test") : t("mcp.add")}
           </button>
-          <button className="text-[12.5px] text-muted hover:text-ink" onClick={onClose}>
+<button className="text-[13px] text-muted hover:text-ink" onClick={onClose}>
             {t("mcp.cancel")}
-          </button>
         </div>
-        {error && <div className="text-[12.5px] text-danger">{error}</div>}
+        {error && <div className="text-[13px] text-danger">{error}</div>}
       </div>
     </div>
   );
@@ -375,10 +407,9 @@ export function McpServerDetail({
         </div>
         <div className={ROW}>
           <span className="text-[13px] flex-1">
-            {t("mcp.test_connection")}
-            <span className="block text-[11.5px] text-faint">
+{t("mcp.test_connection")}
+            <span className="block text-[12px] text-faint">
               {t("mcp.test_sub")}
-            </span>
           </span>
           {server.auth_hint && !isOauth ? (
             <span
@@ -410,17 +441,16 @@ export function McpServerDetail({
           )}
         </div>
         {server.last_error && server.status !== "connected" && (
-          <div className="px-4 py-2.5 text-[12.5px] text-danger break-words">
+          <div className="px-4 py-2.5 text-[13px] text-danger break-words">
             {server.last_error}
           </div>
         )}
         <div className={ROW}>
-          <span className="text-[13px] flex-1">{t("mcp.tools")}</span>
-          <button className="text-[12.5px] text-muted hover:text-ink" onClick={loadTools} disabled={busy}>
+<span className="text-[13px] flex-1">{t("mcp.tools")}</span>
+          <button className="text-[13px] text-muted hover:text-ink" onClick={loadTools} disabled={busy}>
             {busy ? "…" : tools ? t("mcp.hide") : t("mcp.show")}
-          </button>
         </div>
-        {toolErr && <div className="px-4 py-2.5 text-[12.5px] text-danger">{toolErr}</div>}
+        {toolErr && <div className="px-4 py-2.5 text-[13px] text-danger">{toolErr}</div>}
         {tools && (
           <div className="px-4 py-3 flex flex-wrap gap-1.5">
             {tools.length === 0 && <div className="text-[12px] text-faint">{t("mcp.no_tools")}</div>}
@@ -428,7 +458,7 @@ export function McpServerDetail({
               <span
                 key={t.name}
                 title={t.description}
-                className="font-mono text-[11.5px] px-1.5 py-0.5 rounded-md bg-paper border border-line"
+                className="font-mono text-[12px] px-1.5 py-0.5 rounded-md bg-paper border border-line"
               >
                 {t.name}
               </span>
@@ -439,8 +469,8 @@ export function McpServerDetail({
 
       <div className={GRP}>
         <div className="px-4 py-3">
-          <div className="text-[12px] font-semibold text-muted mb-1.5">{t("mcp.config")}</div>
-          <pre className="font-mono text-[11.5px] text-muted whitespace-pre-wrap break-all">
+<div className="text-[12px] font-semibold text-muted mb-1.5">{t("mcp.config")}</div>
+          <pre className="font-mono text-[12px] text-muted whitespace-pre-wrap break-all">
             {JSON.stringify(server.config, null, 2)}
           </pre>
         </div>
@@ -449,7 +479,7 @@ export function McpServerDetail({
       <div className="flex items-center gap-4">
         {isOauth && server.status === "connected" && (
           <button
-            className="text-[12.5px] text-muted hover:text-ink"
+            className="text-[13px] text-muted hover:text-ink"
             onClick={async () => {
               await signoutMcp(server.name);
               onChanged();
@@ -460,7 +490,7 @@ export function McpServerDetail({
           </button>
         )}
         <button
-          className="text-[12.5px] text-danger/80 hover:text-danger"
+          className="text-[13px] text-danger/80 hover:text-danger"
           onClick={async () => {
             await deleteMcpServer(server.name);
             onChanged();

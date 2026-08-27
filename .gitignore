@@ -12,3 +12,4 @@ dist/
 
 # Local sibling project (not part of this fork)
 openworker-pro/
+.claude/settings.local.json

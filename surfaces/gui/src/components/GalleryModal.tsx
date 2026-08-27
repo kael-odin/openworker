@@ -28,8 +28,8 @@ import { useT } from "../i18n/I18nProvider";
 
 const CARD = "rounded-xl border border-line bg-panel/60";
 const BTN_ACCENT =
-  "text-[12.5px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
-const CHIP = "text-[10.5px] px-1.5 py-0.5 rounded border border-line text-muted";
+  "text-[13px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
+const CHIP = "text-[11px] px-1.5 py-0.5 rounded border border-line text-muted";
 
 type Source = "all" | "openworker" | "team";
 
@@ -153,7 +153,7 @@ export function GalleryModal({
           <button
             key={key}
             className={
-              "text-[11.5px] px-2.5 py-1 rounded-full border " +
+              "text-[12px] px-2.5 py-1 rounded-full border " +
               (source === key
                 ? "border-accent text-accent bg-accentSoft"
                 : "border-line text-muted hover:border-lineStrong")
@@ -166,7 +166,7 @@ export function GalleryModal({
       </div>
 
       {unavailable && cloud?.signed_in && (
-        <div className="text-[12.5px] text-muted">
+        <div className="text-[13px] text-muted">
           {t("gallery.unreachable")}
         </div>
       )}
@@ -214,13 +214,13 @@ export function GalleryModal({
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="font-semibold text-[13.5px]">{p.name}</span>
+                  <span className="font-semibold text-[13px]">{p.name}</span>
                   <span className={CHIP}>{p.family}</span>
                   <span className="text-[11px] text-faint">
                     v{p.version} · {p.publisher}
                   </span>
                 </div>
-                <div className="text-[12.5px] text-muted mb-1.5">{p.tagline}</div>
+                <div className="text-[13px] text-muted mb-1.5">{p.tagline}</div>
                 {p.recommended_connectors.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {p.recommended_connectors.map((c) => (
@@ -233,14 +233,14 @@ export function GalleryModal({
                 {isInstalled ? (
                   <span className="text-[12px] text-muted">{t("gallery.installed")}</span>
                 ) : (
-                  <span className="text-[12.5px] text-accent">{t("gallery.view_install")}</span>
+                  <span className="text-[13px] text-accent">{t("gallery.view_install")}</span>
                 )}
               </div>
             </div>
           );
         })}
         {visible.length === 0 && !unavailable && (
-          <div className="text-[12.5px] text-muted py-4">
+          <div className="text-[13px] text-muted py-4">
             {source === "team"
               ? t("gallery.empty_team")
               : q
@@ -263,31 +263,31 @@ export function GalleryModal({
   const detailView = detailSlug && (
     <div data-testid="gallery-detail">
       <button
-        className="text-[12.5px] text-muted hover:text-ink mb-3"
+        className="text-[13px] text-muted hover:text-ink mb-3"
         onClick={() => setDetailSlug(null)}
       >
         {t("gallery.back")}
       </button>
       {!detail ? (
-        <div className="text-[12.5px] text-muted">{t("gallery.loading_detail")}</div>
+        <div className="text-[13px] text-muted">{t("gallery.loading_detail")}</div>
       ) : !detail.ok || !card ? (
-        <div className="text-[12.5px] text-danger">{detail.error || t("gallery.err_detail")}</div>
+        <div className="text-[13px] text-danger">{detail.error || t("gallery.err_detail")}</div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-[17px]">{card.name}</span>
+                <span className="font-semibold text-[16px]">{card.name}</span>
                 <span className={CHIP}>{card.family}</span>
               </div>
               <div className="text-[13px] text-muted">{card.tagline}</div>
-              <div className="text-[11.5px] text-faint mt-1">
+              <div className="text-[12px] text-faint mt-1">
                 v{card.version} · {card.publisher} · {card.risk_summary}
               </div>
             </div>
             <div className="shrink-0">
               {installed.has(detailSlug) ? (
-                <span className="text-[12.5px] text-muted">{t("gallery.installed")}</span>
+                <span className="text-[13px] text-muted">{t("gallery.installed")}</span>
               ) : (
                 <button className={BTN_ACCENT} onClick={() => install(detailSlug)} disabled={busy}>
                   {busy ? t("gallery.installing") : t("gallery.install")}
@@ -295,11 +295,11 @@ export function GalleryModal({
               )}
             </div>
           </div>
-          {msg && <div className="text-[12.5px] text-danger">{msg}</div>}
+          {msg && <div className="text-[13px] text-danger">{msg}</div>}
 
           {justInstalled && (
             <div className="rounded-lg border border-okLine bg-okSoft px-3.5 py-2.5 flex items-center gap-3">
-              <span className="flex-1 text-[12.5px] text-ok">
+              <span className="flex-1 text-[13px] text-ok">
                 {t("gallery.installed_waiting")}
               </span>
               <button className={BTN_ACCENT} onClick={onClose}>
@@ -324,7 +324,7 @@ export function GalleryModal({
               <div className="text-[12px] text-faint mb-3">
                 {t("gallery.capabilities_sub")}
               </div>
-              <div className="space-y-2 text-[12.5px]">
+              <div className="space-y-2 text-[13px]">
                 <div>
                   <span className="text-muted">{t("gallery.tools_label")}</span>
                   {caps.tools.join(", ") || "none"}
@@ -353,7 +353,7 @@ export function GalleryModal({
                         </div>
                       ))}
                     </div>
-                    <div className="text-[11.5px] text-faint mt-2">
+                    <div className="text-[12px] text-faint mt-2">
                       {t("gallery.works_hint")}
                     </div>
                   </div>
@@ -372,7 +372,7 @@ export function GalleryModal({
       <div className="absolute left-1/2 top-[6vh] -translate-x-1/2 w-[720px] max-w-[94vw] max-h-[88vh] rounded-xl2 border border-line bg-panel shadow-2xl overflow-hidden flex flex-col">
         <div className="px-5 pt-4 pb-3 border-b border-line flex items-center gap-3 shrink-0">
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-semibold">{t("gallery.title")}</div>
+            <div className="text-[14px] font-semibold">{t("gallery.title")}</div>
             <div className="text-[12px] text-muted">
               {t("gallery.sub")}
             </div>
@@ -382,7 +382,7 @@ export function GalleryModal({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("gallery.search_ph")}
-              className="w-[180px] px-3 py-1.5 rounded-lg border border-line bg-paper text-[12.5px] text-ink outline-none focus:border-accent"
+              className="w-[180px] px-3 py-1.5 rounded-lg border border-line bg-paper text-[13px] text-ink outline-none focus:border-accent"
             />
           )}
           <button
@@ -398,7 +398,7 @@ export function GalleryModal({
         <div className="overflow-y-auto hairline-scroll p-5">
           {loading ? (
             <div className="space-y-2" data-testid="gallery-loading" aria-busy="true">
-              <div className="text-[12.5px] text-muted mb-3">{t("gallery.loading")}</div>
+              <div className="text-[13px] text-muted mb-3">{t("gallery.loading")}</div>
               {[0, 1, 2].map((i) => (
                 <div key={i} className={CARD + " p-3.5 animate-pulse"}>
                   <div className="h-3.5 w-44 rounded bg-line mb-2.5" />
@@ -410,7 +410,7 @@ export function GalleryModal({
             <div className={CARD + " p-5 flex items-center gap-4"} data-testid="gallery-signin">
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-[14px] mb-1">{t("gallery.signin_title")}</div>
-                <div className="text-[12.5px] text-muted leading-relaxed">
+                <div className="text-[13px] text-muted leading-relaxed">
                   {t("gallery.signin_sub")}
                 </div>
               </div>

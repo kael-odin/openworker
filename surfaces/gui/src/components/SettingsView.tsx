@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   getSettings,
   getTrustedWorkspaces,
+  setAutoApprove,
+  setAutoApproveShadow,
   setCompactionSettings,
   setContextBar,
   setOnboarded,
@@ -68,13 +70,13 @@ function tt(key: string, params?: Record<string, string | number>): string {
 type SetTab = "appearance" | "models" | "context" | "skills" | "voice" | "memory" | "personas";
 
 const CARD = "rounded-xl2 border border-line bg-panel";
-const FIELD_LABEL = "text-[12.5px] font-medium text-ink";
+const FIELD_LABEL = "text-[13px] font-medium text-ink";
 const FIELD_HELP = "text-[12px] text-muted mt-1.5 leading-relaxed";
 const INPUT =
   "flex-1 min-w-0 px-3 py-2 rounded-lg border border-line bg-paper text-[13px] text-ink outline-none focus:border-accent";
-const BTN_ACCENT = "text-[12.5px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
+const BTN_ACCENT = "text-[13px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
 const BTN_BORDERED =
-  "text-[12.5px] px-3 py-2 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
+  "text-[13px] px-3 py-2 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
 
 const SET_TABS: {
   key: SetTab;
@@ -113,9 +115,8 @@ export function SettingsView({
   return (
     <main className="flex-1 min-w-0 flex bg-paper">
       <nav className="page-subnav w-[208px] shrink-0 border-r border-line bg-panel/40 px-3 py-4">
-        <div className="px-2 text-[13.5px] font-semibold mb-3 flex items-center gap-2">
+<div className="px-2 text-[13px] font-semibold mb-3 flex items-center gap-2">
           <Icon name="gear" size={16} /> {t("settings.header")}
-        </div>
         {tabs.map((tb) => {
           const active = tab === tb.key;
           return (
@@ -305,22 +306,20 @@ function VoiceInputSection() {
         <div className={CARD + " p-4 text-[13px] text-muted"}>{t("settings.voice_desktop_only")}</div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-[12.5px] text-green-800">
+<div className="rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-[13px] text-green-800">
             <span className="font-medium">{t("settings.voice_private")}</span> {t("settings.voice_private_blurb")}
-          </div>
 
           <div className={CARD}>
             <div className="p-4 flex items-start gap-3">
               <Icon name="code" size={18} className="text-accent mt-0.5" />
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">{t("settings.voice_this_device")}</div>
+<div className="text-[13px] font-medium">{t("settings.voice_this_device")}</div>
                 <div className="text-[12px] text-muted mt-1">{status?.device_summary || t("settings.voice_checking")}</div>
                 {status?.compatibility_reason && <div className="text-[12px] text-red-600 mt-1.5">{status.compatibility_reason}</div>}
               </div>
               {status && (
-                <span className={"text-[11.5px] px-2 py-1 rounded-full " + (status.supported ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600")}>
+                <span className={"text-[12px] px-2 py-1 rounded-full " + (status.supported ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600")}>
                   {status.supported ? t("settings.voice_compatible") : t("settings.voice_unsupported")}
-                </span>
               )}
             </div>
             <div className="border-t border-line bg-paper/50 px-4 py-3 grid grid-cols-2 gap-3 text-[12px] text-muted">
@@ -335,14 +334,14 @@ function VoiceInputSection() {
             <div className="p-4 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-accentSoft text-accent grid place-items-center font-semibold">W</div>
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">{t("settings.voice_model_name")}</div>
+<div className="text-[13px] font-medium">{t("settings.voice_model_name")}</div>
                 <div className="text-[12px] text-muted mt-0.5">
                   {status?.model_verified ? t("settings.voice_installed", { size: formatBytes(status.model_bytes) }) : t("settings.voice_local_model", { size: formatBytes(status?.model_bytes || 147_964_211) })}
                 </div>
               </div>
               {status?.model_verified ? (
                 <>
-                  <span className="text-[11.5px] px-2 py-1 rounded-full bg-green-50 text-green-700">{t("settings.voice_verified")}</span>
+<span className="text-[12px] px-2 py-1 rounded-full bg-green-50 text-green-700">{t("settings.voice_verified")}</span>
                   <button className={BTN_BORDERED} onClick={() => void repair()}>{t("settings.voice_repair")}</button>
                   <button className="text-[12px] text-red-600 px-2 py-2" onClick={() => void remove()}>{t("settings.voice_delete")}</button>
                 </>
@@ -357,7 +356,7 @@ function VoiceInputSection() {
             {downloading && (
               <div className="border-t border-line px-4 py-3">
                 <div className="h-1.5 rounded-full bg-line overflow-hidden"><div className="h-full bg-accent transition-all" style={{ width: `${progressPercent}%` }} /></div>
-                <div className="mt-1.5 text-[11.5px] text-muted flex"><span>{t("settings.voice_dl_of", { done: formatBytes(progress?.downloaded_bytes || 0), total: formatBytes(progressTotal) })}</span><span className="ml-auto">{progressPercent}%</span></div>
+<div className="mt-1.5 text-[12px] text-muted flex"><span>{t("settings.voice_dl_of", { done: formatBytes(progress?.downloaded_bytes || 0), total: formatBytes(progressTotal) })}</span><span className="ml-auto">{progressPercent}%</span></div>
               </div>
             )}
           </div>
@@ -366,12 +365,12 @@ function VoiceInputSection() {
             <div className="p-4 flex items-center gap-3">
               <Icon name="mic" size={18} className={ready ? "text-green-600" : "text-muted"} />
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">{t("settings.voice_mic_test")}</div>
+<div className="text-[13px] font-medium">{t("settings.voice_mic_test")}</div>
                 <div className="text-[12px] text-muted mt-0.5">
                   {ready ? t("settings.voice_mic_ready_blurb") : t("settings.voice_mic_record_blurb")}
                 </div>
               </div>
-              {ready && <span className="text-[11.5px] px-2 py-1 rounded-full bg-green-50 text-green-700">{t("settings.voice_ready")}</span>}
+{ready && <span className="text-[12px] px-2 py-1 rounded-full bg-green-50 text-green-700">{t("settings.voice_ready")}</span>}
               <button className={BTN_BORDERED} disabled={!status?.supported || !status?.model_verified || phase === "transcribing"} onClick={() => void toggleTest()}>
                 {status?.recording ? t("settings.voice_stop_check") : phase === "transcribing" ? t("settings.voice_transcribing") : ready ? t("settings.voice_test_again") : t("settings.voice_test_mic")}
               </button>
@@ -465,6 +464,8 @@ function AppearanceSection() {
 
       <ContextBarCard />
 
+      <AutoApproveCard />
+
       <FilesCard />
 
       <TrustedWorkspacesCard />
@@ -540,8 +541,8 @@ function TrustedWorkspacesCard() {
           {workspaces.map((workspace) => (
             <div key={workspace.workspace} className="py-2.5 flex items-start gap-3">
               <div className="min-w-0 flex-1">
-                <div className="text-[12.5px] text-ink break-all">{workspace.workspace}</div>
-                <div className="text-[11.5px] text-muted mt-0.5">
+                <div className="text-[13px] text-ink break-all">{workspace.workspace}</div>
+                <div className="text-[12px] text-muted mt-0.5">
                   {workspace.requested_commands.length
                     ? (workspace.requested_commands.length === 1
                         ? t("settings.trusted_n_one", { n: workspace.requested_commands.length })
@@ -703,7 +704,7 @@ function TokenSavingsCard() {
             className="w-16 px-2 py-1.5 rounded-lg border border-line bg-paper text-[13px] text-ink outline-none focus:border-accent"
             onChange={(e) => save({ pdf_max_mb: Math.max(1, Math.min(Number(e.target.value) || 10, 10)) })}
           />
-          <span className="text-[12.5px] text-muted">{t("settings.tokens_mb")}</span>
+<span className="text-[13px] text-muted">{t("settings.tokens_mb")}</span>
         </label>
       </div>
       <div className={FIELD_HELP}>
@@ -774,7 +775,7 @@ function CompactionCard() {
               })
             }
           />
-          <span className="text-[12.5px] text-muted">{t("settings.compaction_of_window")}</span>
+<span className="text-[13px] text-muted">{t("settings.compaction_of_window")}</span>
         </label>
         <label className="flex items-center gap-2.5">
           <span className="text-[13px] text-ink">{t("settings.compaction_or_at")}</span>
@@ -795,7 +796,7 @@ function CompactionCard() {
               })
             }
           />
-          <span className="text-[12.5px] text-muted">{t("settings.compaction_tokens_smaller")}</span>
+<span className="text-[13px] text-muted">{t("settings.compaction_tokens_smaller")}</span>
         </label>
       </div>
       <div className={FIELD_HELP}>
@@ -861,6 +862,72 @@ function ContextBarCard() {
             {t("settings.context_bar_help")}
           </span>
         </span>
+      </label>
+    </div>
+  );
+}
+
+// Auto-Approve (spec §1.5): the experimental feature flag that adds the "Auto-Approve" mode
+// to the composer's mode picker, plus its shadow-evaluation sibling. Both default off and are
+// user-global (a cloned repo can't turn either on). Shadow is nested under the main flag — it
+// only makes sense to measure the reviewer once you know what it is.
+function AutoApproveCard() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [shadow, setShadow] = useState(false);
+
+  useEffect(() => {
+    getSettings()
+      .then((s) => {
+        setOn(s.auto_approve === true);
+        setShadow(s.auto_approve_shadow === true);
+      })
+      .catch(() => setOn(false));
+  }, []);
+
+  const saveOn = async (next: boolean) => {
+    setOn(next);
+    await setAutoApprove(next);
+  };
+  const saveShadow = async (next: boolean) => {
+    setShadow(next);
+    await setAutoApproveShadow(next);
+  };
+
+  if (on === null) return null;
+  return (
+    <div className={CARD + " p-4 mb-4"} data-testid="auto-approve-card">
+      <div className={FIELD_LABEL}>{t("settings.auto_approve_title")}</div>
+      <label className="flex items-start gap-3 py-2">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          data-testid="auto-approve-toggle"
+          checked={on}
+          onChange={(e) => saveOn(e.target.checked)}
+        />
+        <span>
+          <span className="block text-[13px] text-ink">{t("settings.auto_approve_enable")}</span>
+          <span className="block text-[12px] text-muted">
+            {t("settings.auto_approve_help")}
+          </span>
+        </span>
+      </label>
+      <label className="flex items-start gap-3 py-2 pl-7">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          data-testid="auto-approve-shadow-toggle"
+          checked={shadow}
+          onChange={(e) => saveShadow(e.target.checked)}
+        />
+        <span>
+          <span className="block text-[13px] text-ink">
+            {t("settings.auto_approve_shadow")}
+            <span className="text-faint"> ({t("settings.auto_approve_shadow_for_measuring")})</span>
+          </span>
+          <span className="block text-[12px] text-muted">
+            {t("settings.auto_approve_shadow_help")}
+          </span>
       </label>
     </div>
   );
@@ -967,7 +1034,7 @@ function FilesCard() {
       <div className={FIELD_HELP}>
         {t("settings.files_help")}
       </div>
-      {scratchMsg && <div className="text-[12.5px] text-muted mt-2.5">{scratchMsg}</div>}
+      {scratchMsg && <div className="text-[13px] text-muted mt-2.5">{scratchMsg}</div>}
     </div>
   );
 }

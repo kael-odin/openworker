@@ -128,7 +128,7 @@ export function ScheduledView({ onOpenRun, onRunNow, initialOpenId }: Props) {
           <PanelHead title={t("scheduled.title")} sub={t("scheduled.sub")} />
         </div>
         <button
-          className="text-[12.5px] px-3 py-1.5 rounded-lg border border-lineStrong bg-panel hover:border-accent hover:text-accent shrink-0"
+          className="text-[13px] px-3 py-1.5 rounded-lg border border-lineStrong bg-panel hover:border-accent hover:text-accent shrink-0"
           onClick={() => setShowForm((v) => !v)}
         >
           {t("scheduled.new")}
@@ -156,9 +156,8 @@ export function ScheduledView({ onOpenRun, onRunNow, initialOpenId }: Props) {
 
       {empty ? (
         !showForm && (
-          <div className={CARD + " p-4 text-[12.5px] text-muted"}>
+<div className={CARD + " p-4 text-[13px] text-muted"}>
             <span dangerouslySetInnerHTML={{ __html: t("scheduled.empty_hint") }} />
-          </div>
         )
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -169,7 +168,7 @@ export function ScheduledView({ onOpenRun, onRunNow, initialOpenId }: Props) {
               onClick={() => setOpenId(t2.id)}
             >
               <div className="flex items-center justify-between gap-2.5 mb-1">
-                <span className="text-[13.5px] font-semibold truncate">{t2.title}</span>
+<span className="text-[13px] font-semibold truncate">{t2.title}</span>
                 <button
                   className="sched-card-del"
                   title={t("scheduled.delete_title")}
@@ -381,7 +380,7 @@ function TaskDetail({
               placeholder={t("scheduled.title_placeholder")}
             />
           ) : (
-            <h2 className="text-[18px] font-semibold tracking-tight">{task.title}</h2>
+            <h2 className="text-[20px] font-semibold tracking-tight">{task.title}</h2>
           )}
           <div className="sched-actions">
             {editing ? (

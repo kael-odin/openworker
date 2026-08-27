@@ -177,14 +177,14 @@ function GenericDetail({
         <ConnectorBadge connector={c} size={44} title={c.title} />
         <div className="min-w-0 flex-1">
           <h2 className="text-[20px] font-semibold tracking-tight leading-tight">{c.title}</h2>
-          <div className="text-[12.5px] text-muted flex items-center gap-1.5">
+          <div className="text-[13px] text-muted flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-ok" />
             {c.account || (c.auth === "none" ? tt("conn.built_in") : tt("conn.connected"))}
           </div>
         </div>
         {c.auth !== "none" && (
           <button
-            className="text-[12.5px] text-danger/80 hover:text-danger shrink-0"
+            className="text-[13px] text-danger/80 hover:text-danger shrink-0"
             onClick={async () => {
               await disconnectConnector(c.name);
               onChanged();

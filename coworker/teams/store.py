@@ -943,6 +943,93 @@ class TeamStore:
         ).fetchone()
         return int(row["top"] or 0) + 1
 
+    def event_count(self, space: str) -> int:
+        """How many records a space holds — presence probe for the grant-time
+        notice and the migration collision check. No actor: counts, not content."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COUNT(*) FROM team_events WHERE space = ?", (space,)
+            ).fetchone()
+        return int(row[0]) if row else 0
+
+    def rekey_space(self, old: str, new: str) -> bool:
+        """Move one space's records under a new key — the twentieth-pass one-time
+        path→git migration. `space` participates in the hash chain, so the chain
+        is honestly RECOMPUTED in seq order (a wholesale re-key, not tampering).
+        Refuses (returns False) when the target space already has events — the
+        dumb collision rule: git key wins, the old space stays dormant."""
+        if old == new:
+            return True
+        with self._lock:
+            has_new = self._conn.execute(
+                "SELECT 1 FROM team_events WHERE space = ? LIMIT 1", (new,)
+            ).fetchone()
+            if has_new:
+                return False
+            rows = self._conn.execute(
+                "SELECT * FROM team_events WHERE space = ? ORDER BY seq", (old,)
+            ).fetchall()
+            try:
+                prev = GENESIS
+                for row in rows:
+                    record = {
+                        "ts": row["ts"],
+                        "space": new,
+                        "kind": row["kind"],
+                        "actor": row["actor"],
+                        "actor_role": row["actor_role"],
+                        "item_id": row["item_id"],
+                        "case_id": row["case_id"],
+                        "recipient": row["recipient"],
+                        "payload": row["payload"],
+                        "taint": row["taint"],
+                        "prev_hash": prev,
+                    }
+                    record["hash"] = _hash(record)
+                    self._conn.execute(
+                        "UPDATE team_events SET space = ?, prev_hash = ?, hash = ? "
+                        "WHERE seq = ?",
+                        (new, prev, record["hash"], row["seq"]),
+                    )
+                    prev = record["hash"]
+                for table in ("team_items", "team_links", "team_settings"):
+                    self._conn.execute(
+                        f"UPDATE {table} SET space = ? WHERE space = ?", (new, old)
+                    )
+                # Cursor keys embed the space as a suffix ("feed:<actor>:<space>",
+                # "sub:<sub>:<space>") — rewrite the suffix, keep consumed positions.
+                cur_rows = self._conn.execute(
+                    "SELECT cursor_key FROM team_cursors WHERE cursor_key LIKE ?",
+                    ("%:" + old,),
+                ).fetchall()
+                for crow in cur_rows:
+                    new_key = crow["cursor_key"][: -len(old)] + new
+                    self._conn.execute(
+                        "UPDATE OR REPLACE team_cursors SET cursor_key = ? "
+                        "WHERE cursor_key = ?",
+                        (new_key, crow["cursor_key"]),
+                    )
+                meta = self._conn.execute(
+                    "SELECT watermark FROM team_meta WHERE space = ?", (old,)
+                ).fetchone()
+                if meta is not None and rows:
+                    self._conn.execute(
+                        "DELETE FROM team_meta WHERE space = ?", (old,)
+                    )
+                    self._conn.execute(
+                        "INSERT INTO team_meta (space, head_hash, watermark) "
+                        "VALUES (?, ?, ?) ON CONFLICT(space) DO UPDATE SET "
+                        "head_hash = excluded.head_hash, watermark = excluded.watermark",
+                        (new, prev, meta["watermark"]),
+                    )
+                elif meta is not None:
+                    self._conn.execute("DELETE FROM team_meta WHERE space = ?", (old,))
+            except Exception:
+                self._conn.rollback()
+                raise
+            self._conn.commit()
+        return True
+
     def _head_hash(self, space: str) -> str:
         row = self._conn.execute(
             "SELECT head_hash FROM team_meta WHERE space = ?", (space,)

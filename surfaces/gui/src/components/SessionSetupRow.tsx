@@ -59,7 +59,7 @@ export function SessionSetupRow(props: Props) {
   };
 
   const chip =
-    "relative inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[12.5px] text-muted hover:text-ink hover:bg-paper cursor-pointer select-none whitespace-nowrap";
+    "relative inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[13px] text-muted hover:text-ink hover:bg-paper cursor-pointer select-none whitespace-nowrap";
 
   return (
     <div className="max-w-3xl mx-auto mb-1.5 px-1 flex items-center gap-1.5" data-testid="setup-row">
@@ -89,7 +89,7 @@ export function SessionSetupRow(props: Props) {
                   {fullPersonaName(p.name, p.id)}
                 </span>
                 {p.tagline && (
-                  <span className="block text-[11.5px] text-muted truncate">{p.tagline}</span>
+                  <span className="block text-[12px] text-muted truncate">{p.tagline}</span>
                 )}
               </button>
             ))}
@@ -141,7 +141,7 @@ export function SessionSetupRow(props: Props) {
                     <Icon name="folder" size={13} className="mt-0.5 shrink-0 text-muted" />
                     <span className="min-w-0">
                       <span className="block text-[13px] font-medium text-ink truncate">{baseName(w.path)}</span>
-                      <span className="block text-[11.5px] text-faint truncate">{w.path}</span>
+                      <span className="block text-[12px] text-faint truncate">{w.path}</span>
                     </span>
                   </button>
                 ))}
@@ -150,10 +150,10 @@ export function SessionSetupRow(props: Props) {
                   className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-paper text-[12px] text-accent"
                   onClick={() => void browse()}
                 >
-                  {t("setup.choose_other_folder")}
+{props.folderName ? t("setup.choose_other_folder") : t("setup.choose_folder")}
                 </button>
               </div>
-              {error && <div className="px-2.5 py-1 text-[11.5px] text-warnInk">{error}</div>}
+              {error && <div className="px-2.5 py-1 text-[12px] text-warnInk">{error}</div>}
             </div>
           )}
         </div>

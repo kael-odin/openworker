@@ -52,8 +52,8 @@ const relTime = (epoch?: number | null): string | null => {
 // Integrations ▸ Connectors (the MCP tab retired into the Connectors page, UX-034).
 const SEC_H = "text-[11px] uppercase tracking-[0.05em] text-faint font-semibold";
 const BTN_BORDERED =
-  "text-[12.5px] px-3 py-1.5 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
-const BTN_ACCENT = "text-[12.5px] px-3 py-1.5 rounded-lg bg-accent text-white shrink-0 disabled:opacity-50";
+  "text-[13px] px-3 py-1.5 rounded-lg border border-line bg-paper hover:border-lineStrong shrink-0";
+const BTN_ACCENT = "text-[13px] px-3 py-1.5 rounded-lg bg-accent text-white shrink-0 disabled:opacity-50";
 
 /** Two-letter initials for a chip/avatar (first+last word, else first two chars). */
 function initials(name: string): string {
@@ -99,7 +99,7 @@ export function ModelsTab() {
         footer={
           ps.credentialed ? (
             <button
-              className="text-[12.5px] text-danger/80 hover:text-danger hover:underline underline-offset-2"
+              className="text-[13px] text-danger/80 hover:text-danger hover:underline underline-offset-2"
               data-testid="set-remove-key"
               onClick={() => {
                 if (window.confirm(t("mtab.remove_key", { title: info?.title || "" }))) ps.removeKey();
@@ -269,10 +269,10 @@ export function UnauthorizedBlock({
               <span>{t("mtab.in_chat")} {m.chat_name || m.chat_id}</span>
               <span className="ml-auto shrink-0">{relTime(m.ts) || ""}</span>
             </div>
-            <div className="text-[12.5px] mt-1 break-words">{m.text}</div>
+            <div className="text-[13px] mt-1 break-words">{m.text}</div>
             <div className="flex items-center gap-1.5 mt-2">
               <button
-                className="text-[11.5px] px-2 py-1 rounded-md bg-accent text-white"
+                className="text-[12px] px-2 py-1 rounded-md bg-accent text-white"
                 data-testid={`parked-allow-deliver-${m.id}`}
                 title={t("mtab.allow_deliver_title")}
                 onClick={() => act(m.id, "allow_deliver")}
@@ -288,7 +288,7 @@ export function UnauthorizedBlock({
                 {t("mtab.allow_only")}
               </button>
               <button
-                className="text-[11.5px] px-2 py-1 rounded-md text-faint hover:text-danger"
+                className="text-[12px] px-2 py-1 rounded-md text-faint hover:text-danger"
                 data-testid={`parked-dismiss-${m.id}`}
                 title={t("mtab.dismiss_title")}
                 onClick={() => act(m.id, "dismiss")}
@@ -326,7 +326,7 @@ export function ListeningSessionsBlock({ c }: { c: Connector }) {
       ) : (
         <div className="space-y-1.5">
           {mine.map((s) => (
-            <div className="flex items-center gap-2 text-[12.5px]" key={s.session_id + s.channel}>
+            <div className="flex items-center gap-2 text-[13px]" key={s.session_id + s.channel}>
               <span className="min-w-0 truncate" title={s.session_id}>
                 {s.session_title || s.session_id}
                 {s.agent ? <span className="text-faint"> · {s.agent}</span> : null}
@@ -416,7 +416,7 @@ export function AllowlistBlock({
         ) : (
           <div className="space-y-1.5">
             {unknownRecent.map((r) => (
-              <div className="flex items-center gap-2 text-[12.5px]" key={r.user_id}>
+              <div className="flex items-center gap-2 text-[13px]" key={r.user_id}>
                 <span className="w-5 h-5 rounded-full bg-paper border border-line grid place-items-center text-[9px] font-bold text-muted shrink-0">
                   {initials(r.user_name || "?")}
                 </span>
@@ -424,7 +424,7 @@ export function AllowlistBlock({
                   {r.user_name || t("mtab.unknown")} <span className="text-faint">· {r.chat_type}</span>
                 </span>
                 <button
-                  className="ml-auto text-[11.5px] px-2 py-0.5 rounded-md bg-accent text-white shrink-0"
+                  className="ml-auto text-[12px] px-2 py-0.5 rounded-md bg-accent text-white shrink-0"
                   onClick={async () => {
                     await allowUser(c.name, r.user_id, teamId);
                     onChanged();
@@ -449,9 +449,8 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
   };
   if (!c.tools?.length)
     return (
-      <div className="border-t border-line px-3.5 py-3 text-[12.5px] text-muted">
+<div className="border-t border-line px-3.5 py-3 text-[13px] text-muted">
         {t("mtab.no_tools_connector")}
-      </div>
     );
   return (
     <div className="border-t border-line px-3.5 py-3">
@@ -470,10 +469,9 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
             />
             <span className="min-w-0">
               <span className="block text-[13px]">{tool.label}</span>
-              <span className="block text-[11.5px] text-faint">
+<span className="block text-[12px] text-faint">
                 {t("mtab.tool_meta", { name: tool.name, kind: tool.kind })}
-              </span>
-              <span className="block text-[11.5px] text-faint">{tool.description}</span>
+              <span className="block text-[12px] text-faint">{tool.description}</span>
             </span>
           </label>
         ))}
@@ -539,7 +537,7 @@ export function ConnectSetup({
             {waiting ? t("mtab.check_browser") : t("mtab.connect_one_click", { title: c.title })}
           </button>
           {c.fields.length > 0 && (
-            <div className="text-[11.5px] text-faint">{t("mtab.or_manual")}</div>
+<div className="text-[12px] text-faint">{t("mtab.or_manual")}</div>
           )}
         </div>
       )}
@@ -555,9 +553,8 @@ export function ConnectSetup({
                   {t("mtab.coming_soon_badge")}
                 </span>
               </button>
-              <div className="text-[11.5px] text-faint">
+<div className="text-[12px] text-faint">
                 {t("mtab.managed_paused_note")}
-              </div>
             </>
           ) : cloud?.signed_in ? (
             <button className={BTN_ACCENT} onClick={oneClick} disabled={waiting}>
@@ -573,12 +570,12 @@ export function ConnectSetup({
             <CloudStatusPending />
           )}
           {!c.managed_paused && cloud?.signed_in && (
-            <div className="text-[11.5px] text-faint">{t("mtab.manual_or")}</div>
+<div className="text-[12px] text-faint">{t("mtab.manual_or")}</div>
           )}
         </div>
       )}
       {c.instructions.length > 0 && (
-        <ol className="list-decimal pl-4 text-[12.5px] text-muted leading-relaxed space-y-1">
+        <ol className="list-decimal pl-4 text-[13px] text-muted leading-relaxed space-y-1">
           {c.instructions.map((step, i) => (
             <li key={i}>{step}</li>
           ))}
@@ -605,7 +602,7 @@ export function ConnectSetup({
           {busy ? t("mtab.validating") : t("mtab.connect_btn")}
         </button>
       </div>
-      {error && <div className="text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="text-[13px] text-danger">{error}</div>}
     </div>
   );
 }

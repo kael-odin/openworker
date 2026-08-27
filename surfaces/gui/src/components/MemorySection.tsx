@@ -20,10 +20,10 @@ import { useT } from "../i18n/I18nProvider";
 // no scope vocabulary, no markdown, no files. Everything else memory does happens in
 // chat (toast §5.1, attribution §5.2).
 const CARD = "rounded-xl2 border border-line bg-panel";
-const FIELD_LABEL = "text-[12.5px] font-medium text-ink";
+const FIELD_LABEL = "text-[13px] font-medium text-ink";
 const FIELD_HELP = "text-[12px] text-muted mt-1.5 leading-relaxed";
 const BTN_ACCENT =
-  "text-[12.5px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
+  "text-[13px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
 
 export function MemorySection() {
   const { t } = useT();
@@ -98,7 +98,7 @@ export function MemorySection() {
           </div>
         </div>
         {toggleMsg && (
-          <div className="text-[12.5px] text-muted mt-3 pt-3 border-t border-line" data-testid="memory-toggle-msg">
+          <div className="text-[13px] text-muted mt-3 pt-3 border-t border-line" data-testid="memory-toggle-msg">
             {toggleMsg}
           </div>
         )}
@@ -123,7 +123,7 @@ export function MemorySection() {
           {t("memory.learned_help")}
         </div>
         {listMsg && (
-          <div className="text-[12.5px] text-muted mt-2.5" data-testid="memory-list-msg">
+          <div className="text-[13px] text-muted mt-2.5" data-testid="memory-list-msg">
             {listMsg}
           </div>
         )}
@@ -191,9 +191,8 @@ function UserRulesCard({
           {t("memory.rules_save")}
         </button>
         {savedMsg && (
-          <span className="text-[12.5px] text-muted">
+<span className="text-[13px] text-muted">
             {t("memory.rules_saved_msg")}
-          </span>
         )}
       </div>
     </div>
@@ -237,9 +236,8 @@ function MemoryRow({ entry, onChanged }: { entry: MemoryEntry; onChanged: () => 
           <button className={BTN_ACCENT} onClick={() => void save()}>
             {t("memory.rules_save")}
           </button>
-          <button className="text-[12.5px] text-muted hover:text-ink" onClick={() => setEditing(false)}>
+<button className="text-[13px] text-muted hover:text-ink" onClick={() => setEditing(false)}>
             {t("memory.cancel")}
-          </button>
         </div>
       </div>
     );

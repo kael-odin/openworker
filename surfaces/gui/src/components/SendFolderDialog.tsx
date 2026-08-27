@@ -53,12 +53,11 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
         data-testid="send-folder-dialog"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-[14.5px] font-semibold text-ink mb-1">
+<h3 className="text-[14px] font-semibold text-ink mb-1">
           {t("sendfolder.title", { name: coworkerName })}
         </h3>
-        <p className="text-[12.5px] text-muted mb-3">
+        <p className="text-[13px] text-muted mb-3">
           {t("sendfolder.sub")}
-        </p>
         {recents
           .filter((w) => w.exists)
           .slice(0, 4)
@@ -70,20 +69,20 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
               title={w.path}
             >
               <Icon name="folder" size={13} className="shrink-0 text-muted" />
-              <span className="text-[12.5px] text-ink truncate">{baseName(w.path)}</span>
-              <span className="ml-auto text-[11.5px] text-faint truncate max-w-[45%]">{w.path}</span>
+              <span className="text-[13px] text-ink truncate">{baseName(w.path)}</span>
+              <span className="ml-auto text-[12px] text-faint truncate max-w-[45%]">{w.path}</span>
             </button>
           ))}
         <div className="flex gap-2 mt-3">
           <button
-            className="flex-1 text-center text-[12.5px] px-2.5 py-2 rounded-lg border border-lineStrong text-ink hover:bg-paper"
+            className="flex-1 text-center text-[13px] px-2.5 py-2 rounded-lg border border-lineStrong text-ink hover:bg-paper"
             onClick={() => void browse()}
             disabled={busy}
           >
             {t("sendfolder.choose")}
           </button>
           <button
-            className="flex-1 text-center text-[12.5px] px-2.5 py-2 rounded-lg bg-accent text-white font-semibold hover:opacity-95"
+            className="flex-1 text-center text-[13px] px-2.5 py-2 rounded-lg bg-accent text-white font-semibold hover:opacity-95"
             data-testid="start-temp-folder"
             onClick={() => {
               if (busy) return;
@@ -95,7 +94,7 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
             {t("sendfolder.use_temp")}
           </button>
         </div>
-        {error && <div className="mt-2 text-[11.5px] text-warnInk">{error}</div>}
+        {error && <div className="mt-2 text-[12px] text-warnInk">{error}</div>}
         <p className="text-[11px] text-faint mt-2.5">
           {t("sendfolder.hint")}
         </p>

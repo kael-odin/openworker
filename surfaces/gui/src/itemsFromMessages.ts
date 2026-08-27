@@ -28,12 +28,22 @@ export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
   // `_display` sidecar on a tool message = user-facing metadata the agent never saw
   // (e.g. how many hits the privacy filters hid) — surfaces on the tool card.
   const hiddenCounts: Record<string, number> = {};
+  // Approval provenance (owner ruling 2026-08-24): who cleared (or refused) the call —
+  // "reviewer"/"bypass"/"user"/"reviewer_denied" — persisted in the same sidecar so the
+  // quiet chips survive reload.
+  const approvalMeta: Record<string, { origin: string; note?: string; grant?: string }> = {};
   for (const m of messages || []) {
     if (m.role === "tool" && m.tool_call_id) {
       results[m.tool_call_id] =
         typeof m.content === "string" ? m.content : JSON.stringify(m.content);
       const hidden = Number(m._display?.hidden_by_filters || 0);
       if (hidden > 0) hiddenCounts[m.tool_call_id] = hidden;
+      if (m._display?.approval_origin)
+        approvalMeta[m.tool_call_id] = {
+          origin: String(m._display.approval_origin),
+          ...(m._display.approval_note ? { note: String(m._display.approval_note) } : {}),
+          ...(m._display.approval_grant ? { grant: String(m._display.approval_grant) } : {}),
+        };
     }
   }
   for (const m of messages || []) {
@@ -68,14 +78,24 @@ export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
         }
         const preview = results[tc.id];
         const hidden = hiddenCounts[tc.id];
+        const meta = approvalMeta[tc.id];
+        // A denial (by the reviewer or the user) must not replay as a green step.
+        const denied = meta && (meta.origin === "reviewer_denied" || meta.grant === "deny");
         items.push({
           kind: "tool",
           id: tc.id,
           name: tc.function?.name,
           args,
-          status: "ok",
+          status: denied ? "denied" : "ok",
           preview,
           ...(hidden ? { hidden } : {}),
+          ...(meta ? { approvalOrigin: meta.origin } : {}),
+          ...(meta?.note
+            ? meta.origin === "reviewer_denied"
+              ? { reviewerReason: meta.note }
+              : { approvalNote: meta.note }
+            : {}),
+          ...(meta?.grant ? { approvalGrant: meta.grant } : {}),
         });
       }
     } else if (m.role === "notice") {
@@ -92,14 +112,38 @@ export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
                 { kind: "notice", tone: "info", text: m.text || tt("app.notice_compacted") }
               : m.kind === "mcp_error"
                 ? // A configured MCP server failed to start for this session — informational,
-                  // NOT retriable (retry re-runs the model turn, which can't fix a dead server).
-                  { kind: "notice", tone: "warn", text: m.text || tt("app.notice_mcp_error") }
-                : { kind: "notice", tone: "warn", text: tt("app.notice_error_prefix") + (m.text || tt("app.notice_unknown")), retriable: true },
+                  mcpNoticeItem(m)
+                : m.kind === "project_presence"
+                  ? { kind: "notice", tone: "info", text: m.text || "" }
+                  : m.kind === "reviewer_paused"
+                  ? { kind: "notice", tone: "info", text: m.text || tt("app.notice_reviewer_paused") }
+                  : m.kind === "mode_notice"
+                  ? { kind: "notice", tone: "info", title: (m as any).title || tt("app.notice_mode_notice_title"), text: m.text || "" }
+                  : m.kind === "mode_switch"
+                  ? { kind: "notice", tone: "info", text: m.text || "" }
+                  : { kind: "notice", tone: "warn", text: tt("app.notice_error_prefix") + (m.text || tt("app.notice_unknown")), retriable: true },
       );
     }
     // system messages are omitted; tool-result messages are folded into the tool row above
   }
   return items;
+}
+
+function mcpNoticeItem(m: ConversationMessage): Item {
+  const text = typeof m.text === "string" ? m.text : "";
+  const server =
+    (m.server && String(m.server)) || (text.match(/MCP server [“"]([^”"]+)[”"]/) || [])[1];
+  if (!server)
+    return { kind: "notice", tone: "warn", text: text || "An MCP server failed to start" };
+  // The old format appended a plain-text Settings pointer — the button replaces it.
+  const detail = text.replace(/\s*—\s*see Settings ▸ Connectors\s*$/u, "");
+  return {
+    kind: "notice",
+    tone: "warn",
+    text: `MCP server “${server}” didn’t start — its tools are unavailable here`,
+    server,
+    detail: detail || undefined,
+  };
 }
 
 export function userItemFromContent(content: any): Extract<Item, { kind: "user" }> {

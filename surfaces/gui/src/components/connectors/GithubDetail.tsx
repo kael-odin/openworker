@@ -28,7 +28,7 @@ import en from "../../i18n/en.json";
 // thread, which the GUI can't map back to an installation). Adding an
 // installation goes through the ONE entry point: header button → modal.
 
-const LABEL = "text-[12.5px] text-muted w-24 shrink-0";
+const LABEL = "text-[13px] text-muted w-24 shrink-0";
 
 type Dict = Record<string, string>;
 const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
@@ -78,8 +78,8 @@ export function GithubDetail({ c, cloud, onChanged }: DetailProps) {
       <div className="flex items-center gap-3.5 mb-5">
         <ConnectorBadge connector={c} size={44} title={t("gh.title")} />
         <div className="min-w-0 flex-1">
-          <h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("gh.title")}</h2>
-          <div className="text-[12.5px] text-muted flex items-center gap-1.5">
+<h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("gh.title")}</h2>
+          <div className="text-[13px] text-muted flex items-center gap-1.5">
             {c.connected ? (
               <>
                 <span
@@ -111,10 +111,9 @@ export function GithubDetail({ c, cloud, onChanged }: DetailProps) {
 
       {!c.connected && (
         <div className={GRP}>
-          <div className={ROW + " text-[12.5px] text-muted"}>
+<div className={ROW + " text-[13px] text-muted"}>
             {t("gh.sub")}
             {cloud?.signed_in ? "" : t("gh.oneclick_cloud")}
-          </div>
         </div>
       )}
 
@@ -132,9 +131,8 @@ export function GithubDetail({ c, cloud, onChanged }: DetailProps) {
       {/* Manual PAT: request/response tools only — no inbound triggers. */}
       {c.connected && !relay && (
         <div className={GRP} data-testid="github-manual-card">
-          <div className={ROW + " text-[12.5px] text-muted"}>
+<div className={ROW + " text-[13px] text-muted"}>
             {t("gh.manual_card")}
-          </div>
         </div>
       )}
 
@@ -208,9 +206,8 @@ function InstallationGroup({
       <div className={GRP}>
         {empty ? (
           <div className={ROW}>
-            <span className="min-w-0 flex-1 text-[12.5px] text-muted">
+<span className="min-w-0 flex-1 text-[13px] text-muted">
               {t("gh.empty")}
-            </span>
             <DisconnectBtn id={inst.installation_id} busy={busy} onClick={disconnect} />
           </div>
         ) : (
@@ -238,7 +235,7 @@ function DisconnectBtn({ id, busy, onClick }: { id: string; busy: boolean; onCli
   const { t } = useT();
   return (
     <button
-      className="text-[12.5px] text-danger/80 hover:text-danger shrink-0"
+      className="text-[13px] text-danger/80 hover:text-danger shrink-0"
       data-testid={`disconnect-install-${id}`}
       title={t("gh.disconnect_title")}
       onClick={onClick}
@@ -269,7 +266,7 @@ function PeopleRow({
         {allowed.map((login) => (
           <span
             key={login}
-            className="inline-flex items-center gap-1.5 pl-2 pr-2 py-0.5 rounded-full bg-paper border border-line text-[12.5px]"
+            className="inline-flex items-center gap-1.5 pl-2 pr-2 py-0.5 rounded-full bg-paper border border-line text-[13px]"
           >
             {/* GitHub logins ARE the readable identity — no resolution needed. */}
             @{login}
@@ -298,8 +295,8 @@ function WaitingRow({ m, onChanged }: { m: ParkedMessage; onChanged: () => void 
       <span className={LABEL}>{t("gh.waiting")}</span>
       <span className="min-w-0 flex-1">
         <span className="font-medium text-[13px]">@{m.user_name || m.user_id}</span>{" "}
-        <span className="text-[12.5px] text-muted">{t("gh.in", { chat: m.chat_name || m.chat_id })}</span>
-        <span className="block text-[12.5px] text-muted truncate">“{m.text}”</span>
+<span className="text-[13px] text-muted">{t("gh.in", { chat: m.chat_name || m.chat_id })}</span>
+        <span className="block text-[13px] text-muted truncate">“{m.text}”</span>
       </span>
       <button
         className={PILL_ACCENT + " !py-1"}
@@ -331,7 +328,7 @@ function ListeningRows({ subs, onChanged }: { subs: Subscription[]; onChanged: (
       <span className={LABEL}>{t("gh.listening")}</span>
       <span className="min-w-0 flex-1 space-y-1">
         {subs.map((s) => (
-          <span key={s.session_id + s.channel} className="flex items-center gap-2 text-[12.5px]">
+          <span key={s.session_id + s.channel} className="flex items-center gap-2 text-[13px]">
             <span className="font-medium truncate" title={s.session_id}>
               {s.session_title || s.session_id}
             </span>

@@ -188,7 +188,7 @@ export function ChannelPicker({
                 inputRef.current?.blur();
               }}
             >
-              <span className="text-[12.5px] text-ink">
+              <span className="text-[13px] text-ink">
                 {c.name ? `#${c.name}` : c.channel}
               </span>
               {c.name && <span className="ml-1.5 text-[11px] text-faint">{c.channel}</span>}
@@ -228,7 +228,7 @@ export function ChannelPicker({
                 inputRef.current?.blur();
               }}
             >
-              <span className="text-[12.5px] text-ink">
+              <span className="text-[13px] text-ink">
                 {r.is_private ? "🔒 " : "#"}
                 {r.name}
               </span>

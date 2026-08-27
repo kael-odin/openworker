@@ -34,7 +34,7 @@ export function CalendarDetail({ c, cloud, slack: _slack, onChanged }: DetailPro
           <h2 className="text-[20px] font-semibold tracking-tight leading-tight">
             {t("conn.gcal_title")}
           </h2>
-          <div className="text-[12.5px] text-muted flex items-center gap-1.5">
+          <div className="text-[13px] text-muted flex items-center gap-1.5">
             {c.connected ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-ok" />
@@ -66,10 +66,9 @@ export function CalendarDetail({ c, cloud, slack: _slack, onChanged }: DetailPro
 
       {!c.connected && (
         <div className={GRP}>
-          <div className={ROW + " text-[12.5px] text-muted"}>
+<div className={ROW + " text-[13px] text-muted"}>
             {t("conn.gcal_sub")}
             {cloud?.signed_in ? "" : t("conn.requires_cloud")}
-          </div>
         </div>
       )}
 

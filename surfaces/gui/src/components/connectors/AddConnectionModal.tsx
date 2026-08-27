@@ -68,7 +68,7 @@ export function AddConnectionModal({
           <div className="flex-1 font-semibold text-[16px] tracking-tight">
             {header}
           </div>
-          <button className="text-faint hover:text-ink text-[18px] leading-none" onClick={onClose} title={t("conn.close")}>
+<button className="text-faint hover:text-ink text-[20px] leading-none" onClick={onClose} title={t("conn.close")}>
             ×
           </button>
         </div>
@@ -76,7 +76,7 @@ export function AddConnectionModal({
         {twoModes ? (
           <>
             <div className="px-5 pt-4">
-              <div className="inline-flex rounded-full p-0.5 bg-paper text-[12.5px] font-medium">
+              <div className="inline-flex rounded-full p-0.5 bg-paper text-[13px] font-medium">
                 {(["one", "manual"] as const).map((p) => (
                   <button
                     key={p}
@@ -165,7 +165,7 @@ function McpOneClick({ c, onConnected }: { c: Connector; onConnected: () => void
       >
         {waiting ? t("conn.check_browser") : t("conn.connect_title", { title: c.title })}
       </button>
-      {error && <div className="text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
         <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.mcp_foot", { title: c.title })}
       </p>
@@ -204,7 +204,7 @@ function GenericOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null
       ) : (
         <CloudStatusPending />
       )}
-      {error && <div className="text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
         <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.tokens_local")}
       </p>
@@ -236,7 +236,7 @@ function SlackOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null }
       ) : (
         <CloudStatusPending />
       )}
-      {error && <div className="text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
         <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.slack_foot")}
       </p>
@@ -271,7 +271,7 @@ function GithubOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null 
       ) : (
         <CloudStatusPending />
       )}
-      {error && <div className="text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
         <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.github_foot")}
       </p>
@@ -326,7 +326,7 @@ function HubSpotOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null
       ) : (
         <CloudStatusPending />
       )}
-      {error && <div className="text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center">
         {t("conn.hubspot_foot")}
       </p>
@@ -360,7 +360,7 @@ function SlackManual({ onConnected }: { onConnected: () => void }) {
       <button className={PILL_LINE + " w-full !py-2"} onClick={submit} disabled={busy || !bot.trim() || !app.trim()}>
         {busy ? t("conn.validating") : t("conn.connect")}
       </button>
-      {error && <div className="text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-warnInk text-center">
         {t("conn.slack_manual_warn")}
       </p>
