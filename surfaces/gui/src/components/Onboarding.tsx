@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   cloudLogin,
   connectManaged,
@@ -11,7 +12,6 @@ import {
 import { ConnectorBadge } from "../connectors/ConnectorIcon";
 import { ProviderCards, ProviderForm, useProviderSetup } from "../providers/ProviderSetup";
 import { Spinner } from "./AutomationQuickstart";
-import { useT } from "../i18n/I18nProvider";
 
 // First-run onboarding (UX-DECISIONS §24 → §29 → §39): model → your tools → go.
 // §39 (owner design, 2026-07-18): step 1 is a PROVIDER GALLERY — 13 real brand
@@ -39,8 +39,8 @@ const TOOL_ROWS = [
 const TOOLS_SOON = ["gmail", "google_calendar"];
 
 export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "automations") => void }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
-  const { t } = useT();
 
   // -- step 1: model (provider gallery ⇄ key form, shared machinery) ---------------
   const ps = useProviderSetup();
@@ -81,8 +81,8 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
     };
     load();
     const fast = signinPhase === "waiting" || pendingTool !== null;
-    const timer = setInterval(load, fast ? 750 : 3000);
-    return () => clearInterval(timer);
+    const t = setInterval(load, fast ? 750 : 3000);
+    return () => clearInterval(t);
   }, [step, signinPhase, pendingTool]);
 
   // The poll flips the card to ✓ when the consent lands.
@@ -126,7 +126,7 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
             {/* Persistent header — stays put while the region below swaps (§39). */}
             <h1 className="text-[20px] font-semibold">{t("onboarding.welcome")}<span className="beta-tag">BETA</span></h1>
             <p className="text-[13px] text-muted mt-0.5 mb-4">
-              {t("onboarding.welcome_sub")}
+              {t("onboarding.model_intro")}
             </p>
 
             {!ps.sel ? (
@@ -149,7 +149,7 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
                 </button>
               ) : (
                 <span className="text-[13px] text-muted">
-                  {t("onboarding.skip_warn")}{" "}
+                  {t("onboarding.skip_warn_pref")}{" "}
                   <button className="text-accent" onClick={() => finish()}>
                     {t("onboarding.skip_anyway")}
                   </button>
@@ -165,7 +165,7 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
               </button>
             </div>
             <p className="text-[11px] text-faint mt-3">
-              {t("onboarding.models_hint")}
+              {t("onboarding.models_settings_hint")}
             </p>
           </section>
         )}
@@ -177,9 +177,9 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
              slot keeps its place but flips to a green congrats, and every row grows a quiet
              Connect pill. The gated Google pair is ONE combined grayed row. */
           <section data-testid="ob-step-tools" className="flex-1 min-h-0 flex flex-col">
-            <h1 className="text-[20px] font-semibold">{t("onboarding.connect_tools")}</h1>
+            <h1 className="text-[20px] font-semibold">{t("onboarding.connect_tools_title")}</h1>
             <p className="text-[13px] text-muted mt-0.5 mb-3">
-              {t("onboarding.connect_tools_sub")}
+              {t("onboarding.connect_tools_intro")}
             </p>
 
             <div className="flex-1 min-h-0 overflow-y-auto pr-1" data-testid="ob-tool-gallery">
@@ -199,7 +199,7 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
                     </span>
                     {cloud?.signed_in &&
                       (c.connected ? (
-                        <span className="text-[12px] text-ok font-medium shrink-0">{t("onboarding.connected")}</span>
+                        <span className="text-[12px] text-ok font-medium shrink-0">{t("onboarding.connected_ok")}</span>
                       ) : pendingTool === name ? (
                         <span className="text-[12px] text-muted shrink-0">{t("onboarding.check_browser")}</span>
                       ) : (
@@ -223,10 +223,10 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-semibold leading-tight text-faint">
-                    {t("onboarding.google_soon_title")}
+                    {t("onboarding.google_pair_title")}
                   </span>
                   <span className="block text-[12px] text-faint truncate">
-                    {t("onboarding.google_soon_detail")}
+                    {t("onboarding.google_pair_detail")}
                   </span>
                 </span>
                 {cloud?.signed_in && <span className="text-[12px] text-faint shrink-0">{t("onboarding.coming_soon")}</span>}
@@ -240,9 +240,9 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
               <div className="mt-3.5 rounded-xl border border-line bg-paper px-4 py-3 flex items-center gap-3.5 shrink-0">
                 <span className="flex-1 text-[13px] text-muted leading-snug">
                   <span className="block text-[13px] font-semibold text-ink mb-0.5">
-                    {t("onboarding.signin_title")}
+                    {t("onboarding.signin_for_oneclick")}
                   </span>
-                  {t("onboarding.signin_sub")}
+                  {t("onboarding.signin_band_desc")}
                 </span>
                 {signinPhase ? (
                   <span className="inline-flex items-center gap-2 text-[13px] text-muted shrink-0">
@@ -272,7 +272,7 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
                     }}
                     data-testid="ob-cloud-signin"
                   >
-                    {t("onboarding.signin")}
+                    {t("onboarding.sign_in")}
                   </button>
                 )}
               </div>
@@ -282,10 +282,12 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
                 data-testid="ob-tools-signedin"
               >
                 <span className="block text-[13px] font-semibold text-ok mb-0.5">
-                  {t("onboarding.signed_in", { account: cloud.account ? ` as ${cloud.account}` : "" })}
+                  {cloud.account
+                    ? t("onboarding.signed_in_as", { account: cloud.account })
+                    : t("onboarding.signed_in")}
                 </span>
                 <span className="block text-[13px] text-muted">
-                  {t("onboarding.signed_in_sub")}
+                  {t("onboarding.signed_in_desc")}
                 </span>
               </div>
             )}
@@ -306,12 +308,12 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
                   onClick={() => setStep(2)}
                   data-testid="ob-tools-skip"
                 >
-                  {t("onboarding.continue_without")}
+                  {t("onboarding.continue_without_signin")}
                 </button>
               )}
             </div>
             <p className="text-[11px] text-faint mt-3">
-              {t("onboarding.tools_hint")}
+              {t("onboarding.more_tools_hint")}
             </p>
           </section>
         )}
@@ -322,8 +324,8 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
               <div className="w-12 h-12 rounded-full bg-okSoft text-ok grid place-items-center mx-auto mb-3 text-[22px]">
                 ✓
               </div>
-              <h1 className="text-[20px] font-semibold mb-1">{t("onboarding.done_title")}</h1>
-              <p className="text-[13px] text-muted mb-5">{t("onboarding.done_sub")}</p>
+              <h1 className="text-[20px] font-semibold mb-1">{t("onboarding.youre_set_up")}</h1>
+              <p className="text-[13px] text-muted mb-5">{t("onboarding.two_ways")}</p>
             </div>
 
             <button
@@ -337,7 +339,7 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
               <span className="flex-1 min-w-0 text-left">
                 <b className="block text-[13px]">{t("onboarding.cta_automation_title")}</b>
                 <span className="text-[12px] text-muted">
-                  {t("onboarding.cta_automation_sub")}
+                  {t("onboarding.cta_automation_desc")}
                 </span>
               </span>
               <span className="text-faint self-center">›</span>
@@ -353,7 +355,7 @@ export function Onboarding({ onDone }: { onDone: (next?: "work" | "gallery" | "a
               <span className="flex-1 min-w-0 text-left">
                 <b className="block text-[13px]">{t("onboarding.cta_work_title")}</b>
                 <span className="text-[12px] text-muted">
-                  {t("onboarding.cta_work_sub")}
+                  {t("onboarding.cta_work_desc")}
                 </span>
               </span>
               <span className="text-faint self-center">›</span>

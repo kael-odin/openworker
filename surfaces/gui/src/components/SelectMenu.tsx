@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 // A form-styled custom select (the native <select> can't carry status dots or sub-lines and
 // looks like a raw OS control next to the rest of the UI). Rows: label, an optional quiet
@@ -24,8 +24,8 @@ export function SelectMenu({
   onChange: (value: string) => void;
   ariaLabel: string;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const { t } = useT();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -101,7 +101,7 @@ export function SelectMenu({
                     className={
                       "w-1.5 h-1.5 rounded-full shrink-0 " + (o.dot ? "bg-ok" : "bg-transparent")
                     }
-                    title={o.dot ? t("selectmenu.key_set") : undefined}
+                    title={o.dot ? t("models.key_set") : undefined}
                   />
                   </button>
                 </div>

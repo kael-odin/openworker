@@ -10,6 +10,7 @@
 // to expand it and scroll it into view.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CLOUD_CHANGED,
   getCloudStatus,
@@ -36,7 +37,6 @@ import { ConnectSetup } from "./ManageTabs";
 import { RootRow } from "./RootRow";
 import { ChannelPicker } from "./SubscriptionsChip";
 import { Toggle } from "./Toggle";
-import { useT } from "../i18n/I18nProvider";
 
 // A channel address's platform: "slack:C0123" → "slack"; a bare id or "#mention" defaults to
 // slack (the backend's own default when no platform prefix is given).
@@ -76,7 +76,7 @@ export function AccessSection({
   const { roots, busy: rootsBusy, error: rootsError, addRoot, toggleAccess, removeRoot } =
     useRoots(sessionId, open ? 1 : 0);
   const rootEl = useRef<HTMLElement | null>(null);
-  const { t } = useT();
+  const { t } = useTranslation();
 
   const reload = useCallback(() => {
     // personaId hint: a brand-new session has no server-side record yet, so without it the
@@ -132,10 +132,10 @@ export function AccessSection({
     // listen for the sign-in broadcast so the pane flips the moment login lands.
     const load = () => getCloudStatus().then(setCloud).catch(() => {});
     load();
-    const timer = setInterval(load, 5000);
+    const t = setInterval(load, 5000);
     window.addEventListener(CLOUD_CHANGED, load);
     return () => {
-      clearInterval(timer);
+      clearInterval(t);
       window.removeEventListener(CLOUD_CHANGED, load);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,7 +175,7 @@ export function AccessSection({
     const channel = raw.includes(":") || raw.startsWith("#") ? raw : `${channelsFor}:${raw}`;
     const r = await subscribeChannel(sessionId, channel);
     if (!r.ok) {
-      setAddErr(r.error || t("access.err_add_channel"));
+      setAddErr(r.error || t("access.channel_add_error"));
       return;
     }
     setAddErr(null);
@@ -214,27 +214,27 @@ export function AccessSection({
   const names = live.map((c) => labelFor(c.connector, byName));
   const sourcesPart =
     names.length === 0
-      ? t("access.no_sources")
+      ? t("access.summary_no_sources")
       : names.length <= 2
         ? names.join(", ")
-        : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+        : t("access.summary_sources_more", { first: names.slice(0, 2).join(", "), more: names.length - 2 });
   // A temporary dir's raw name (the session id) never shows — say "Temporary folder"; a
   // draft with no folder picked yet shows none at all (UX-029).
   const folderPart = projectScoped
     ? scratchPrimary
-      ? "Temporary folder"
+      ? t("root.temporary_space")
       : baseName(workspace || "") || null
     : roots.length > 0
-      ? t(roots.length === 1 ? "access.folder_one" : "access.folder_n", { n: roots.length })
+      ? t("access.summary_folder_count", { count: roots.length })
       : null;
-  const summary = [sourcesPart, folderPart].filter(Boolean).join(" · ");
+  const summary = folderPart ? t("access.summary_join", { sources: sourcesPart, folder: folderPart }) : sourcesPart;
 
   return (
     <section className="rail-section" ref={rootEl} data-testid="access-section">
       <div className="rail-section-head">
         <button className="rail-section-toggle" onClick={() => setOpen((v) => !v)} data-testid="access-toggle">
           <Icon name={open ? "chevronDown" : "chevronRight"} size={14} className="rail-chev" />
-          <span>{t("access.header")}</span>
+          <span>{t("access.section_title")}</span>
           <span
             className="ml-auto min-w-0 truncate text-[11px] font-normal text-faint"
             data-testid="access-summary"
@@ -245,7 +245,7 @@ export function AccessSection({
         </button>
       </div>
       {open && (
-        <div className="rail-section-body" role="region" aria-label={t("access.aria")}>
+        <div className="rail-section-body" role="region" aria-label={t("access.region_label")}>
           {connectFor ? (
             <ConnectInline
               c={connectFor}
@@ -311,7 +311,7 @@ export function AccessSection({
                               setChannelsFor(c.connector);
                             }}
                           >
-                            {t("access.channels_count", { n: channelsOf(c.connector).length })}
+                            {t("access.channels_link", { count: channelsOf(c.connector).length })}
                             <Icon name="chevronRight" size={10} />
                           </button>
                         )}
@@ -330,8 +330,8 @@ export function AccessSection({
                 {adding ? (
                   <div className="mt-1.5">
                     <input
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-line bg-panel text-[12.5px] outline-none focus:border-accent"
-                      placeholder={t("access.add_search_ph")}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-line bg-panel text-[13px] outline-none focus:border-accent"
+                      placeholder={t("access.search_placeholder")}
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={(e) => {
@@ -346,8 +346,8 @@ export function AccessSection({
                     {results.length === 0 && (
                       // Also covers a failed/empty catalog fetch: an open picker must never
                       // be silently blank — point at the Connectors page either way.
-                      <div className="text-[11.5px] text-faint mt-1.5 px-0.5">
-                        {t("access.add_no_match")}
+                      <div className="text-[12px] text-faint mt-1.5 px-0.5">
+                        {t("access.no_match")}
                       </div>
                     )}
                     <div className="mt-1 max-h-64 overflow-y-auto">
@@ -393,7 +393,7 @@ export function AccessSection({
                       data-testid="access-manage"
                       onClick={() => onOpenIntegrations?.()}
                     >
-                      {t("access.manage")}
+                      {t("access.manage_all")} →
                     </button>
                   </div>
                 )}
@@ -409,7 +409,7 @@ export function AccessSection({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 text-[13px] font-medium leading-tight">
                             <span className="truncate">{labelFor(r.connector, byName)}</span>
-                            {r.tier === "core" && <span className={TAG_CORE}>{t("access.tag_core")}</span>}
+                            {r.tier === "core" && <span className={TAG_CORE}>{t("access.core_tag")}</span>}
                           </div>
                           <div className="text-[11px] text-faint truncate" title={r.reason}>
                             {r.reason}
@@ -425,7 +425,7 @@ export function AccessSection({
                             else onOpenIntegrations?.();
                           }}
                         >
-                          {t("access.connect")}
+                          {t("connector.connect")}
                         </button>
                       </div>
                     ))}
@@ -465,7 +465,7 @@ export function AccessSection({
                     className="mt-1 text-[12px] text-accent hover:underline text-left"
                     onClick={() => setAddingFolder(true)}
                   >
-                    {t("access.add_folder")}
+                    + {t("access.give_folder")}
                   </button>
                 )}
                 {rootsError && <div className="roots-err">{rootsError}</div>}
@@ -492,9 +492,9 @@ function ConnectInline({
   onDone: () => void;
   onBack: () => void;
 }) {
-  const { t } = useT();
+  const { t: tt } = useTranslation();
   useEffect(() => {
-    const timer = setInterval(async () => {
+    const t = setInterval(async () => {
       try {
         const list = await getConnectors();
         if (list.find((x) => x.name === c.name)?.connected) onDone();
@@ -502,7 +502,7 @@ function ConnectInline({
         /* poll again */
       }
     }, 2500);
-    return () => clearInterval(timer);
+    return () => clearInterval(t);
   }, [c.name, onDone]);
 
   return (
@@ -510,9 +510,9 @@ function ConnectInline({
       <button
         className="inline-flex items-center gap-1 text-[12px] text-faint hover:text-ink mb-2"
         onClick={onBack}
-        aria-label={t("access.back_aria")}
+        aria-label={tt("access.back_to_sources")}
       >
-        <Icon name="arrowLeft" size={13} /> {t("access.connect_inline_back", { title: c.title })}
+        <Icon name="arrowLeft" size={13} /> {tt("access.connect_title", { title: c.title })}
       </button>
       {c.blurb && <p className="text-[12px] text-muted mb-1 leading-relaxed">{c.blurb}</p>}
       <div className="-mx-2">
@@ -520,8 +520,8 @@ function ConnectInline({
       </div>
       {/* Scope semantics, stated once (owner ask 2026-07-13): connecting is account-level,
           the toggle above is what scopes it to a session. */}
-      <p className="text-[10.5px] text-faint mt-2 leading-snug">
-        {t("access.connect_scope", { title: c.title })}
+      <p className="text-[11px] text-faint mt-2 leading-snug">
+        {tt("access.scope_note", { title: c.title })}
       </p>
     </div>
   );
@@ -550,20 +550,20 @@ function ChannelsInline({
   onRemove: (channel: string) => void;
   onBack: () => void;
 }) {
-  const { t } = useT();
+  const { t: tt } = useTranslation();
   return (
     <div>
       <button
         className="inline-flex items-center gap-1 text-[12px] text-faint hover:text-ink mb-2"
         onClick={onBack}
-        aria-label={t("access.back_aria")}
+        aria-label={tt("access.back_to_sources")}
       >
-        <Icon name="arrowLeft" size={13} /> {t("access.channels_inline_title", { label })}
+        <Icon name="arrowLeft" size={13} /> {tt("access.channels_title", { label })}
       </button>
-      <div className={`${SEC_H} mb-1.5`}>{t("access.subscribed_n", { n: channels.length })}</div>
+      <div className={`${SEC_H} mb-1.5`}>{tt("access.subscribed", { count: channels.length })}</div>
       {channels.length === 0 ? (
         <div className="text-[12px] text-faint py-0.5">
-          {t("access.no_channels", { label })}
+          {tt("access.no_channels", { label })}
         </div>
       ) : (
         <div className="space-y-1">
@@ -576,14 +576,14 @@ function ChannelsInline({
               {s.collision && (
                 <span
                   className="text-[11px] text-warnInk bg-warnSoft/70 border border-warnInk/15 rounded px-1 shrink-0"
-                  title={t("access.channels_collides_title")}
+                  title={tt("access.collision_title")}
                 >
                   ⚠
                 </span>
               )}
               <button
                 className="w-5 h-5 grid place-items-center text-faint hover:text-danger shrink-0"
-                title={t("access.stop_listening")}
+                title={tt("access.stop_listening")}
                 onClick={() => onRemove(s.channel)}
               >
                 ×
@@ -592,11 +592,11 @@ function ChannelsInline({
           ))}
         </div>
       )}
-      <div className={`${SEC_H} mt-3 mb-1.5`}>{t("access.add_channel")}</div>
+      <div className={`${SEC_H} mt-3 mb-1.5`}>{tt("access.add_channel")}</div>
       <div className="flex items-center gap-1.5">
         <ChannelPicker value={draft} onChange={onDraft} recent={recent} onSubmit={onAdd} />
         <button className={BTN_ACCENT} disabled={!draft.trim()} onClick={onAdd}>
-          {t("access.add_btn")}
+          {tt("access.add_btn")}
         </button>
       </div>
       {error && (
@@ -604,8 +604,8 @@ function ChannelsInline({
           {error}
         </p>
       )}
-      <p className="text-[10.5px] text-faint mt-1.5 leading-snug">
-        {t("access.channel_scope")}
+      <p className="text-[11px] text-faint mt-1.5 leading-snug">
+        {tt("access.channels_note")}
       </p>
     </div>
   );

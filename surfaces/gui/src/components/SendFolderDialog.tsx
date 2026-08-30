@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getRecentWorkspaces, openWorkspace, type RecentWorkspace } from "../api";
 import { chooseFolder } from "../tauri";
 import { baseName } from "../paths";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 // UX-029: folder enforcement AT SEND, not at session start. A code-family coworker with no
 // folder picked gets this dialog when the user hits send; the message goes out the moment a
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Props) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [recents, setRecents] = useState<RecentWorkspace[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,7 +38,7 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
     setError("");
     const res = await openWorkspace(path);
     if (res.ok) onPick(res.path, res.git_branch);
-    else setError(res.error || t("setup.err_open_folder"));
+    else setError(res.error || t("folder_gate.open_error"));
   };
 
   const browse = async () => {
@@ -53,12 +53,10 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
         data-testid="send-folder-dialog"
         onClick={(e) => e.stopPropagation()}
       >
-<h3 className="text-[14px] font-semibold text-ink mb-1">
-          {t("sendfolder.title", { name: coworkerName })}
+        <h3 className="text-[14px] font-semibold text-ink mb-1">
+          {t("folder_gate.where_work", { name: coworkerName })}
         </h3>
-        <p className="text-[13px] text-muted mb-3">
-          {t("sendfolder.sub")}
-        </p>
+        <p className="text-[13px] text-muted mb-3">{t("folder_gate.send_sub")}</p>
         {recents
           .filter((w) => w.exists)
           .slice(0, 4)
@@ -80,7 +78,7 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
             onClick={() => void browse()}
             disabled={busy}
           >
-            {t("sendfolder.choose")}
+            {t("folder_gate.choose_a_folder")}
           </button>
           <button
             className="flex-1 text-center text-[13px] px-2.5 py-2 rounded-lg bg-accent text-white font-semibold hover:opacity-95"
@@ -92,13 +90,11 @@ export function SendFolderDialog({ coworkerName, onPick, onTemp, onCancel }: Pro
             }}
             disabled={busy}
           >
-            {t("sendfolder.use_temp")}
+            {t("folder_gate.use_temp")}
           </button>
         </div>
         {error && <div className="mt-2 text-[12px] text-warnInk">{error}</div>}
-        <p className="text-[11px] text-faint mt-2.5">
-          {t("sendfolder.hint")}
-        </p>
+        <p className="text-[11px] text-faint mt-2.5">{t("folder_gate.temp_note")}</p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   getConnectors,
   getDmRoute,
@@ -19,7 +20,6 @@ import {
 import type { SessionInfo } from "../types";
 import { ChannelPicker } from "./SubscriptionsChip";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 // Inbox ▸ Configure (UX-DECISIONS §28): the former Connectors ▸ "Messaging routing" page,
 // relocated whole — where inbox items go out (mirror channel), how inbound messages reach
@@ -31,7 +31,7 @@ const SELECT = "px-2.5 py-1.5 rounded-lg border border-line bg-paper text-[13px]
 const BTN_ACCENT_SM = "text-[12px] px-2.5 py-1 rounded-md bg-accent text-white disabled:opacity-50";
 
 export function InboxConfigure() {
-  const { t } = useT();
+  const { t } = useTranslation();
   return (
     <div data-testid="inbox-configure">
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -42,9 +42,9 @@ export function InboxConfigure() {
       {/* Unrouted = delivery FAILURES ("messages that never reached you"), so it lives with
           the Inbox now (§28; previously with routing under Connectors, §26). */}
       <div className="mt-6" data-testid="unrouted-section">
-        <h3 className="text-[14px] font-semibold mb-1">{t("inboxcfg.unrouted_title")}</h3>
+        <h3 className="text-[14px] font-semibold mb-1">{t("inbox.unrouted_title")}</h3>
         <p className="text-[13px] text-muted mb-3">
-          {t("inboxcfg.unrouted_sub")}
+          {t("inbox.unrouted_sub")}
         </p>
         <UnroutedTable />
       </div>
@@ -60,7 +60,7 @@ function InboxRoutingCard() {
   const [target, setTarget] = useState(""); // current default-binding address, e.g. "slack:C0123"
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
+  const { t: tt } = useTranslation();
 
   const load = () => {
     getRecentChannels().then(setRecent).catch(() => setRecent([]));
@@ -74,8 +74,8 @@ function InboxRoutingCard() {
   };
   useEffect(() => {
     load();
-    const timer = setInterval(load, 5000);
-    return () => clearInterval(timer);
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
   }, []);
 
   const save = async () => {
@@ -85,7 +85,7 @@ function InboxRoutingCard() {
     const [platform, id] = addr.includes(":") ? addr.split(":", 2) : ["slack", addr];
     const result = await setInboxBinding("default", platform, id);
     if (!result.ok) {
-      setError(result.error || t("inboxcfg.err_routing"));
+      setError(result.error || tt("inbox.routing_update_failed"));
       return;
     }
     setError(null);
@@ -95,7 +95,7 @@ function InboxRoutingCard() {
   const clear = async () => {
     const result = await setInboxBinding("default", null, "");
     if (!result.ok) {
-      setError(result.error || t("inboxcfg.err_clear"));
+      setError(result.error || tt("inbox.routing_clear_failed"));
       return;
     }
     setError(null);
@@ -125,13 +125,13 @@ function InboxRoutingCard() {
 
   return (
     <div className={CARD + " p-4"} data-testid="inbox-mirror-card">
-      <div className="font-semibold text-[13px] mb-1">{t("inboxcfg.mirror_title")}</div>
+      <div className="font-semibold text-[13px] mb-1">{tt("inbox.unattended_approvals")}</div>
       <p className="text-[12px] text-muted mb-3">
-        {t("inboxcfg.mirror_sub")}{" "}
+        {tt("inbox.mirror_desc_prefix")}{" "}
         <strong className="text-ink font-medium" title={target || undefined}>
-          {known ? `#${known}` : target || t("inboxcfg.mirror_in_app_only")}
+          {known ? `#${known}` : target || tt("inbox.in_app_inbox_only")}
         </strong>
-        .
+        {tt("inbox.mirror_desc_suffix")}
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-muted shrink-0">
@@ -143,17 +143,17 @@ function InboxRoutingCard() {
           disabled={!draft.trim() || missingSlackOwner}
           onClick={save}
         >
-          {t("inboxcfg.set")}
+          {tt("inbox.set")}
         </button>
         {target && (
           <button className="text-[12px] text-danger/80 hover:text-danger" onClick={clear}>
-            {t("inboxcfg.clear")}
+            {tt("inbox.clear")}
           </button>
         )}
       </div>
       {missingSlackOwner && (
         <p className="text-[12px] text-warnInk mt-2">
-          {t("inboxcfg.missing_owner")}
+          {tt("inbox.missing_slack_owner")}
         </p>
       )}
       {error && <p className="text-[12px] text-warnInk mt-2">{error}</p>}
@@ -165,7 +165,7 @@ function InboxRoutingCard() {
 function DmRouteCard() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [dm, setDm] = useState<string>("");
-  const { t } = useT();
+  const { t: tt } = useTranslation();
 
   const load = () => {
     getSessions().then(setSessions).catch(() => setSessions([]));
@@ -173,8 +173,8 @@ function DmRouteCard() {
   };
   useEffect(() => {
     load();
-    const timer = setInterval(load, 5000);
-    return () => clearInterval(timer);
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
   }, []);
 
   const real = sessions.filter((s) => !s.session_id.startsWith("__"));
@@ -186,16 +186,16 @@ function DmRouteCard() {
 
   return (
     <div className={CARD + " p-4"}>
-      <div className="font-semibold text-[13px] mb-1">{t("inboxcfg.dm_title")}</div>
+      <div className="font-semibold text-[13px] mb-1">{tt("inbox.direct_messages")}</div>
       <p className="text-[12px] text-muted mb-3">
-        {t("inboxcfg.dm_sub")}
+        {tt("inbox.dm_desc")}
       </p>
       <div className="flex items-center gap-2">
         <span className="text-muted shrink-0">
           <Icon name="chat" size={16} />
         </span>
         <select className={"flex-1 " + SELECT} value={dm} onChange={(e) => choose(e.target.value)}>
-          <option value="">{t("inboxcfg.dm_park")}</option>
+          <option value="">{tt("inbox.dm_no_session")}</option>
           {real.map((s) => (
             <option key={s.session_id} value={s.session_id}>
               {s.title || s.session_id}
@@ -215,7 +215,7 @@ function SubscriptionsCard() {
   const [recent, setRecent] = useState<RecentChannel[]>([]);
   const [addSession, setAddSession] = useState("");
   const [addChannel, setAddChannel] = useState("");
-  const { t } = useT();
+  const { t: tt } = useTranslation();
 
   const load = () => {
     getSubscriptions().then(setSubs).catch(() => setSubs([]));
@@ -224,8 +224,8 @@ function SubscriptionsCard() {
   };
   useEffect(() => {
     load();
-    const timer = setInterval(load, 5000);
-    return () => clearInterval(timer);
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
   }, []);
 
   const real = sessions.filter((s) => !s.session_id.startsWith("__"));
@@ -246,17 +246,17 @@ function SubscriptionsCard() {
         <span className="text-muted shrink-0">
           <Icon name="plug" size={15} />
         </span>
-        <span className="font-semibold text-[13px]">{t("inboxcfg.subs_title")}</span>
-        <span className="text-[12px] text-muted">{t("inboxcfg.subs_sub")}</span>
+        <span className="font-semibold text-[13px]">{tt("inbox.channel_subscriptions")}</span>
+        <span className="text-[12px] text-muted">{tt("inbox.subscriptions_sub")}</span>
       </div>
 
       {subs && subs.length > 0 ? (
         <table className="w-full text-[13px]">
           <thead className="text-[11px] uppercase tracking-[0.04em] text-faint">
             <tr className="text-left">
-              <th className="font-medium px-4 py-2">{t("inboxcfg.col_session")}</th>
-              <th className="font-medium px-4 py-2">{t("inboxcfg.col_listens_to")}</th>
-              <th className="font-medium px-4 py-2">{t("inboxcfg.col_routes_to")}</th>
+              <th className="font-medium px-4 py-2">{tt("inbox.col_session")}</th>
+              <th className="font-medium px-4 py-2">{tt("inbox.col_listens_to")}</th>
+              <th className="font-medium px-4 py-2">{tt("inbox.col_inbox_routes_to")}</th>
               <th className="px-4 py-2" />
             </tr>
           </thead>
@@ -279,9 +279,9 @@ function SubscriptionsCard() {
                   {s.collision && (
                     <span
                       className="ml-1.5 text-[11px] text-warnInk bg-warnSoft/70 border border-warnInk/15 rounded px-1.5 py-0.5"
-                      title={t("inboxcfg.collides_title")}
+                      title={tt("inbox.collision_title")}
                     >
-                      {t("inboxcfg.collides")}
+                      {tt("inbox.collides")}
                     </span>
                   )}
                 </td>
@@ -289,7 +289,7 @@ function SubscriptionsCard() {
                 <td className="px-4 py-2.5 text-right">
                   <button
                     className="text-faint hover:text-danger"
-                    title={t("inboxcfg.unsubscribe")}
+                    title={tt("inbox.unsubscribe")}
                     onClick={() => remove(s.session_id, s.channel)}
                   >
                     ×
@@ -301,7 +301,7 @@ function SubscriptionsCard() {
         </table>
       ) : (
         <div className="px-4 py-3 text-[13px] text-muted">
-          {t("inboxcfg.subs_empty")}
+          {tt("inbox.no_subscriptions")}
         </div>
       )}
 
@@ -311,7 +311,7 @@ function SubscriptionsCard() {
           value={addSession}
           onChange={(e) => setAddSession(e.target.value)}
         >
-          <option value="">{t("inboxcfg.choose_session")}</option>
+          <option value="">{tt("inbox.choose_session")}</option>
           {real.map((s) => (
             <option key={s.session_id} value={s.session_id}>
               {s.title || s.session_id}
@@ -320,7 +320,7 @@ function SubscriptionsCard() {
         </select>
         <ChannelPicker value={addChannel} onChange={setAddChannel} recent={recent} onSubmit={add} />
         <button className={BTN_ACCENT_SM} disabled={!addSession || !addChannel.trim()} onClick={add}>
-          {t("inboxcfg.subscribe")}
+          {tt("inbox.subscribe")}
         </button>
       </div>
     </div>
@@ -331,19 +331,19 @@ function SubscriptionsCard() {
 // and background turns that failed (e.g. a dead model). Read-only — for visibility/debugging.
 function UnroutedTable() {
   const [items, setItems] = useState<UnroutedItem[] | null>(null);
-  const { t } = useT();
+  const { t: tt } = useTranslation();
 
   useEffect(() => {
     const load = () => getUnrouted().then(setItems).catch(() => setItems([]));
     load();
-    const timer = setInterval(load, 5000);
-    return () => clearInterval(timer);
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
   }, []);
 
   if (items && items.length === 0)
     return (
       <div className={CARD + " p-4 text-[13px] text-muted"}>
-        {t("inboxcfg.unrouted_empty")}
+        {tt("inbox.unrouted_empty")}
       </div>
     );
 
@@ -352,10 +352,10 @@ function UnroutedTable() {
       <table className="w-full text-[13px]">
         <thead className="text-[11px] uppercase tracking-[0.04em] text-faint">
           <tr className="text-left">
-            <th className="font-medium px-4 py-2">{t("inboxcfg.col_when")}</th>
-            <th className="font-medium px-4 py-2">{t("inboxcfg.col_source")}</th>
-            <th className="font-medium px-4 py-2">{t("inboxcfg.col_reason")}</th>
-            <th className="font-medium px-4 py-2">{t("inboxcfg.col_message")}</th>
+            <th className="font-medium px-4 py-2">{tt("inbox.col_when")}</th>
+            <th className="font-medium px-4 py-2">{tt("inbox.col_source")}</th>
+            <th className="font-medium px-4 py-2">{tt("inbox.col_reason")}</th>
+            <th className="font-medium px-4 py-2">{tt("inbox.col_message")}</th>
           </tr>
         </thead>
         <tbody>

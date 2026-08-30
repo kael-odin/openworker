@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Item } from "../types";
 import { Icon } from "./Icon";
 import { Markdown } from "./Markdown";
-import { useT } from "../i18n/I18nProvider";
 
 type PlanItem = Extract<Item, { kind: "planreq" }>;
 
@@ -18,13 +18,13 @@ export function PlanCard({
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const { t } = useT();
+  const { t } = useTranslation();
 
   return (
     <div className="dirreq-card plan-card">
       <div className="dirreq-head">
         <Icon name="sparkle" size={16} className="ico" />
-        <span>{t("plan.head")}</span>
+        <span>{t("plan.proposed")}</span>
       </div>
       <div className="plan-body">
         <Markdown text={item.plan} />
@@ -62,7 +62,7 @@ export function PlanCard({
             {t("plan.approve_ask")}
           </button>
           <button className="btn primary" onClick={() => onRespond(true, "auto")}>
-            {t("plan.approve_run")}
+            {t("plan.approve_and_run")}
           </button>
         </div>
       )}

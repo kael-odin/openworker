@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { getI18n, useTranslation } from "react-i18next";
+import { getStoredLanguage, setLanguage as setI18nLanguage, type Lang } from "../i18n";
 import {
   getSettings,
   getTrustedWorkspaces,
@@ -38,10 +40,6 @@ import {
   type DictationStatus,
 } from "../tauri";
 import { useThemePref } from "../theme";
-import { useLangPref } from "../i18n";
-import { useT, currentLang } from "../i18n/I18nProvider";
-import zh from "../i18n/zh.json";
-import en from "../i18n/en.json";
 import { Icon } from "./Icon";
 import { PanelHead } from "./IntegrationsView";
 import { ModelsTab } from "./ManageTabs";
@@ -49,16 +47,6 @@ import { MemorySection } from "./MemorySection";
 import { PersonasTab } from "./PersonasTab";
 import { SkillsTab } from "./SkillsTab";
 import { showPersonas } from "../flags";
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-const EN: Dict = en as Dict;
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  let raw = d[key] ?? EN[key] ?? key;
-  if (params) for (const [k, v] of Object.entries(params)) raw = raw.replace(`{${k}}`, String(v));
-  return raw;
-}
 
 // Settings, restructured (Option 2) into a full-page surface that mirrors IntegrationsView's shell:
 // a left sub-nav (Appearance · Files · Models · Personas) + centered panel, replacing the old
@@ -80,16 +68,16 @@ const BTN_BORDERED =
 
 const SET_TABS: {
   key: SetTab;
-  label: string;
+  labelKey: string;
   icon: "sliders" | "code" | "mic" | "archive" | "sparkle" | "book" | "refresh";
 }[] = [
-  { key: "appearance", label: "settings.tab_general", icon: "sliders" },
-  { key: "models", label: "settings.tab_models", icon: "code" },
-  { key: "context", label: "settings.tab_context", icon: "refresh" },
-  { key: "skills", label: "settings.tab_skills", icon: "book" },
-  { key: "voice", label: "settings.tab_voice", icon: "mic" },
-  { key: "memory", label: "settings.tab_memory", icon: "archive" },
-  { key: "personas", label: "settings.tab_personas", icon: "sparkle" },
+  { key: "appearance", labelKey: "settings.tab.general", icon: "sliders" },
+  { key: "models", labelKey: "settings.tab.models", icon: "code" },
+  { key: "context", labelKey: "settings.tab.context", icon: "refresh" },
+  { key: "skills", labelKey: "settings.tab.skills", icon: "book" },
+  { key: "voice", labelKey: "settings.tab.voice", icon: "mic" },
+  { key: "memory", labelKey: "settings.tab.memory", icon: "archive" },
+  { key: "personas", labelKey: "settings.tab.personas", icon: "sparkle" },
 ];
 
 export function SettingsView({
@@ -103,20 +91,20 @@ export function SettingsView({
   // prefilled — the worker builds the skill and proposes it via save_skill.
   onCreateSkill?: (description: string) => void;
 }) {
+  const { t } = useTranslation();
   // Personas is flag-gated (hidden for launch) — filter the tab AND coerce a stale
   // deep-link to it (openSettings("personas") callers) so the page never opens on a
   // section with no nav entry.
   const personas = showPersonas();
-  const { t } = useT();
-  const tabs = personas ? SET_TABS : SET_TABS.filter((tb) => tb.key !== "personas");
+  const tabs = personas ? SET_TABS : SET_TABS.filter((tab) => tab.key !== "personas");
   const wanted = initialTab && (personas || initialTab !== "personas") ? initialTab : "appearance";
   const [tab, setTab] = useState<SetTab>(wanted);
 
   return (
     <main className="flex-1 min-w-0 flex bg-paper">
       <nav className="page-subnav w-[208px] shrink-0 border-r border-line bg-panel/40 px-3 py-4">
-<div className="px-2 text-[13px] font-semibold mb-3 flex items-center gap-2">
-          <Icon name="gear" size={16} /> {t("settings.header")}
+        <div className="px-2 text-[13px] font-semibold mb-3 flex items-center gap-2">
+          <Icon name="gear" size={16} /> {t("nav.settings")}
         </div>
         {tabs.map((tb) => {
           const active = tab === tb.key;
@@ -129,7 +117,7 @@ export function SettingsView({
               }
               onClick={() => setTab(tb.key)}
             >
-              <Icon name={tb.icon} size={15} /> {t(tb.label)}
+              <Icon name={tb.icon} size={15} /> {t(tb.labelKey)}
             </button>
           );
         })}
@@ -142,7 +130,7 @@ export function SettingsView({
           ) : tab === "models" ? (
             <section>
               <PanelHead
-                title={t("settings.models_title")}
+                title={t("settings.tab.models")}
                 sub={t("settings.models_sub")}
               />
               <ModelsTab />
@@ -173,7 +161,11 @@ export function SettingsView({
 
 // -- Voice input: deliberate model provisioning + compatibility + microphone test (§37) --------
 const voiceError = (error: unknown) =>
-  error instanceof Error ? error.message : typeof error === "string" ? error : tt("settings.voice_err_fallback");
+  error instanceof Error
+    ? error.message
+    : typeof error === "string"
+      ? error
+      : getI18n().getFixedT(null, "translation")("settings.voice_action_failed");
 
 const formatBytes = (bytes: number) => {
   if (!bytes) return "0 MiB";
@@ -181,13 +173,13 @@ const formatBytes = (bytes: number) => {
 };
 
 function VoiceInputSection() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<DictationStatus | null>(null);
   const [progress, setProgress] = useState<DictationDownloadProgress | null>(null);
   const [phase, setPhase] = useState<"idle" | "downloading" | "verifying" | "testing" | "transcribing">("idle");
   const [error, setError] = useState<string | null>(null);
   const [testTranscript, setTestTranscript] = useState("");
   const desktop = isTauri();
-  const { t } = useT();
 
   const publish = (next: DictationStatus) => {
     setStatus(next);
@@ -256,7 +248,7 @@ function VoiceInputSection() {
   };
 
   const remove = async () => {
-    if (!window.confirm(t("settings.voice_confirm_delete"))) return;
+    if (!window.confirm(t("settings.voice_delete_confirm"))) return;
     setError(null);
     try {
       publish(await deleteDictationModel());
@@ -299,8 +291,8 @@ function VoiceInputSection() {
   return (
     <section>
       <PanelHead
-        title={t("settings.voice_title")}
-        sub={t("settings.voice_sub")}
+        title={t("settings.tab.voice")}
+        sub={t("settings.voice_intro")}
       />
 
       {!desktop ? (
@@ -308,28 +300,29 @@ function VoiceInputSection() {
       ) : (
         <div className="space-y-4">
           <div className="rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-[13px] text-green-800">
-            <span className="font-medium">{t("settings.voice_private")}</span> {t("settings.voice_private_blurb")}
+            <span className="font-medium">{t("settings.voice_private_title")}</span>{" "}
+            {t("settings.voice_private_body")}
           </div>
 
           <div className={CARD}>
             <div className="p-4 flex items-start gap-3">
               <Icon name="code" size={18} className="text-accent mt-0.5" />
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium">{t("settings.voice_this_device")}</div>
+                <div className="text-[13px] font-medium">{t("settings.voice_device_title")}</div>
                 <div className="text-[12px] text-muted mt-1">{status?.device_summary || t("settings.voice_checking")}</div>
                 {status?.compatibility_reason && <div className="text-[12px] text-red-600 mt-1.5">{status.compatibility_reason}</div>}
               </div>
               {status && (
                 <span className={"text-[12px] px-2 py-1 rounded-full " + (status.supported ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600")}>
-                  {status.supported ? t("settings.voice_compatible") : t("settings.voice_unsupported")}
+                  {status.supported ? `● ${t("settings.voice_compatible")}` : t("settings.voice_unsupported")}
                 </span>
               )}
             </div>
             <div className="border-t border-line bg-paper/50 px-4 py-3 grid grid-cols-2 gap-3 text-[12px] text-muted">
-              <div><span className="block text-ink font-medium">{t("settings.voice_mac")}</span>{t("settings.voice_mac_spec")}</div>
-              <div><span className="block text-ink font-medium">{t("settings.voice_windows")}</span>{t("settings.voice_windows_spec")}</div>
-              <div><span className="block text-ink font-medium">{t("settings.voice_memory")}</span>{t("settings.voice_memory_spec")}</div>
-              <div><span className="block text-ink font-medium">{t("settings.voice_processor")}</span>{t("settings.voice_processor_spec")}</div>
+              <div><span className="block text-ink font-medium">{t("settings.voice_mac")}</span>{t("settings.voice_mac_detail")}</div>
+              <div><span className="block text-ink font-medium">{t("settings.voice_windows")}</span>{t("settings.voice_windows_detail")}</div>
+              <div><span className="block text-ink font-medium">{t("settings.voice_memory")}</span>{t("settings.voice_memory_detail")}</div>
+              <div><span className="block text-ink font-medium">{t("settings.voice_processor")}</span>{t("settings.voice_processor_detail")}</div>
             </div>
           </div>
 
@@ -337,19 +330,21 @@ function VoiceInputSection() {
             <div className="p-4 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-accentSoft text-accent grid place-items-center font-semibold">W</div>
               <div className="min-w-0 flex-1">
-<div className="text-[13px] font-medium">{t("settings.voice_model_name")}</div>
+                <div className="text-[13px] font-medium">{t("settings.voice_whisper_title")}</div>
                 <div className="text-[12px] text-muted mt-0.5">
-                  {status?.model_verified ? t("settings.voice_installed", { size: formatBytes(status.model_bytes) }) : t("settings.voice_local_model", { size: formatBytes(status?.model_bytes || 147_964_211) })}
+                  {status?.model_verified
+                    ? t("settings.voice_installed", { size: formatBytes(status.model_bytes) })
+                    : t("settings.voice_not_installed", { size: formatBytes(status?.model_bytes || 147_964_211) })}
                 </div>
               </div>
               {status?.model_verified ? (
                 <>
-<span className="text-[12px] px-2 py-1 rounded-full bg-green-50 text-green-700">{t("settings.voice_verified")}</span>
+                  <span className="text-[12px] px-2 py-1 rounded-full bg-green-50 text-green-700">{t("settings.voice_verified")}</span>
                   <button className={BTN_BORDERED} onClick={() => void repair()}>{t("settings.voice_repair")}</button>
                   <button className="text-[12px] text-red-600 px-2 py-2" onClick={() => void remove()}>{t("settings.voice_delete")}</button>
                 </>
               ) : downloading ? (
-                <button className={BTN_BORDERED} onClick={() => void cancelDownload()}>{t("settings.voice_cancel")}</button>
+                <button className={BTN_BORDERED} onClick={() => void cancelDownload()}>{t("common.stop")}</button>
               ) : phase === "verifying" ? (
                 <span className="text-[12px] text-muted">{t("settings.voice_verifying")}</span>
               ) : (
@@ -359,7 +354,7 @@ function VoiceInputSection() {
             {downloading && (
               <div className="border-t border-line px-4 py-3">
                 <div className="h-1.5 rounded-full bg-line overflow-hidden"><div className="h-full bg-accent transition-all" style={{ width: `${progressPercent}%` }} /></div>
-<div className="mt-1.5 text-[12px] text-muted flex"><span>{t("settings.voice_dl_of", { done: formatBytes(progress?.downloaded_bytes || 0), total: formatBytes(progressTotal) })}</span><span className="ml-auto">{progressPercent}%</span></div>
+                <div className="mt-1.5 text-[12px] text-muted flex"><span>{t("settings.voice_dl_progress", { done: formatBytes(progress?.downloaded_bytes || 0), total: formatBytes(progressTotal) })}</span><span className="ml-auto">{progressPercent}%</span></div>
               </div>
             )}
           </div>
@@ -368,14 +363,20 @@ function VoiceInputSection() {
             <div className="p-4 flex items-center gap-3">
               <Icon name="mic" size={18} className={ready ? "text-green-600" : "text-muted"} />
               <div className="min-w-0 flex-1">
-<div className="text-[13px] font-medium">{t("settings.voice_mic_test")}</div>
+                <div className="text-[13px] font-medium">{t("settings.voice_mic_test_title")}</div>
                 <div className="text-[12px] text-muted mt-0.5">
-                  {ready ? t("settings.voice_mic_ready_blurb") : t("settings.voice_mic_record_blurb")}
+                  {ready ? t("settings.voice_mic_test_ready") : t("settings.voice_mic_test_pending")}
                 </div>
               </div>
-{ready && <span className="text-[12px] px-2 py-1 rounded-full bg-green-50 text-green-700">{t("settings.voice_ready")}</span>}
+              {ready && <span className="text-[12px] px-2 py-1 rounded-full bg-green-50 text-green-700">● {t("settings.voice_ready_badge")}</span>}
               <button className={BTN_BORDERED} disabled={!status?.supported || !status?.model_verified || phase === "transcribing"} onClick={() => void toggleTest()}>
-                {status?.recording ? t("settings.voice_stop_check") : phase === "transcribing" ? t("settings.voice_transcribing") : ready ? t("settings.voice_test_again") : t("settings.voice_test_mic")}
+                {status?.recording
+                  ? t("settings.voice_stop_check")
+                  : phase === "transcribing"
+                    ? t("settings.voice_transcribing")
+                    : ready
+                      ? t("settings.voice_test_again")
+                      : t("settings.voice_test_mic")}
               </button>
             </div>
             {status?.recording && <div className="border-t border-line px-4 py-3 text-[12px] text-accent" role="status">{t("settings.voice_listening")}</div>}
@@ -396,16 +397,12 @@ function VoiceInputSection() {
 // GitHub / folder / zip only. GalleryModal stays in the tree for the gallery's
 // possible return as a first-class distribution surface, but nothing mounts it.
 function PersonasSection({ onOpenPersona }: { onOpenPersona?: (id: string) => void }) {
-  const { t } = useT();
-
+  const { t } = useTranslation();
   return (
     <section>
-      <PanelHead
-        title={t("settings.personas_title")}
-        sub={t("settings.personas_sub")}
-      />
+      <PanelHead title={t("settings.tab.personas")} sub={t("settings.personas_intro")} />
       <p className="text-[13px] text-muted leading-relaxed max-w-[560px] mt-5 mb-1">
-        {t("settings.personas_lede")}
+        {t("settings.personas_desc")}
       </p>
       <PersonasTab onOpenPersona={onOpenPersona} />
     </section>
@@ -414,12 +411,13 @@ function PersonasSection({ onOpenPersona }: { onOpenPersona?: (id: string) => vo
 
 // -- Appearance + app behaviour ------------------------------------------------
 function AppearanceSection() {
+  const { t } = useTranslation();
   const [theme, setTheme] = useThemePref();
-  const [lang, setLang] = useLangPref();
-  const { t } = useT();
   const [autostart, setAuto] = useState(false);
   const [keepAwake, setKeep] = useState(false);
   const desktop = isTauri();
+  // "system" = no explicit choice persisted; the app follows the OS locale.
+  const [currentLang, setCurrentLang] = useState<Lang | "system">(() => getStoredLanguage() ?? "system");
 
   useEffect(() => {
     if (isTauri()) {
@@ -434,6 +432,10 @@ function AppearanceSection() {
     await setOnboarded(false);
     window.dispatchEvent(new CustomEvent("coworker:open-onboarding"));
   };
+  const changeLang = (lang: Lang | "system") => {
+    setCurrentLang(lang);
+    void setI18nLanguage(lang === "system" ? null : lang);
+  };
 
   return (
     <section>
@@ -441,7 +443,7 @@ function AppearanceSection() {
 
       <div className={CARD + " p-4 mb-4"}>
         <div className={FIELD_LABEL}>{t("settings.theme")}</div>
-        <div className="seg mt-2.5" role="radiogroup" aria-label={t("settings.theme")}>
+        <div className="seg mt-2.5" role="radiogroup" aria-label={t("settings.appearance_aria")}>
           {(["light", "dark", "auto"] as const).map((p) => (
             <button key={p} className={p === theme ? "active" : ""} onClick={() => setTheme(p)}>
               {p === "light" ? t("settings.theme_light") : p === "dark" ? t("settings.theme_dark") : t("settings.theme_auto")}
@@ -453,10 +455,14 @@ function AppearanceSection() {
 
       <div className={CARD + " p-4 mb-4"}>
         <div className={FIELD_LABEL}>{t("settings.language")}</div>
-        <div className="seg mt-2.5" role="radiogroup" aria-label={t("settings.language")}>
-          {(["zh", "en"] as const).map((p) => (
-            <button key={p} className={p === lang ? "active" : ""} onClick={() => setLang(p)}>
-              {p === "zh" ? t("settings.language_zh") : t("settings.language_en")}
+        <div className="seg mt-2.5" role="radiogroup" aria-label={t("settings.language_aria")}>
+          {(["system", "en", "zh"] as const).map((lng) => (
+            <button
+              key={lng}
+              className={lng === currentLang ? "active" : ""}
+              onClick={() => changeLang(lng)}
+            >
+              {lng === "zh" ? t("settings.language_zh") : lng === "en" ? t("settings.language_en") : t("settings.language_system")}
             </button>
           ))}
         </div>
@@ -480,14 +486,14 @@ function AppearanceSection() {
             <input type="checkbox" className="mt-0.5" checked={autostart} onChange={(e) => toggleAuto(e.target.checked)} />
             <span>
               <span className="block text-[13px] text-ink">{t("settings.open_at_login")}</span>
-              <span className="block text-[12px] text-muted">{t("settings.open_at_login_sub")}</span>
+              <span className="block text-[12px] text-muted">{t("settings.open_at_login_help")}</span>
             </span>
           </label>
           <label className="flex items-start gap-3 py-2">
             <input type="checkbox" className="mt-0.5" checked={keepAwake} onChange={(e) => toggleKeep(e.target.checked)} />
             <span>
               <span className="block text-[13px] text-ink">{t("settings.keep_awake")}</span>
-              <span className="block text-[12px] text-muted">{t("settings.keep_awake_sub")}</span>
+              <span className="block text-[12px] text-muted">{t("settings.keep_awake_help")}</span>
             </span>
           </label>
         </div>
@@ -511,8 +517,8 @@ function AppearanceSection() {
 }
 
 function TrustedWorkspacesCard() {
+  const { t } = useTranslation();
   const [workspaces, setWorkspaces] = useState<WorkspaceCommandTrust[] | null>(null);
-  const { t } = useT();
 
   const refresh = () =>
     getTrustedWorkspaces()
@@ -524,21 +530,21 @@ function TrustedWorkspacesCard() {
   }, []);
 
   const revoke = async (path: string) => {
-    if (!window.confirm(t("settings.trusted_revoke_confirm", { path }))) return;
+    if (!window.confirm(t("settings.trust_revoke_confirm", { path }))) return;
     await setWorkspaceTrusted(path, false);
     refresh();
   };
 
   return (
     <div className={CARD + " p-4 mb-4"} data-testid="trusted-workspaces-card">
-      <div className={FIELD_LABEL}>{t("settings.trusted_title")}</div>
+      <div className={FIELD_LABEL}>{t("settings.trusted_workspaces")}</div>
       <div className={FIELD_HELP}>
-        {t("settings.trusted_sub")}
+        {t("settings.trusted_workspaces_help")}
       </div>
       {workspaces === null ? (
-        <div className="text-[12px] text-muted mt-3">{t("settings.loading")}</div>
+        <div className="text-[12px] text-muted mt-3">{t("settings.trust_loading")}</div>
       ) : workspaces.length === 0 ? (
-        <div className="text-[12px] text-muted mt-3">{t("settings.trusted_empty")}</div>
+        <div className="text-[12px] text-muted mt-3">{t("settings.trust_empty")}</div>
       ) : (
         <div className="mt-3 divide-y divide-line">
           {workspaces.map((workspace) => (
@@ -547,18 +553,16 @@ function TrustedWorkspacesCard() {
                 <div className="text-[13px] text-ink break-all">{workspace.workspace}</div>
                 <div className="text-[12px] text-muted mt-0.5">
                   {workspace.requested_commands.length
-                    ? (workspace.requested_commands.length === 1
-                        ? t("settings.trusted_n_one", { n: workspace.requested_commands.length })
-                        : t("settings.trusted_n", { n: workspace.requested_commands.length }))
-                    : t("settings.trusted_none_declared")}
-                  {!workspace.exists ? t("settings.trusted_folder_unavail") : ""}
+                    ? t("settings.trust_allowances", { count: workspace.requested_commands.length })
+                    : t("settings.trust_no_allowances")}
+                  {!workspace.exists ? t("settings.trust_folder_unavailable") : ""}
                 </div>
               </div>
               <button
                 className="text-[12px] text-red-600 px-2 py-1"
                 onClick={() => void revoke(workspace.workspace)}
               >
-                {t("settings.trusted_revoke")}
+                {t("settings.trust_revoke")}
               </button>
             </div>
           ))}
@@ -569,9 +573,9 @@ function TrustedWorkspacesCard() {
 }
 
 function UpdateInline() {
+  const { t } = useTranslation();
   const [state, setState] = useState<"idle" | "checking" | "none" | "found" | "installing" | "error">("idle");
   const [version, setVersion] = useState("");
-  const { t } = useT();
 
   const check = async () => {
     setState("checking");
@@ -610,7 +614,7 @@ function UpdateInline() {
           disabled={state === "checking" || state === "installing"}
           data-testid="settings-update-check"
         >
-          {state === "checking" ? t("settings.update_checking") : t("settings.update_check")}
+          {state === "checking" ? t("settings.checking") : t("settings.check_for_updates")}
         </button>
       )}
       {(state === "none" || state === "error" || state === "installing") && (
@@ -618,7 +622,7 @@ function UpdateInline() {
           {state === "none"
             ? t("settings.update_latest")
             : state === "error"
-              ? t("settings.update_err")
+              ? t("settings.update_error")
               : t("settings.update_downloading")}
         </span>
       )}
@@ -636,8 +640,8 @@ function UpdateInline() {
 // without native PDF support. (Long-history spend is handled by auto-compaction —
 // the CompactionCard below, OPE-27.)
 function TokenSavingsCard() {
+  const { t } = useTranslation();
   const [pdf, setPdf] = useState<PdfSettings | null>(null);
-  const { t } = useT();
 
   useEffect(() => {
     getSettings()
@@ -659,33 +663,33 @@ function TokenSavingsCard() {
   if (!pdf) return null;
   return (
     <div className={CARD + " p-4 mb-4"} data-testid="token-savings-card">
-      <div className={FIELD_LABEL}>{t("settings.tokens_title")}</div>
+      <div className={FIELD_LABEL}>{t("settings.token_savings")}</div>
       <div className={FIELD_HELP}>
-        {t("settings.tokens_sub")}
+        {t("settings.token_savings_help")}
       </div>
 
-      <div className="mt-3 text-[13px] text-ink">{t("settings.tokens_pdf_hdr")}</div>
-      <div className="seg mt-2" role="radiogroup" aria-label="PDF fallback" data-testid="pdf-fallback">
+      <div className="mt-3 text-[13px] text-ink">{t("settings.pdf_fallback_label")}</div>
+      <div className="seg mt-2" role="radiogroup" aria-label={t("settings.pdf_fallback_aria")} data-testid="pdf-fallback">
         <button
           className={pdf.pdf_fallback === "text" ? "active" : ""}
           onClick={() => save({ pdf_fallback: "text" })}
         >
-          {t("settings.tokens_extract_text")}
+          {t("settings.pdf_extract_text")}
         </button>
         <button
           className={pdf.pdf_fallback === "images" ? "active" : ""}
           onClick={() => save({ pdf_fallback: "images" })}
         >
-          {t("settings.tokens_send_images")}
+          {t("settings.pdf_send_images")}
         </button>
       </div>
       <div className={FIELD_HELP}>
-        {t("settings.tokens_fallback_help")}
+        {t("settings.pdf_fallback_help")}
       </div>
 
       <div className="mt-3 flex items-center gap-5">
         <label className="flex items-center gap-2.5">
-          <span className="text-[13px] text-ink">{t("settings.tokens_max_pages")}</span>
+          <span className="text-[13px] text-ink">{t("settings.pdf_max_pages")}</span>
           <input
             type="number"
             min={1}
@@ -697,7 +701,7 @@ function TokenSavingsCard() {
           />
         </label>
         <label className="flex items-center gap-2.5">
-          <span className="text-[13px] text-ink">{t("settings.tokens_max_size")}</span>
+          <span className="text-[13px] text-ink">{t("settings.pdf_max_size")}</span>
           <input
             type="number"
             min={1}
@@ -707,11 +711,11 @@ function TokenSavingsCard() {
             className="w-16 px-2 py-1.5 rounded-lg border border-line bg-paper text-[13px] text-ink outline-none focus:border-accent"
             onChange={(e) => save({ pdf_max_mb: Math.max(1, Math.min(Number(e.target.value) || 10, 10)) })}
           />
-<span className="text-[13px] text-muted">{t("settings.tokens_mb")}</span>
+          <span className="text-[13px] text-muted">MB</span>
         </label>
       </div>
       <div className={FIELD_HELP}>
-        {t("settings.tokens_limits_help")}
+        {t("settings.pdf_limits_help")}
       </div>
     </div>
   );
@@ -722,7 +726,6 @@ function TokenSavingsCard() {
 // limit, so work continues instead of hitting a raw provider error. Two spec'd
 // overrides (trigger % + token cap) and the summarizer-model pin — nothing more.
 function CompactionCard() {
-  const { t } = useT();
   const [cfg, setCfg] = useState<CompactionSettings | null>(null);
   const [models, setModels] = useState<string[]>([]);
   const [labels, setLabels] = useState<Record<string, string>>({});
@@ -756,14 +759,16 @@ function CompactionCard() {
   const modelLabel = (id: string) => labels[id]?.split(" · ")[0] || id;
   return (
     <div className={CARD + " p-4 mb-4"} data-testid="compaction-card">
-      <div className={FIELD_LABEL}>{t("settings.compaction_title")}</div>
+      <div className={FIELD_LABEL}>Context compaction</div>
       <div className={FIELD_HELP}>
-        {t("settings.compaction_blurb")}
+        Long sessions are compacted automatically: older turns are summarized so the
+        coworker keeps working instead of running out of context. Your visible transcript
+        is never changed — a small marker shows where compaction happened.
       </div>
 
       <div className="mt-3 flex items-center gap-5 flex-wrap">
         <label className="flex items-center gap-2.5">
-          <span className="text-[13px] text-ink">{t("settings.compaction_compact_at")}</span>
+          <span className="text-[13px] text-ink">Compact at</span>
           <input
             type="number"
             min={10}
@@ -778,10 +783,10 @@ function CompactionCard() {
               })
             }
           />
-<span className="text-[13px] text-muted">{t("settings.compaction_of_window")}</span>
+          <span className="text-[13px] text-muted">% of the context window</span>
         </label>
         <label className="flex items-center gap-2.5">
-          <span className="text-[13px] text-ink">{t("settings.compaction_or_at")}</span>
+          <span className="text-[13px] text-ink">or at</span>
           <input
             type="number"
             min={10_000}
@@ -799,22 +804,23 @@ function CompactionCard() {
               })
             }
           />
-<span className="text-[13px] text-muted">{t("settings.compaction_tokens_smaller")}</span>
+          <span className="text-[13px] text-muted">tokens, whichever is smaller</span>
         </label>
       </div>
       <div className={FIELD_HELP}>
-        {t("settings.compaction_cap_help")}
+        The cap makes very-large-context models compact early — quality and speed degrade
+        well before their nominal limit.
       </div>
 
       <div className="mt-3 flex items-center gap-2.5">
-        <span className="text-[13px] text-ink">{t("settings.compaction_summarizer_model")}</span>
+        <span className="text-[13px] text-ink">Summarizer model</span>
         <select
           value={cfg.compaction_model}
           data-testid="compaction-model"
           className="px-2 py-1.5 rounded-lg border border-line bg-paper text-[13px] text-ink outline-none focus:border-accent"
           onChange={(e) => save({ compaction_model: e.target.value })}
         >
-          <option value="">{t("settings.compaction_own_model_default")}</option>
+          <option value="">Session&rsquo;s own model (default)</option>
           {models.map((m) => (
             <option key={m} value={m}>
               {modelLabel(m)}
@@ -823,7 +829,8 @@ function CompactionCard() {
         </select>
       </div>
       <div className={FIELD_HELP}>
-        {t("settings.compaction_model_help")}
+        The summary is written by this model. The default follows whatever model the
+        session is using.
       </div>
     </div>
   );
@@ -833,8 +840,8 @@ function CompactionCard() {
 // The chip's bar is context-window occupancy; the session total (unbounded) lives in
 // the popover. Some people would rather not watch a meter at all, hence the toggle.
 function ContextBarCard() {
+  const { t } = useTranslation();
   const [shown, setShown] = useState<boolean | null>(null);
-  const { t } = useT();
 
   useEffect(() => {
     getSettings()
@@ -850,7 +857,7 @@ function ContextBarCard() {
   if (shown === null) return null;
   return (
     <div className={CARD + " p-4 mb-4"} data-testid="context-bar-card">
-      <div className={FIELD_LABEL}>{t("settings.context_bar_title")}</div>
+      <div className={FIELD_LABEL}>{t("settings.composer_section")}</div>
       <label className="flex items-start gap-3 py-2">
         <input
           type="checkbox"
@@ -860,10 +867,8 @@ function ContextBarCard() {
           onChange={(e) => save(e.target.checked)}
         />
         <span>
-          <span className="block text-[13px] text-ink">{t("settings.context_bar_show")}</span>
-          <span className="block text-[12px] text-muted">
-            {t("settings.context_bar_help")}
-          </span>
+          <span className="block text-[13px] text-ink">{t("settings.context_bar_title")}</span>
+          <span className="block text-[12px] text-muted">{t("settings.context_bar_desc")}</span>
         </span>
       </label>
     </div>
@@ -877,7 +882,6 @@ function ContextBarCard() {
 function AutoApproveCard() {
   const [on, setOn] = useState<boolean | null>(null);
   const [shadow, setShadow] = useState(false);
-  const { t } = useT();
 
   useEffect(() => {
     getSettings()
@@ -900,7 +904,7 @@ function AutoApproveCard() {
   if (on === null) return null;
   return (
     <div className={CARD + " p-4 mb-4"} data-testid="auto-approve-card">
-      <div className={FIELD_LABEL}>{t("settings.auto_approve_title")}</div>
+      <div className={FIELD_LABEL}>Auto-approve (experimental)</div>
       <label className="flex items-start gap-3 py-2">
         <input
           type="checkbox"
@@ -910,9 +914,12 @@ function AutoApproveCard() {
           onChange={(e) => saveOn(e.target.checked)}
         />
         <span>
-          <span className="block text-[13px] text-ink">{t("settings.auto_approve_enable")}</span>
+          <span className="block text-[13px] text-ink">Enable Auto-approve mode</span>
           <span className="block text-[12px] text-muted">
-            {t("settings.auto_approve_help")}
+            Adds an <em>Auto-approve</em> option to the mode picker. In that mode, your session
+            model reviews each action that would normally need approval and clears the routine
+            ones; anything doubtful still asks you. It can never allow something the rules
+            block. One extra model call per check, billed to your usage.
           </span>
         </span>
       </label>
@@ -926,11 +933,12 @@ function AutoApproveCard() {
         />
         <span>
           <span className="block text-[13px] text-ink">
-            {t("settings.auto_approve_shadow")}
-            <span className="text-faint"> ({t("settings.auto_approve_shadow_for_measuring")})</span>
+            Shadow evaluation <span className="text-faint">(for measuring)</span>
           </span>
           <span className="block text-[12px] text-muted">
-            {t("settings.auto_approve_shadow_help")}
+            On any mode, the reviewer records what it <em>would</em> have decided next to your
+            own choice — without changing anything. Lets you see how it would behave before
+            trusting it. Also costs one model call per approval.
           </span>
         </span>
       </label>
@@ -939,8 +947,8 @@ function AutoApproveCard() {
 }
 
 function SidebarCard() {
+  const { t } = useTranslation();
   const [peek, setPeek] = useState<number | null>(null);
-  const { t } = useT();
 
   useEffect(() => {
     getSettings()
@@ -957,7 +965,7 @@ function SidebarCard() {
   if (peek === null) return null;
   return (
     <div className={CARD + " p-4 mb-4"}>
-      <div className={FIELD_LABEL}>{t("settings.sidebar_title")}</div>
+      <div className={FIELD_LABEL}>{t("settings.sidebar_card_title")}</div>
       <label className="flex items-center gap-3 mt-2.5">
         <span className="text-[13px] text-ink">{t("settings.sidebar_per_coworker")}</span>
         <input
@@ -970,7 +978,7 @@ function SidebarCard() {
         />
       </label>
       <div className={FIELD_HELP}>
-        {t("settings.sidebar_help")}
+        {t("settings.sidebar_card_help")}
       </div>
     </div>
   );
@@ -979,11 +987,11 @@ function SidebarCard() {
 // -- Files (scratch location) — one card inside General (UX-021: a single option
 // doesn't earn its own tab) -----------------------------------------------------
 function FilesCard() {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<ModelSettings | null>(null);
   const [scratchDraft, setScratchDraft] = useState("");
   const [scratchMsg, setScratchMsg] = useState<string | null>(null);
   const desktop = isTauri();
-  const { t } = useT();
 
   const refresh = () =>
     getSettings()
@@ -1003,7 +1011,7 @@ function FilesCard() {
       setScratchMsg(t("settings.files_saved"));
       refresh();
     } else {
-      setScratchMsg(res.error || t("settings.files_err"));
+      setScratchMsg(res.error || t("settings.files_save_error"));
     }
   };
   const browseScratch = async () => {
@@ -1020,7 +1028,7 @@ function FilesCard() {
           <input
             className={INPUT}
             type="text"
-            placeholder={t("settings.files_ph")}
+            placeholder={t("settings.scratch_placeholder")}
             value={scratchDraft}
             spellCheck={false}
             autoComplete="off"
@@ -1028,7 +1036,7 @@ function FilesCard() {
             onKeyDown={(e) => e.key === "Enter" && saveScratch()}
           />
           {desktop && (
-            <button className={BTN_BORDERED} onClick={browseScratch} title={t("settings.files_pick")}>
+            <button className={BTN_BORDERED} onClick={browseScratch} title={t("settings.files_pick_folder")}>
               {t("settings.files_browse")}
             </button>
           )}

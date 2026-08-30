@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   getConnectors,
   getInbox,
@@ -16,7 +17,6 @@ import { InboxItemCard } from "./InboxItemCard";
 import { InboxConfigure } from "./InboxConfigure";
 import { PanelHead } from "./IntegrationsView";
 import { shortPersonaName } from "../personaScope";
-import { useT } from "../i18n/I18nProvider";
 
 const ICON_FOR: Record<string, "diamond" | "chat" | "code"> = {
   cowork: "diamond",
@@ -25,9 +25,9 @@ const ICON_FOR: Record<string, "diamond" | "chat" | "code"> = {
 };
 
 const KIND_TABS: { key: string; labelKey: string }[] = [
-  { key: "all", labelKey: "inboxview.kind_all" },
-  { key: "approval", labelKey: "inboxview.kind_approvals" },
-  { key: "question", labelKey: "inboxview.kind_questions" },
+  { key: "all", labelKey: "inbox.kind_all" },
+  { key: "approval", labelKey: "inbox.kind_approvals" },
+  { key: "question", labelKey: "inbox.kind_questions" },
 ];
 
 const CHIP = (active: boolean) =>
@@ -66,7 +66,7 @@ export function InboxView({
   const [unroutedCount, setUnroutedCount] = useState(0);
   const [kind, setKind] = useState<string>("all");
   const [personaFilter, setPersonaFilter] = useState<string>("all");
-  const { t } = useT();
+  const { t: tt } = useTranslation();
 
   const load = () => {
     getInbox(undefined, "pending").then(setItems).catch(() => {});
@@ -87,11 +87,11 @@ export function InboxView({
       .then((cs) => setSlackConnected(!!cs.find((c) => c.name === "slack" && c.connected)))
       .catch(() => {});
     getRecentChannels().then(setRecent).catch(() => setRecent([]));
-    const timer = setInterval(() => {
+    const t = setInterval(() => {
       load();
       loadRouting(); // edits happen on the Configure tab; keep Pending's status line honest
     }, 4000);
-    return () => clearInterval(timer);
+    return () => clearInterval(t);
   }, []);
 
   const resolve = async (id: string, resolution: string) => {
@@ -124,7 +124,7 @@ export function InboxView({
     return (
       <button
         className="inbox-session-chip"
-        title={exists ? t("inboxview.session_open", { label }) : t("inboxview.session_unavailable")}
+        title={exists ? tt("inbox.open_session", { label }) : tt("inbox.session_unavailable")}
         disabled={!exists}
         onClick={() =>
           exists && onOpenSession(it.session_id, it.session_workspace || "", it.session_agent || "cowork")
@@ -147,8 +147,8 @@ export function InboxView({
       <div className="flex-1 min-w-0 overflow-y-auto hairline-scroll">
         <div className="max-w-4xl mx-auto px-7 py-6">
           <PanelHead
-            title={t("inboxview.title")}
-            sub={t("inboxview.sub")}
+            title={tt("inbox.title")}
+            sub={tt("inbox.sub")}
           />
 
           <div className="flex gap-5 border-b border-line mb-4">
@@ -163,7 +163,7 @@ export function InboxView({
                 load();
               }}
             >
-              {t("inboxview.tab_pending")}
+              {tt("inbox.tab_pending")}
               {items.length > 0 && (
                 <span className="text-[11px] px-1.5 rounded-full bg-accentSoft text-accent leading-4">
                   {items.length}
@@ -175,7 +175,7 @@ export function InboxView({
               data-testid="inbox-tab-configure"
               onClick={() => setTab("configure")}
             >
-              {t("inboxview.tab_configure")}
+              {tt("inbox.tab_configure")}
               {unroutedCount > 0 && (
                 <span className="text-[11px] px-1.5 rounded-full bg-warnSoft text-warnInk leading-4">
                   ⚠ {unroutedCount}
@@ -191,17 +191,17 @@ export function InboxView({
               <div className="text-[12px] text-faint -mt-1 mb-4" data-testid="inbox-routing">
                 {routing ? (
                   <span>
-                    {t("inboxview.delivered_to")}{" "}
+                    {tt("inbox.also_delivered_to")}{" "}
                     <span className="text-muted" title={routing}>
                       {routingLabel}
                     </span>{" "}
-                    {t("inboxview.replies_resolve")}{" "}
+                    {tt("inbox.replies_resolve")}{" "}
                   </span>
                 ) : slackConnected ? (
-                  <span>{t("inboxview.here_only")} </span>
+                  <span>{tt("inbox.delivered_here_only")} </span>
                 ) : (
                   <span>
-                    {t("inboxview.here_only_connect")}{" "}
+                    {tt("inbox.delivered_here_only_connect_slack")}{" "}
                   </span>
                 )}
                 <button
@@ -209,14 +209,14 @@ export function InboxView({
                   data-testid="inbox-route-configure"
                   onClick={() => setTab("configure")}
                 >
-                  {t("inboxview.configure_chevron")}
+                  {tt("inbox.configure_arrow")}
                 </button>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap mb-4" data-testid="inbox-filters">
-                {KIND_TABS.map((kt) => (
-                  <button key={kt.key} className={CHIP(kind === kt.key)} onClick={() => setKind(kt.key)}>
-                    {t(kt.labelKey)}
+                {KIND_TABS.map((t) => (
+                  <button key={t.key} className={CHIP(kind === t.key)} onClick={() => setKind(t.key)}>
+                    {tt(t.labelKey)}
                   </button>
                 ))}
                 {personasWithItems.length > 1 && (
@@ -226,7 +226,7 @@ export function InboxView({
                       className={CHIP(personaFilter === "all")}
                       onClick={() => setPersonaFilter("all")}
                     >
-                      {t("inboxview.all_coworkers")}
+                      {tt("inbox.all_coworkers")}
                     </button>
                     {personasWithItems.map((p) => (
                       <button
@@ -243,7 +243,7 @@ export function InboxView({
 
               {visible.length === 0 ? (
                 <div className="manage-empty">
-                  {items.length === 0 ? t("inboxview.empty_all") : t("inboxview.empty_filter")}
+                  {items.length === 0 ? tt("inbox.nothing_pending") : tt("inbox.nothing_pending_filter")}
                 </div>
               ) : null}
 

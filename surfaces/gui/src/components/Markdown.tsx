@@ -1,7 +1,7 @@
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import { useTranslation } from "react-i18next";
 import remarkGfm from "remark-gfm";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 // §34 (UX-016): the agent ends a deliverable turn with plain markdown —
 // [Title](artifact:relative/path) — and the renderer turns it into a chip that opens the
@@ -16,22 +16,21 @@ export const OPEN_ARTIFACT_EVENT = "ocw-open-artifact";
 export const OPEN_BOARD_EVENT = "ocw-open-board";
 
 function BoardChip({ label }: { label: string }) {
-  const { t } = useT();
   return (
     <button
       className="boardlink-chip"
       data-testid="board-chip"
-      title={t("board.open_board")}
+      title="Open the board"
       onClick={() => window.dispatchEvent(new CustomEvent(OPEN_BOARD_EVENT))}
     >
       <Icon name="table" size={12} />
-      <span>{label || t("board.title")}</span>
+      <span>{label || "Board"}</span>
     </button>
   );
 }
 
 function ArtifactChip({ path, title }: { path: string; title: string }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const file = path.split("/").pop() || path;
   return (
     <button
@@ -49,7 +48,7 @@ function ArtifactChip({ path, title }: { path: string; title: string }) {
         <b>{title || file}</b>
         {title && title !== file && <span>{file}</span>}
       </span>
-      <span className="art-chip-open">{t("common.open_chevron")}</span>
+      <span className="art-chip-open">{t("rail.open")} ›</span>
     </button>
   );
 }

@@ -1,20 +1,20 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { addModel, getSettings, removeModel, setDefaultModel } from "../api";
-import { useT } from "../i18n/I18nProvider";
 
 // Cloud-account providers dispatch by a family segment baked into the model id
 // (`bedrock:claude/…`, `vertex:openweight/…`). The add-model row shows a dropdown so
 // users pick the family instead of memorizing the prefix; curated matrix ids already
 // carry theirs.
-const MODEL_FAMILIES: Record<string, { value: string; labelKey: string }[]> = {
+const MODEL_FAMILIES: Record<string, { value: string; label: string }[]> = {
   bedrock: [
-    { value: "claude", labelKey: "models.family_claude" },
-    { value: "other", labelKey: "models.family_other" },
+    { value: "claude", label: "Claude family" },
+    { value: "other", label: "Other models" },
   ],
   vertex: [
-    { value: "gemini", labelKey: "models.family_gemini" },
-    { value: "claude", labelKey: "models.family_claude" },
-    { value: "openweight", labelKey: "models.family_openweight" },
+    { value: "gemini", label: "Gemini family" },
+    { value: "claude", label: "Claude family" },
+    { value: "openweight", label: "Open-weight" },
   ],
 };
 
@@ -39,8 +39,8 @@ export function ModelChecklist({
   labels?: Record<string, string>; // curated display names (full id → label); raw id when absent
   onChanged: (next: { models: string[]; model: string }) => void;
 }) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState("");
-  const { t } = useT();
   const families = MODEL_FAMILIES[provider];
   const [family, setFamily] = useState(families?.[0]?.value || "");
 
@@ -96,7 +96,7 @@ export function ModelChecklist({
                 type="checkbox"
                 checked={checked(id)}
                 disabled={isDefault}
-                title={isDefault ? t("models.default_title") : undefined}
+                title={isDefault ? t("models.default_locked") : undefined}
                 onChange={(e) => tick(id, e.target.checked)}
               />
               <span className="mlist-name" title={id}>
@@ -118,12 +118,12 @@ export function ModelChecklist({
           <select
             value={family}
             onChange={(e) => setFamily(e.target.value)}
-            aria-label={t("models.family_aria")}
+            aria-label="Model family"
             data-testid="mlist-family"
           >
             {families.map((f) => (
               <option key={f.value} value={f.value}>
-                {t(f.labelKey)}
+                {f.label}
               </option>
             ))}
           </select>
@@ -137,7 +137,7 @@ export function ModelChecklist({
           onKeyDown={(e) => e.key === "Enter" && add()}
         />
         <button className="btn-primary sm" onClick={add} disabled={!draft.trim()}>
-          {t("models.add")}
+          {t("models.add_btn")}
         </button>
       </div>
     </div>

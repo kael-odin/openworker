@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { getI18n, useTranslation } from "react-i18next";
 import {
   announceCloudChanged,
   AUTOMATIONS_CHANGED,
@@ -26,31 +27,18 @@ import { Icon, type IconName } from "./Icon";
 import { personaGlyph } from "./personaIcon";
 import { SearchModal } from "./SearchModal";
 import { baseName } from "../paths";
-import { useT } from "../i18n/I18nProvider";
-import { currentLang } from "../i18n/I18nProvider";
-import zh from "../i18n/zh.json";
-import en from "../i18n/en.json";
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-// Module-scope helper for non-component paths (compactAge). Reads lang at call time.
-function tt(key: string): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  return d[key] ?? DICTS.en[key] ?? key;
-}
 
 // Session surfaces shown as accordions, in display order. The surfaced personas drive this list
 // (so third-party / Ops personas appear); the hardcoded set is the fallback before personas load.
-const SURFACES: { key: string; label?: string; labelKey?: string; icon: IconName; cls: string }[] = [
-  { key: "cowork", labelKey: "sidebar.surface_cowork", icon: "diamond", cls: "ico-cowork" },
-  { key: "chat", labelKey: "sidebar.surface_chat", icon: "chat", cls: "ico-chat" },
-  { key: "code", labelKey: "sidebar.surface_code", icon: "code", cls: "ico-code" },
+const SURFACES: { key: string; label: string; icon: IconName; cls: string }[] = [
+  { key: "cowork", label: "Coworker", icon: "diamond", cls: "ico-cowork" },
+  { key: "chat", label: "Chat", icon: "chat", cls: "ico-chat" },
+  { key: "code", label: "Code", icon: "code", cls: "ico-code" },
 ];
 
 const surfaceFromPersona = (p: Persona) => ({
   key: p.id,
   label: shortPersonaName(p.name, p.id),
-  labelKey: undefined,
   icon: personaGlyph(p.icon, p.requires_folder),
   cls: `ico-${p.icon || "cowork"}`,
 });
@@ -58,12 +46,12 @@ const surfaceFromPersona = (p: Persona) => ({
 // Attention = Inbox items awaiting a session (an accent count that bubbles session → persona →
 // footer Inbox — all views of the one Inbox queue, never a second list).
 function AttnBadge({ n }: { n: number }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   if (!n) return null;
   return (
     <span
       className="text-[11px] font-semibold text-ink bg-faint/30 rounded-full px-1.5 leading-[15px] shrink-0"
-      title={t("sidebar.attention_tip", { n })}
+      title={t("sidebar.awaiting_attention", { n })}
     >
       {n > 99 ? "99+" : n}
     </span>
@@ -74,19 +62,12 @@ function AttnBadge({ n }: { n: number }) {
 // treatment as the attention badge; failure only colors the tooltip's words, not the
 // sidebar (owner call 2026-07-20: no color, and the entry alone carries the count).
 function UnseenBadge({ n, failed }: { n: number; failed?: boolean }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   if (!n) return null;
-  const key = failed
-    ? n > 1
-      ? "sidebar.unseen_runs_failed_plural"
-      : "sidebar.unseen_runs_failed"
-    : n > 1
-      ? "sidebar.unseen_runs_plural"
-      : "sidebar.unseen_runs";
   return (
     <span
       className="text-[11px] font-semibold text-ink bg-faint/30 rounded-full px-1.5 leading-[15px] shrink-0"
-      title={t(key, { n })}
+      title={failed ? t("sidebar.unseen_failed", { count: n }) : t("sidebar.unseen_new", { count: n })}
     >
       {n > 99 ? "99+" : n}
     </span>
@@ -96,14 +77,14 @@ function UnseenBadge({ n, failed }: { n: number; failed?: boolean }) {
 // Liveness = working (in-flight turn) / sleeping (a self-wake is pending). A count-less dot that
 // never bubbles — it says "this is alive", not "this needs you".
 function LiveDot({ state }: { state?: "working" | "sleeping" | "idle" }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   if (state !== "working" && state !== "sleeping") return null;
   return state === "working" ? (
-    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" title={t("sidebar.live_working")} />
+    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" title={t("sidebar.status_working")} />
   ) : (
     <span
       className="w-1.5 h-1.5 rounded-full bg-faint/60 shrink-0"
-      title={t("sidebar.live_sleeping")}
+      title={t("sidebar.status_sleeping")}
     />
   );
 }
@@ -111,12 +92,13 @@ function LiveDot({ state }: { state?: "working" | "sleeping" | "idle" }) {
 // §31: a session spawned by a platform mention wears its platform's logo, right-aligned beside
 // the title cluster (owner call 2026-07-13). Slack today; the origin key is the platform id.
 function OriginIcon({ s }: { s: SessionInfo }) {
+  const { t } = useTranslation();
   if (s.origin !== "slack") return null;
   return (
     <ConnectorIcon
       connector={{ logo: "slack", brand_color: "#611f69" }}
       size={12}
-      title={s.origin_label || tt("sidebar.from_slack")}
+      title={s.origin_label || t("sidebar.from_slack")}
     />
   );
 }
@@ -175,24 +157,26 @@ const compactAge = (iso?: string | null): string => {
   if (!iso) return "";
   const then = Date.parse(iso);
   if (Number.isNaN(then)) return "";
+  const tt = getI18n().getFixedT(null, "translation");
   const secs = Math.max(0, Math.floor((Date.now() - then) / 1000));
   if (secs < 60) return tt("sidebar.age_now");
   const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m`;
+  if (mins < 60) return tt("sidebar.age_m", { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
+  if (hrs < 24) return tt("sidebar.age_h", { n: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d`;
+  if (days < 7) return tt("sidebar.age_d", { n: days });
   const weeks = Math.floor(days / 7);
-  if (days < 30) return `${weeks}w`;
+  if (days < 30) return tt("sidebar.age_w", { n: weeks });
   const months = Math.floor(days / 30);
-  if (days < 365) return `${months}mo`;
-  return `${Math.floor(days / 365)}y`;
+  if (days < 365) return tt("sidebar.age_mo", { n: months });
+  return tt("sidebar.age_y", { n: Math.floor(days / 365) });
 };
 
 // Sessions shown per group before "Show more" comes from Settings (sessions_peek, default 5).
 
 export function Sidebar(props: Props) {
+  const { t } = useTranslation();
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [appMenuOpen, setAppMenuOpen] = useState(false);
   // The account row (§26): cloud sign-in status drives the avatar/name/dot; refreshed on
@@ -297,7 +281,6 @@ export function Sidebar(props: Props) {
     return () => window.removeEventListener(PERSONAS_CHANGED, load);
   }, []);
   const personaOf = (id: string) => personas?.find((p) => p.id === id);
-  const { t } = useT();
 
   // Sidebar layout (§7): "grouped" = the per-coworker accordion; "flat" = a single
   // ungrouped list (Pinned + Recent). Flat stays the default even with Coworkers shipped
@@ -517,7 +500,7 @@ export function Sidebar(props: Props) {
               <div className="h-px bg-line my-1 mx-2" />
               {confirmDelId === s.session_id ? (
                 <button
-title={t("sidebar.delete_again_hint")}
+                  title={t("sidebar.confirm_delete")}
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[13px] text-left font-medium text-danger hover:bg-paper"
                   data-testid="row-menu-delete"
                   role="menuitem"
@@ -739,54 +722,54 @@ title={t("sidebar.delete_again_hint")}
       (p) => (p.enabled && p.surfaced) || agentsWithSessions.has(p.id),
     );
     return (
-      <div className="relative flex items-center justify-between px-1.5 mb-1" data-testid="recent-header">
-        <span className="text-[11px] uppercase tracking-[0.07em] text-faint font-semibold">
-          {t("sidebar.recent")}
-        </span>
-        <button
-          className="w-6 h-6 grid place-items-center rounded-md text-faint hover:text-ink hover:bg-chromeHover -mr-1"
-          title={t("sidebar.group_filter_title")}
-          aria-label={t("sidebar.group_filter_title")}
-          onClick={() => setGroupMenuOpen((v) => !v)}
-        >
-          <Icon name="sliders" size={14} />
-        </button>
-        {groupMenuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setGroupMenuOpen(false)} />
-            <div
-              className="absolute right-0 top-7 z-50 w-56 rounded-xl border border-line bg-panel shadow-xl p-1.5"
-              role="menu"
-              data-testid="group-filter-menu"
-            >
-              <div className="px-2 pt-1 pb-1 text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
-                {t("sidebar.group_by")}
-              </div>
-              {([["grouped", t("sidebar.group_persona")], ["flat", t("sidebar.group_chrono")]] as ["flat" | "grouped", string][]).map(
-                ([key, label]) => (
-                  <button
-                    key={key}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-left hover:bg-paper"
-                    onClick={() => setGroupBy(key)}
-                  >
-                    <span className="flex-1">{label}</span>
-                    {layout === key && <span className="text-accent text-[12px]">✓</span>}
-                  </button>
-                ),
-              )}
-              {filterPersonaList.length > 1 && (
-                <>
-                  <div className="my-1 border-t border-line" />
-                  <div className="px-2 pt-1 pb-1 flex items-center justify-between">
-                    <span className="text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
-                      {t("sidebar.filter_by_coworker")}
-                    </span>
-                    {filterPersonas.size > 0 && (
-                      <button className="text-[11px] text-accent" onClick={() => setFilterPersonas(new Set())}>
-                        {t("sidebar.clear")}
-                      </button>
-                    )}
-                  </div>
+    <div className="relative flex items-center justify-between px-1.5 mb-1" data-testid="recent-header">
+      <span className="text-[11px] uppercase tracking-[0.07em] text-faint font-semibold">
+        {t("sidebar.recent")}
+      </span>
+      <button
+        className="w-6 h-6 grid place-items-center rounded-md text-faint hover:text-ink hover:bg-chromeHover -mr-1"
+        title={t("sidebar.group_and_filter_short")}
+        aria-label={t("sidebar.group_and_filter")}
+        onClick={() => setGroupMenuOpen((v) => !v)}
+      >
+        <Icon name="sliders" size={14} />
+      </button>
+      {groupMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setGroupMenuOpen(false)} />
+          <div
+            className="absolute right-0 top-7 z-50 w-56 rounded-xl border border-line bg-panel shadow-xl p-1.5"
+            role="menu"
+            data-testid="group-filter-menu"
+          >
+            <div className="px-2 pt-1 pb-1 text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
+              {t("sidebar.group_by")}
+            </div>
+            {([["grouped", t("sidebar.group_persona")], ["flat", t("sidebar.group_chrono")]] as ["flat" | "grouped", string][]).map(
+              ([key, label]) => (
+                <button
+                  key={key}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-left hover:bg-paper"
+                  onClick={() => setGroupBy(key)}
+                >
+                  <span className="flex-1">{label}</span>
+                  {layout === key && <span className="text-accent text-[12px]">✓</span>}
+                </button>
+              ),
+            )}
+            {filterPersonaList.length > 1 && (
+              <>
+                <div className="my-1 border-t border-line" />
+                <div className="px-2 pt-1 pb-1 flex items-center justify-between">
+                  <span className="text-[11px] uppercase tracking-[0.06em] text-faint font-semibold">
+                    {t("sidebar.filter_coworker")}
+                  </span>
+                  {filterPersonas.size > 0 && (
+                    <button className="text-[11px] text-accent" onClick={() => setFilterPersonas(new Set())}>
+                      {t("sidebar.clear")}
+                    </button>
+                  )}
+                </div>
                 <div className="max-h-52 overflow-y-auto">
                   {filterPersonaList.map((p) => {
                     const checked = filterPersonas.has(p.id);
@@ -810,7 +793,7 @@ title={t("sidebar.delete_again_hint")}
                   })}
                 </div>
                 <div className="px-2 pt-1 pb-0.5 text-[11px] text-faint leading-snug">
-                  {t("sidebar.filter_none_hint")}
+                  {t("sidebar.filter_all_hint")}
                 </div>
               </>
             )}
@@ -913,7 +896,7 @@ title={t("sidebar.delete_again_hint")}
             <div className="space-y-0.5">
               {projectOrder.length === 0 && (
                 <div className="px-2 py-1.5 text-[12px] text-faint leading-snug">
-                  {t("sidebar.no_projects")}
+                  {t("sidebar.no_projects_yet")}
                 </div>
               )}
               {projectOrder.map((proj) => {
@@ -963,13 +946,13 @@ title={t("sidebar.delete_again_hint")}
                               className="px-2 py-1 text-[12px] text-faint hover:text-muted"
                               onClick={() => setProjShowAll((s) => toggleSet(s, proj))}
                             >
-                              {t("sidebar.show_more", { n: list.length - peek })}
+                              {t("sidebar.show_more_n", { n: list.length - peek })}
                             </button>
                           )}
                         </div>
                       ) : (
                         <div className="px-2 py-1.5 pl-[19px] text-[12px] text-faint leading-snug">
-                          {t("sidebar.no_conversations_in_project")}
+                          {t("sidebar.no_project_convos")}
                         </div>
                       ))}
                   </div>
@@ -994,7 +977,7 @@ title={t("sidebar.delete_again_hint")}
                     className="px-2 py-1 text-[12px] text-faint hover:text-muted"
                     onClick={() => setPersonaShowAll((s) => toggleSet(s, browseKey))}
                   >
-                    {t("sidebar.show_more", { n: mine.filter(matches).length - peek })}
+                    {t("sidebar.show_more_n", { n: mine.filter(matches).length - peek })}
                   </button>
                 )}
               </>
@@ -1009,7 +992,7 @@ title={t("sidebar.delete_again_hint")}
               onClick={() => setShowArchived((v) => !v)}
             >
               <Icon name={showArchived ? "chevronDown" : "chevronRight"} size={13} className="shrink-0" />
-              {t("sidebar.archived", { n: archived.length })}
+              {t("sidebar.archived_n", { n: archived.length })}
             </button>
             {showArchived && (
               <div className="space-y-0.5 mt-0.5">{archived.filter(matches).map((s) => sessionRow(s))}</div>
@@ -1033,9 +1016,9 @@ title={t("sidebar.delete_again_hint")}
         {/* Collapse (dock) / pin the sidebar. ⌘B mirrors this. */}
         {props.onCollapse && (
           <button
-className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hover:text-ink hover:bg-chromeHover shrink-0"
-            title={props.collapsed ? t("sidebar.dock_sidebar") : t("sidebar.collapse_sidebar")}
-            aria-label={props.collapsed ? t("sidebar.dock_sidebar") : t("sidebar.collapse_sidebar")}
+            className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hover:text-ink hover:bg-chromeHover shrink-0"
+            title={props.collapsed ? t("sidebar.dock") + " (⌘B)" : t("sidebar.collapse") + " (⌘B)"}
+            aria-label={props.collapsed ? t("sidebar.dock") : t("sidebar.collapse")}
             onClick={props.onCollapse}
           >
             <Icon name="sidebar" size={16} />
@@ -1120,7 +1103,7 @@ className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hov
                           (isCurrent(s.key) ? "font-semibold text-ink" : "font-medium text-ink")
                         }
                       >
-                        {s.label ?? t(s.labelKey ?? "")}
+                        {s.label}
                       </span>
                       <LiveDot state={liveByPersona.get(s.key)} />
                       <AttnBadge n={attnByPersona.get(s.key) || 0} />
@@ -1191,7 +1174,7 @@ className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hov
                 ) : (
                   <>
                     <div className="px-3 py-1.5 text-[11px] text-faint border-b border-line">
-                      {t("sidebar.not_signed_in_hint")}
+                      {t("sidebar.not_signed_in")}
                     </div>
                     <button
                       className="w-full flex items-center gap-2.5 px-3 py-1.5 mb-1 text-[13px] text-left text-accent hover:bg-paper"
@@ -1209,28 +1192,28 @@ className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hov
                         });
                       }}
                     >
-                      <Icon name="plug" size={15} className="shrink-0" /> {t("sidebar.sign_in_cloud")}
+                      <Icon name="plug" size={15} className="shrink-0" /> {t("sidebar.sign_in")}
                     </button>
                   </>
                 )}
                 {appMenuItem(
                   "inbox",
-                  t("sidebar.inbox"),
+                  t("nav.inbox"),
                   props.onOpenInbox,
                   props.inboxActive,
                   <AttnBadge n={totalAttention} />,
                 )}
-                {appMenuItem("plug", t("sidebar.connectors"), props.onOpenIntegrations, props.integrationsActive)}
+                {appMenuItem("plug", t("nav.connectors"), props.onOpenIntegrations, props.integrationsActive)}
                 <div className="h-px bg-line my-1 mx-2" />
                 {appMenuItem(
                   "gear",
-                  t("sidebar.settings"),
+                  t("nav.settings"),
                   props.onManage,
                   false,
                   <span className="text-[11px] text-faint">⌘ ,</span>,
                 )}
                 {/* No Automations here — the sidebar's top nav already carries it. */}
-                {appMenuItem("audit", t("sidebar.activity"), props.onOpenAudit, props.auditActive)}
+                {appMenuItem("audit", t("nav.activity"), props.onOpenAudit, props.auditActive)}
                 {cloud?.signed_in && (
                   <>
                     <div className="h-px bg-line my-1 mx-2" />
@@ -1256,7 +1239,7 @@ className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hov
             }}
             aria-haspopup="menu"
             aria-expanded={appMenuOpen}
-            aria-label={cloud?.signed_in ? t("sidebar.account_signed_in", { email: accountEmail }) : t("sidebar.account_not_signed_in")}
+            aria-label={cloud?.signed_in ? t("sidebar.account_aria", { email: accountEmail }) : t("sidebar.account_not_signed_in_aria")}
           >
             <span
               className={
@@ -1270,12 +1253,12 @@ className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hov
               {cloud?.signed_in ? accountName.slice(0, 1).toUpperCase() : "?"}
             </span>
             <span className={"truncate " + (cloud?.signed_in ? "" : "text-muted")}>
-              {cloud?.signed_in ? accountName : t("sidebar.not_signed_in")}
+              {cloud?.signed_in ? accountName : t("sidebar.not_signed_in_row")}
             </span>
             {cloud?.signed_in && (
               <span
                 className="w-[7px] h-[7px] rounded-full bg-ok shrink-0"
-                title={t("sidebar.signed_in_tip")}
+                title={t("sidebar.signed_in_tooltip")}
                 aria-hidden
               />
             )}
@@ -1291,9 +1274,9 @@ className="nav-pin-btn w-7 h-7 grid place-items-center rounded-md text-faint hov
                 data-testid="inbox-chip"
                 role="button"
                 aria-label={
-                  totalAttention > 0 ? t("sidebar.inbox_chip_pending", { n: totalAttention }) : t("sidebar.inbox_chip_empty")
+                  totalAttention > 0 ? t("sidebar.inbox_chip_pending", { n: totalAttention }) : t("nav.inbox")
                 }
-                title={totalAttention > 0 ? t("sidebar.inbox_chip_pending", { n: totalAttention }) : t("sidebar.inbox_chip_empty")}
+                title={totalAttention > 0 ? t("sidebar.inbox_chip_pending", { n: totalAttention }) : t("nav.inbox")}
                 onClick={(e) => {
                   // The chip goes STRAIGHT to Inbox — the menu is the row's target, not the chip's.
                   e.stopPropagation();

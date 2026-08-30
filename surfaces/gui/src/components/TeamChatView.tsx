@@ -4,9 +4,9 @@
 // No derived board-event clusters (owner call, eighth pass): status lives on the
 // board rail one click away — this surface is pure messages.
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getTeamChat, postTeamChat, type TeamChat } from "../api";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 function mentionify(text: string, members: Set<string>) {
   // Split on @word tokens; wrap known handles in a highlight span.
@@ -30,7 +30,7 @@ function clock(ts: string): string {
 }
 
 export function TeamChatView({ teamId, onClose }: { teamId: string; onClose: () => void }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [chat, setChat] = useState<TeamChat | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,8 +39,8 @@ export function TeamChatView({ teamId, onClose }: { teamId: string; onClose: () 
   const load = () => getTeamChat(teamId).then(setChat).catch(() => {});
   useEffect(() => {
     load();
-    const timer = setInterval(load, 3000);
-    return () => clearInterval(timer);
+    const t = setInterval(load, 3000);
+    return () => clearInterval(t);
   }, [teamId]);
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "end" });
@@ -74,25 +74,28 @@ export function TeamChatView({ teamId, onClose }: { teamId: string; onClose: () 
     // the sidebar stays interactive; back or Esc returns to the session.
     <div className="chat-view" data-testid="teamchat-view">
       <div className="chat-view-head">
-        <button className="artifact-icon-btn" onClick={onClose} aria-label={t("teamchat.back_aria")} title={t("rightrail.back")}>
+        <button
+          className="artifact-icon-btn"
+          onClick={onClose}
+          aria-label={t("team.back_to_session")}
+          title={t("rail.back")}
+        >
           <Icon name="arrowLeft" size={16} />
         </button>
         <div className="board-overlay-title">
           <span className="chat-hash">#</span>
-          <span>{t("teamchat.title")}</span>
-          <span className="board-overlay-space">{t("teamchat.sub")}</span>
+          <span>{t("rail.team_chat")}</span>
+          <span className="board-overlay-space">{t("team.chat_tagline")}</span>
         </div>
       </div>
       <div className="chat-view-body">
         <div className="chat-scroll">
           {messages.length === 0 && (
-            <div className="chat-empty">
-              {t("teamchat.empty")}
-            </div>
+            <div className="chat-empty">{t("team.chat_empty")}</div>
           )}
           {messages.map((m, i) => {
             const grouped = i > 0 && messages[i - 1].author === m.author;
-            const label = m.author_role === "user" ? t("teamchat.you") : m.author;
+            const label = m.author_role === "user" ? t("team.you") : m.author;
             return (
               <div className={"chat-msg" + (grouped ? " grouped" : "")} key={m.seq}>
                 {!grouped && (
@@ -101,15 +104,7 @@ export function TeamChatView({ teamId, onClose }: { teamId: string; onClose: () 
                       {label.slice(0, 1).toUpperCase()}
                     </span>
                     <span className="chat-name">{label}</span>
-                    <span className="chat-role">
-                      {m.author_role === "user"
-                        ? ""
-                        : m.author_role === "lead"
-                          ? t("teamchat.role_lead")
-                          : m.author_role === "worker"
-                            ? t("teamchat.role_worker")
-                            : m.author_role}
-                    </span>
+                    <span className="chat-role">{m.author_role === "user" ? "" : m.author_role}</span>
                     <span className="chat-ts">{clock(m.ts)}</span>
                   </div>
                 )}
@@ -123,7 +118,7 @@ export function TeamChatView({ teamId, onClose }: { teamId: string; onClose: () 
           <input
             className="chat-input"
             data-testid="chat-input"
-            placeholder={t("teamchat.input_ph")}
+            placeholder={t("team.chat_placeholder")}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -131,7 +126,7 @@ export function TeamChatView({ teamId, onClose }: { teamId: string; onClose: () 
             }}
           />
           <button className="btn primary" data-testid="chat-send" disabled={busy || !draft.trim()} onClick={send}>
-            {t("teamchat.send")}
+            {t("common.send")}
           </button>
         </div>
       </div>

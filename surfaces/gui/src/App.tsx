@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   announceInboxUnlock,
   createTempWorkspace,
@@ -83,33 +84,17 @@ import { TeamRequestCard } from "./components/TeamRequestCard";
 import { WorkItemsCard } from "./components/WorkItemsCard";
 import { TeamChatView } from "./components/TeamChatView";
 import { WorkspaceTrustPrompt } from "./components/WorkspaceTrustPrompt";
-import { useT } from "./i18n/I18nProvider";
-import { currentLang } from "./i18n/I18nProvider";
-import zh from "./i18n/zh.json";
-import en from "./i18n/en.json";
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-// Resolve a key outside React render (WS handler closures, module-scope). The hook `t`
-// from useT() would go stale inside the once-built socket handler, so these paths read
-// the lang at call time instead.
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  const raw = d[key] ?? DICTS.en[key] ?? key;
-  if (!params) return raw;
-  return raw.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
-}
-// SUGGESTIONS is module-scope (no hook); resolve its seed text by current lang.
-function suggestionsText(): { ico: string; text: string }[] {
-  return [
-    { ico: "⚙", text: tt("app.suggest_tests") },
-    { ico: "✦", text: tt("app.suggest_overview") },
-    { ico: "↻", text: tt("app.suggest_fix_build") },
-  ];
-}
 
 const newId = () =>
   (crypto as any).randomUUID ? crypto.randomUUID().slice(0, 12) : Math.random().toString(36).slice(2, 14);
+
+// Hero task suggestions — translated at call time (module scope can't see React hooks).
+// Keys live under `hero.suggest_*`; resolved in the component via useTranslation.
+const SUGGESTION_KEYS = [
+  { ico: "⚙", key: "hero.suggest_tests" },
+  { ico: "✦", key: "hero.suggest_overview" },
+  { ico: "↻", key: "hero.suggest_fix_build" },
+];
 
 // Tools whose success means a new/changed file should show up under Artifacts right away.
 const FILE_WRITE_TOOLS = new Set(["write_file", "apply_patch", "apply_unified_diff", "replace_in_file"]);
@@ -189,6 +174,7 @@ function fallbackWorkspace(current: string | null, projects: RecentWorkspace[]):
 }
 
 export function App() {
+  const { t } = useTranslation();
   const [workspace, setWorkspace] = useState<string | null>(null);
   const [branch, setBranch] = useState<string | null>(null);
   // UX-029: the active session runs in a temporary folder (never show its raw path —
@@ -361,7 +347,10 @@ export function App() {
       navBeforePreview.current = null;
     }
   }, []);
-  useEffect(() => {
+  // Layout effect on purpose: a passive effect registers after paint, leaving a boot-splash
+  // window where the app is visible but ⌘B/⌘, are dead (input arriving right after load was
+  // dropped). Registering at commit closes that gap.
+  useLayoutEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
@@ -900,7 +889,7 @@ export function App() {
           break;
         case "turn_end":
           if (d.status === "max_iterations_exceeded")
-            setItems((p) => [...p, { kind: "notice", tone: "warn", text: tt("app.notice_stopped_max") }]);
+            setItems((p) => [...p, { kind: "notice", tone: "warn", text: t("app.notice.max_iterations") }]);
           break;
         case "mode_notice":
           // Server-authored + persisted (owner ruling 2026-08-24): the Auto-Approve
@@ -914,7 +903,7 @@ export function App() {
           // Mid-session switch (server-applied): update the header fact and drop the
           // persisted marker into the live transcript (replay renders it from history).
           if (d.model) setModel(d.model);
-          setItems((p) => [...p, { kind: "notice", tone: "info", text: d.text || tt("app.notice_model_switched") }]);
+          setItems((p) => [...p, { kind: "notice", tone: "info", text: d.text || t("app.notice.model_switched") }]);
           break;
         case "memory_saved":
           // §5.1 save notice — inline in the transcript, where the user is already
@@ -940,23 +929,23 @@ export function App() {
         case "compacted":
           // Auto-compaction marker (OPE-27): outbound-only — the transcript stays intact,
           // this divider just shows where the model's memory was summarized.
-          setItems((p) => [...p, { kind: "notice", tone: "info", text: d.text || tt("app.notice_compacted") }]);
+          setItems((p) => [...p, { kind: "notice", tone: "info", text: d.text || t("app.notice.context_compacted") }]);
           break;
         case "interrupted":
           flushPartialStream();
-          setItems((p) => [...p, { kind: "notice", tone: "warn", text: tt("app.notice_interrupted") }]);
+          setItems((p) => [...p, { kind: "notice", tone: "warn", text: t("app.notice.interrupted") }]);
           break;
         case "error":
           flushPartialStream();
           setItems((p) => [
             ...p,
-            { kind: "notice", tone: "warn", text: tt("app.notice_error_prefix") + (d.error || tt("app.notice_unknown")), retriable: true },
+            { kind: "notice", tone: "warn", text: t("app.notice.error") + (d.error || t("app.notice.unknown")), retriable: true },
           ]);
           break;
         case "input_rejected":
           setItems((p) => [
             ...p,
-            { kind: "notice", tone: "warn", text: d.error || tt("app.notice_rejected") },
+            { kind: "notice", tone: "warn", text: d.error || t("app.notice.input_rejected") },
           ]);
           break;
         case "turn_done":
@@ -1155,7 +1144,7 @@ export function App() {
   // identical re-proposal without the reviewer or a card; anything different still asks.
   const allowAnyway = (name: string, args: any) => {
     sessionRef.current?.allowAnyway(name, args);
-    send(`I reviewed the blocked ${name} action — go ahead with it exactly as proposed.`);
+    send(t("app.allow_anyway_message", { name }));
   };
   const approve = (decision: ApprovalDecision) => {
     setItems((p) => resolveLastApproval(p, decision));
@@ -1296,7 +1285,7 @@ export function App() {
       setSendGate(null);
       setItems((p) => [
         ...p,
-        { kind: "notice", tone: "warn", text: res.error || t("app.err_temp_folder") },
+        { kind: "notice", tone: "warn", text: res.error || t("app.temp_folder_failed") },
       ]);
       prefillComposer(gate.skill ? `/${gate.skill} ${gate.text}` : gate.text, gate.attachments);
       return;
@@ -1308,7 +1297,7 @@ export function App() {
     pendingPromptRef.current = {
       ...gate,
       model,
-      notice: res.git ? t("app.temp_created_git") : t("app.temp_created"),
+      notice: res.git ? t("app.temp_folder_created_git") : t("app.temp_folder_created"),
     };
     setSessionId(sid);
   };
@@ -1328,7 +1317,7 @@ export function App() {
     if (!res.ok || !res.path) {
       setItems((p) => [
         ...p,
-        { kind: "notice", tone: "warn", text: res.error || t("app.err_save_project") },
+        { kind: "notice", tone: "warn", text: res.error || t("app.save_project_failed") },
       ]);
       return;
     }
@@ -1338,7 +1327,7 @@ export function App() {
     setTempWorkspace(false);
     setItems((p) => [
       ...p,
-      { kind: "notice", tone: "info", text: `Saved as a project — now working in ${baseName(newPath)}.` },
+      { kind: "notice", tone: "info", text: t("app.saved_as_project", { name: baseName(newPath) }) },
     ]);
     setConnectNonce((n) => n + 1);
     refreshSessions();
@@ -1355,7 +1344,7 @@ export function App() {
       if (msg.type !== "automation_run_started") return;
       const d = (msg.data ?? {}) as Record<string, string>;
       setRunToast({
-        title: d.task_title || tt("app.automation_default_title"),
+        title: d.task_title || t("toast.automation_fallback"),
         sessionId: d.session_id || "",
         workspace: d.workspace || "",
         agent: d.agent || "cowork",
@@ -1570,7 +1559,6 @@ export function App() {
   // workspace folder for project-scoped sessions). Renders only once the session has history;
   // until then the model is still choosable in the composer, so there's no locked fact to state.
   const hasHistory = items.length > 0;
-  const { t } = useT();
   // Curated labels read "Claude Opus 4.8 · Anthropic" — the provider suffix is dropdown context,
   // noise in a facts line. Fall back to the raw id without its provider prefix.
   const modelDisplay =
@@ -1584,7 +1572,7 @@ export function App() {
     subtitleParts.push(tempWorkspace ? t("root.temporary_space") : baseName(workspace));
   const showSaveAsProject = hasHistory && tempWorkspace && isProjectScoped(personaOf(agent));
   const activeInfo = sessions.find((s) => s.session_id === sessionId);
-  const activeTitle = activeInfo?.title || t("app.new_session");
+  const activeTitle = activeInfo?.title || t("sidebar.new_session");
 
   const desktop = isTauri();
   // Dev-only: `?overlay=1` simulates the desktop overlay layout in the browser (adds the
@@ -1623,7 +1611,7 @@ export function App() {
           <Icon name="logo" size={38} />
         </div>
         <div className="boot-text">
-          {resumedExisting ? t("app.restoring") : t("app.starting")}
+          {resumedExisting ? t("boot.restoring") : t("boot.starting")}
           <span className="beta-tag">BETA</span>
         </div>
       </div>
@@ -1656,10 +1644,10 @@ export function App() {
         >
           <div className="flex items-center gap-2 text-[13px] font-semibold">
             <span className="w-[7px] h-[7px] rounded-full bg-faint toast-pulse" />
-            {t("app.automation_started")}
+            {t("toast.automation_started")}
           </div>
-          <div className="text-[12.5px] text-muted mt-0.5 ml-[15px] truncate">
-            {t("app.run_n", { title: runToast.title, n: runToast.time })}
+          <div className="text-[13px] text-muted mt-0.5 ml-[15px] truncate">
+            {runToast.title} · {runToast.time} {t("toast.run_count")}
           </div>
           <div className="flex items-center justify-between ml-[15px] mt-1.5">
             <button
@@ -1670,12 +1658,12 @@ export function App() {
                 setRunToast(null);
               }}
             >
-              {t("app.view_run")}
+              {t("toast.view_run")} ›
             </button>
             <button
               className="text-[12px] text-faint px-0.5"
               data-testid="toast-dismiss"
-              title={t("app.dismiss")}
+              title={t("common.dismiss")}
               onClick={() => setRunToast(null)}
             >
               ✕
@@ -1702,8 +1690,8 @@ export function App() {
           className="nav-reveal-btn"
           onClick={toggleNav}
           onMouseEnter={() => setNavPeek(true)}
-          title={t("app.show_sidebar")}
-          aria-label={t("app.show_sidebar")}
+          title={t("topbar.show_sidebar")}
+          aria-label={t("topbar.show_sidebar_short")}
         >
           <Icon name="sidebar" size={16} />
         </button>
@@ -1784,8 +1772,8 @@ export function App() {
             startNewSession();
             prefillComposer(
               description
-                ? t("app.create_skill_prefill", { description })
-                : t("app.create_skill_prefill_empty"),
+                ? t("app.build_skill_prefill", { description })
+                : t("app.build_skill_prefill_empty"),
             );
           }}
         />
@@ -1817,24 +1805,24 @@ export function App() {
                 <button
                   className="topbar-icon-btn"
                   onClick={toggleNav}
-                  aria-label={t("app.show_sidebar")}
-                  title={t("app.show_sidebar")}
+                  aria-label={t("topbar.show_sidebar_short")}
+                  title={t("topbar.show_sidebar")}
                 >
                   <Icon name="sidebar" size={16} />
                 </button>
                 <button
                   className="topbar-icon-btn"
                   onClick={() => startNewSession()}
-                  aria-label={t("app.new_session")}
-                  title={t("app.new_session")}
+                  aria-label={t("sidebar.new_session")}
+                  title={t("sidebar.new_session")}
                 >
                   <Icon name="plus" size={16} />
                 </button>
                 <button
                   className="topbar-icon-btn"
                   onClick={() => setSearchOpen(true)}
-                  aria-label={t("app.search")}
-                  title={t("app.search")}
+                  aria-label={t("topbar.search")}
+                  title={t("topbar.search")}
                 >
                   <Icon name="search" size={16} />
                 </button>
@@ -1883,10 +1871,10 @@ export function App() {
                 className="topbar-artifacts-btn"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => setRailHidden(false)}
-                title={t("app.show_files_produced")}
+                title={t("topbar.show_artifacts")}
               >
                 <Icon name="file" size={14} />
-                <span>{t("app.artifacts")}</span>
+                <span>{t("topbar.artifacts")}</span>
                 <span className="topbar-artifacts-count">{artifactCount}</span>
               </button>
             )}
@@ -1897,8 +1885,8 @@ export function App() {
                 className="topbar-icon-btn"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => setRailHiddenPersist(!railHidden)}
-                aria-label={railHidden ? t("app.show_side_panel") : t("app.hide_side_panel")}
-                title={railHidden ? t("app.show_side_panel") : t("app.hide_side_panel")}
+                aria-label={railHidden ? t("topbar.show_side_panel") : t("topbar.hide_side_panel")}
+                title={railHidden ? t("topbar.show_side_panel") : t("topbar.hide_side_panel")}
               >
                 <Icon name="sidebarRight" size={16} />
               </button>
@@ -1923,14 +1911,14 @@ export function App() {
               >
                 <Icon name="clock" size={14} className="text-accent shrink-0" />
                 <span className="truncate text-muted">
-                  {t("app.scheduled_run")}
+                  {t("run_banner.scheduled_run")}
                   {runContext?.title ? (
                     <>
                       {" — "}
                       <span className="text-ink font-medium">{runContext.title}</span>
                     </>
-                  ) : null}
-                  {t("app.started_by_automation")}
+                  ) : null}{" "}
+                  {t("run_banner.started_by_automation")}
                 </span>
                 <button
                   className="ml-auto shrink-0 text-accent font-medium hover:underline"
@@ -1939,7 +1927,7 @@ export function App() {
                     setSurface("scheduled");
                   }}
                 >
-                  {t("app.back_to_runs")}
+                  {t("run_banner.back_to_runs")}
                 </button>
               </div>
             )}
@@ -1955,15 +1943,15 @@ export function App() {
                   <div className="hero">
                     <h1 className="greeting">
                       <span className="mark">✦</span>
-                      {agent === "chat" ? t("app.how_can_i_help") : t("app.lets_build")}
+                      {agent === "chat" ? t("hero.chat_greeting") : t("hero.build_greeting")}
                     </h1>
                     {(
                       <div className="suggestions">
-                        <div className="suggest-head">{t("app.try_a_task")}</div>
-                        {suggestionsText().map((s, i) => (
-                          <div className="suggest" key={i} onClick={() => workspace && send(s.text)}>
+                        <div className="suggest-head">{t("hero.try_a_task")}</div>
+                        {SUGGESTION_KEYS.map((s, i) => (
+                          <div className="suggest" key={i} onClick={() => workspace && send(t(s.key))}>
                             <span className="ico">{s.ico}</span>
-                            {s.text}
+                            {t(s.key)}
                           </div>
                         ))}
                       </div>
@@ -2059,25 +2047,23 @@ export function App() {
               <div className="sleep-strip" data-testid="sleep-strip">
                 <span className="sleep-dot" />
                 <span className="sleep-text">
-                  Sleeping
+                  {t("app.sleep.label")}
                   {activeInfo.sleeping_until
-                    ? ` until ${new Date(activeInfo.sleeping_until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                    ? t("app.sleep.until", {
+                        time: new Date(activeInfo.sleeping_until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                      })
                     : ""}
                   {activeInfo.team?.role === "lead"
-                    ? " while the team works — it also wakes on board activity."
-                    : " — it wakes on its trigger."}{" "}
-                  Talk to it anytime.
+                    ? t("app.sleep.team_clause")
+                    : t("app.sleep.trigger_clause")}{" "}
+                  {t("app.sleep.talk_anytime")}
                 </span>
                 <button
                   className="btn sm"
                   data-testid="sleep-status-btn"
-                  onClick={() =>
-                    send(
-                      "Quick status check, please — what's moving, what's blocked, and does anything need me?",
-                    )
-                  }
+                  onClick={() => send(t("app.sleep.status_prompt"))}
                 >
-                  {t("app.ask_status")}
+                  {t("app.sleep.ask_status")}
                 </button>
               </div>
             )}
@@ -2112,7 +2098,7 @@ export function App() {
                   ? t("composer.placeholder_code")
                   : agent === "chat"
                     ? t("composer.placeholder_chat")
-                    : t("composer.placeholder")
+                    : t("composer.placeholder_cowork")
               }
               approvalSlot={
                 // Live inline cards are for ATTENDED sessions only; when Unattended the prompt is
@@ -2297,7 +2283,7 @@ function lastItemIsAssistant(items: Item[]): boolean {
 }
 
 function WaitingForAgent({ label }: { label?: string }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   return (
     <div className="waiting-transcript">
       <div className="waiting-row" aria-live="polite">

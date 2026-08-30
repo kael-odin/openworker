@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   disconnectHubSpotPortal,
   setHubSpotDefaultPortal,
@@ -10,7 +11,6 @@ import { AddConnectionModal } from "./AddConnectionModal";
 import type { DetailProps } from "./ConnectorsSection";
 import { ToolsDisclosure } from "./ToolsDisclosure";
 import { FOOT, GRP, GRP_H, PILL_ACCENT, ROW, TAG_ACCENT, TAG_QUIET, TAG_WARN, XBTN } from "./ui";
-import { useT } from "../../i18n/I18nProvider";
 
 // The HubSpot detail page (UX-DECISIONS §21): connected portals (multi-portal,
 // Default/Sandbox tags, the consent tier granted at connect) + Access & privacy
@@ -21,45 +21,45 @@ import { useT } from "../../i18n/I18nProvider";
 const LABEL = "text-[13px] text-muted w-24 shrink-0";
 
 export function HubSpotDetail({ c, cloud, slack: _slack, onChanged }: DetailProps) {
+  const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   const portals = c.portals ?? [];
-  const { t } = useT();
 
   return (
     <div data-testid="hubspot-detail">
       <div className="flex items-center gap-3.5 mb-5">
-        <ConnectorBadge connector={c} size={44} title={t("conn.hubspot_title")} />
+        <ConnectorBadge connector={c} size={44} title="HubSpot" />
         <div className="min-w-0 flex-1">
-<h2 className="text-[20px] font-semibold tracking-tight leading-tight">{t("conn.hubspot_title")}</h2>
+          <h2 className="text-[20px] font-semibold tracking-tight leading-tight">HubSpot</h2>
           <div className="text-[13px] text-muted flex items-center gap-1.5">
             {c.connected ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-ok" />
                 <span data-testid="hubspot-status">
-                  {t(portals.length === 1 ? "conn.portal_n_one" : "conn.portal_n", { n: portals.length })}
+                  {t("hubspot.portal_count", { count: portals.length })}
                 </span>
               </>
             ) : (
-              <span>{t("conn.not_connected")}</span>
+              <span>{t("connector.not_connected")}</span>
             )}
           </div>
         </div>
         <button className={PILL_ACCENT} data-testid="add-portal-btn" onClick={() => setAdding(true)}>
-          {t("conn.add_portal")}
+          {t("hubspot.add_portal")}
         </button>
       </div>
 
       {!c.connected && (
         <div className={GRP}>
           <div className={ROW + " text-[13px] text-muted"}>
-            {t("conn.hubspot_sub")}
+            {t("hubspot.setup_blurb")}
           </div>
         </div>
       )}
 
       {portals.length > 0 && (
         <>
-          <div className={GRP_H + " !mt-0"}>{t("conn.portals")}</div>
+          <div className={GRP_H + " !mt-0"}>{t("hubspot.portals")}</div>
           <div className={GRP} data-testid="hubspot-portals">
             {portals.map((p) => (
               <PortalRow key={p.hub_id} p={p} onChanged={onChanged} />
@@ -72,14 +72,14 @@ export function HubSpotDetail({ c, cloud, slack: _slack, onChanged }: DetailProp
 
       <ToolsDisclosure c={c} onChanged={onChanged} />
       <div className={FOOT + " mt-2"}>
-        {t("conn.hubspot_foot")}
+        {t("hubspot.hidden_fields_foot")}
       </div>
 
       {adding && (
         <AddConnectionModal
           c={c}
           cloud={cloud}
-          title={t("conn.add_a_portal")}
+          title={t("hubspot.add_portal_title")}
           onClose={() => setAdding(false)}
           onChanged={onChanged}
         />
@@ -89,22 +89,22 @@ export function HubSpotDetail({ c, cloud, slack: _slack, onChanged }: DetailProp
 }
 
 function PortalRow({ p, onChanged }: { p: HubSpotPortal; onChanged: () => void }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
-  const { t } = useT();
   return (
     <div className={ROW} data-testid={`hubspot-portal-${p.hub_id}`}>
       <span className="min-w-0 flex-1 flex items-center gap-2">
         <span className="text-[13px] font-medium truncate" title={`hub ${p.hub_id}`}>
           {p.name}
         </span>
-        {p.default && <span className={TAG_ACCENT}>{t("conn.default")}</span>}
-        {p.sandbox && <span className={TAG_WARN}>{t("conn.sandbox")}</span>}
+        {p.default && <span className={TAG_ACCENT}>{t("connector.default")}</span>}
+        {p.sandbox && <span className={TAG_WARN}>{t("hubspot.sandbox")}</span>}
         {p.access && (
           <span className={TAG_QUIET} data-testid={`hubspot-access-tag-${p.hub_id}`}>
-            {p.access === "write" ? t("conn.read_write") : t("conn.read_only")}
+            {p.access === "write" ? t("hubspot.read_write") : t("hubspot.read_only")}
           </span>
         )}
-        {!p.managed && <span className={TAG_QUIET}>{t("conn.private_app")}</span>}
+        {!p.managed && <span className={TAG_QUIET}>{t("hubspot.private_app")}</span>}
       </span>
       {!p.default && (
         <button
@@ -115,12 +115,12 @@ function PortalRow({ p, onChanged }: { p: HubSpotPortal; onChanged: () => void }
             onChanged();
           }}
         >
-          {t("conn.make_default")}
+          {t("connector.make_default")}
         </button>
       )}
       <button
         className={XBTN}
-        title={t("conn.disconnect_portal")}
+        title={t("hubspot.disconnect_portal_title")}
         data-testid={`hubspot-disconnect-${p.hub_id}`}
         disabled={busy}
         onClick={async () => {
@@ -137,9 +137,9 @@ function PortalRow({ p, onChanged }: { p: HubSpotPortal; onChanged: () => void }
 }
 
 function PrivacyGroup({ c, onChanged }: Pick<DetailProps, "c" | "onChanged">) {
+  const { t } = useTranslation();
   const fields = c.hidden_fields ?? [];
   const [draft, setDraft] = useState("");
-  const { t } = useT();
   const save = async (next: string[]) => {
     await setHubSpotHiddenFields(next);
     onChanged();
@@ -152,10 +152,10 @@ function PrivacyGroup({ c, onChanged }: Pick<DetailProps, "c" | "onChanged">) {
   };
   return (
     <>
-      <div className={GRP_H}>{t("conn.access_privacy")}</div>
+      <div className={GRP_H}>{t("hubspot.access_privacy")}</div>
       <div className={GRP}>
         <div className={ROW} data-testid="hubspot-hidden-fields">
-          <span className={LABEL}>{t("conn.hidden_fields")}</span>
+          <span className={LABEL}>{t("hubspot.hidden_fields")}</span>
           <span className="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
             {fields.map((f) => (
               <span
@@ -163,14 +163,14 @@ function PrivacyGroup({ c, onChanged }: Pick<DetailProps, "c" | "onChanged">) {
                 className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-paper border border-line text-[13px] font-mono"
               >
                 {f}
-                <button className={XBTN} title={t("conn.remove")} onClick={() => save(fields.filter((x) => x !== f))}>
+                <button className={XBTN} title={t("common.remove")} onClick={() => save(fields.filter((x) => x !== f))}>
                   ×
                 </button>
               </span>
             ))}
             <input
-className="flex-1 min-w-[140px] bg-transparent text-[13px] outline-none placeholder:text-faint"
-              placeholder={t("conn.hidden_fields_ph")}
+              className="flex-1 min-w-[140px] bg-transparent text-[13px] outline-none placeholder:text-faint"
+              placeholder={t("hubspot.hidden_fields_placeholder")}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -181,7 +181,7 @@ className="flex-1 min-w-[140px] bg-transparent text-[13px] outline-none placehol
           </span>
         </div>
       </div>
-      <div className={FOOT}>{t("conn.hidden_fields_foot")}</div>
+      <div className={FOOT}>{t("hubspot.hidden_fields_foot_inner")}</div>
     </>
   );
 }

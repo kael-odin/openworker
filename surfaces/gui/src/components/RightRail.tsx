@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 // Emits the asset URL only; the worker itself loads lazily with the pdfjs chunk.
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
@@ -14,7 +16,6 @@ import {
   type RootInfo,
 } from "../api";
 import type { SessionInfo, TodoItem } from "../types";
-import { useT } from "../i18n/I18nProvider";
 import { AccessSection } from "./AccessSection";
 import { BoardSection } from "./BoardPanel";
 import { Icon } from "./Icon";
@@ -108,7 +109,7 @@ export function RightRail({
   onOpenWorker,
   openBoardKey = 0,
 }: Props) {
-  const { t } = useT();
+  const { t } = useTranslation();
   // Seventeenth pass: every panel starts collapsed and nothing auto-expands — a count
   // chip is the maximum signal. One exception survives (solo sessions only): Progress
   // still auto-opens the first time a live turn has todos.
@@ -258,7 +259,7 @@ export function RightRail({
         <>
           {/* Leads carry no Progress panel — the board IS the lead's progress surface. */}
           {!isLead && (
-            <RailSection title={t("rightrail.progress")} open={open.progress} onToggle={() => setOpen({ ...open, progress: !open.progress })}>
+            <RailSection title={t("rail.progress_title")} open={open.progress} onToggle={() => setOpen({ ...open, progress: !open.progress })}>
               <ProgressSummary running={running} toolNames={toolNames} todo={todo} />
             </RailSection>
           )}
@@ -267,7 +268,7 @@ export function RightRail({
               Hidden entirely until the workspace has items (no chrome for plain sessions). */}
           {board?.space && (
             <RailSection
-              title={t("rightrail.board")}
+              title={t("rail.board_title")}
               count={boardChip(board, t).text}
               countAttention={boardChip(board, t).attention}
               open={open.board}
@@ -280,7 +281,7 @@ export function RightRail({
                     e.stopPropagation();
                     onExpandBoard?.();
                   }}
-                  title={t("rightrail.expand_board")}
+                  title={t("rail.board_expand")}
                 >
                   <Icon name="panelOpen" size={13} />
                 </button>
@@ -299,7 +300,7 @@ export function RightRail({
               entry per team: the lead). */}
           {teamMembers.length > 0 && (
             <RailSection
-              title={t("rightrail.team")}
+              title={t("rail.team_title")}
               open={open.team}
               onToggle={() => setOpen({ ...open, team: !open.team })}
               count={String(teamMembers.length)}
@@ -311,18 +312,18 @@ export function RightRail({
                     key={w.session_id}
                     data-testid={`team-row-${w.team?.actor || w.session_id}`}
                     onClick={() => onOpenWorker?.(w)}
-                    title={t("rightrail.open_session", { name: w.team?.actor || t("rightrail.worker") })}
+                    title={t("rail.team_open_session", { name: w.team?.actor || t("rail.team_worker") })}
                   >
                     <span className={"team-dot " + (w.team?.status || "idle")} />
                     <span className="rail-team-name">{w.team?.actor || w.agent}</span>
-                    <span className="rail-team-item">{w.team?.current_item || t("rightrail.sleeping")}</span>
-                    <span className="rail-team-open">{t("rightrail.open_short")}</span>
+                    <span className="rail-team-item">{w.team?.current_item || t("rail.team_sleeping")}</span>
+                    <span className="rail-team-open">{t("rail.team_open")}</span>
                   </button>
                 ))}
                 {teamChatEnabled && onOpenTeamChat && (
                   <button className="rail-team-row rail-chat-row" data-testid="team-chat-row" onClick={onOpenTeamChat}>
                     <span className="team-hash">#</span>
-                    <span className="rail-team-name">{t("rightrail.team_chat")}</span>
+                    <span className="rail-team-name">{t("rail.team_chat")}</span>
                     {teamChatUnread > 0 && <span className="team-chat-badge">{teamChatUnread}</span>}
                   </button>
                 )}
@@ -332,7 +333,7 @@ export function RightRail({
 
           {showArtifacts && (
           <RailSection
-            title={t("rightrail.artifacts")}
+            title={t("rail.artifacts_title")}
             count={artifacts.length ? String(artifacts.length) : undefined}
             open={open.artifacts}
             onToggle={() => setOpen({ ...open, artifacts: !open.artifacts })}
@@ -342,17 +343,17 @@ export function RightRail({
                   <button
                     className="rail-mini-btn"
                     onClick={(e) => { e.stopPropagation(); revealArtifact(sessionId, artifacts[0].path, "reveal"); }}
-                    title={t("rightrail.show_folder")}
+                    title={t("rail.show_folder")}
                   >
                     <Icon name="folder" size={13} />
                   </button>
                 )}
-                <button className="rail-mini-btn" onClick={(e) => { e.stopPropagation(); refreshArtifacts(); }} title={t("rightrail.refresh_artifacts")}><Icon name="refresh" size={13} /></button>
+                <button className="rail-mini-btn" onClick={(e) => { e.stopPropagation(); refreshArtifacts(); }} title={t("rail.refresh")}><Icon name="refresh" size={13} /></button>
               </>
             }
           >
             {artifacts.length === 0 ? (
-              <div className="rail-muted">{t("rightrail.no_files")}</div>
+              <div className="rail-muted">{t("rail.artifacts_empty")}</div>
             ) : (
               <div className="artifact-list">
                 {artifacts.slice(0, 16).map((a) => (
@@ -364,7 +365,7 @@ export function RightRail({
                       {a.name}
                       <span className="artifact-row-meta">{formatBytes(a.size)} · {formatTime(a.modified_at)}</span>
                     </span>
-                    <span className="artifact-open">Open</span>
+                    <span className="artifact-open">{t("rail.open")}</span>
                   </button>
                 ))}
               </div>
@@ -377,7 +378,7 @@ export function RightRail({
               drawer for no gain. */}
           {board?.space && journal.length > 0 && (
             <RailSection
-              title={t("rightrail.journal")}
+              title={t("rail.journal_title")}
               count={String(journal.length)}
               open={open.journal}
               onToggle={() => setOpen({ ...open, journal: !open.journal })}
@@ -387,7 +388,7 @@ export function RightRail({
                   <div className="journal-row" key={c.case}>
                     <Icon name="file" size={13} />
                     <span className="journal-case">{c.case}</span>
-                    <span className="journal-count">{t("rightrail.entries_count", { n: c.entries })}</span>
+                    <span className="journal-count">{t("rail.journal_entries", { count: c.entries })}</span>
                   </div>
                 ))}
               </div>
@@ -398,7 +399,7 @@ export function RightRail({
               Artifacts section stays the curated scratch-only surface. */}
           {rootDirs.length > 0 && (
             <RailSection
-              title={t("rightrail.files")}
+              title={t("rail.crumb_files")}
               count={String(rootDirs.length)}
               open={open.files}
               onToggle={() => setOpen({ ...open, files: !open.files })}
@@ -428,11 +429,11 @@ export function RightRail({
                     <span className="artifact-name">
                       {r.label || r.path.split("/").pop() || r.path}
                       <span className="artifact-row-meta">
-                        {r.writable ? t("rightrail.read_write") : t("rightrail.read_only")}
-                        {!r.exists ? t("rightrail.missing_suffix") : ""}
+                        {r.writable ? t("rail.root_read_write") : t("rail.root_read_only")}
+                        {!r.exists ? ` · ${t("root.missing")}` : ""}
                       </span>
                     </span>
-                    <span className="artifact-open">{t("rightrail.browse")}</span>
+                    <span className="artifact-open">{t("rail.browse")}</span>
                   </button>
                 ))}
               </div>
@@ -462,22 +463,19 @@ export function RightRail({
 
 // The Board section's header chip: the attention states (blocked/review) when present,
 // otherwise a quiet active count. Full per-state summary stays on the topbar button.
-function boardChip(
-  board: Board,
-  t: (key: string, params?: Record<string, string | number>) => string,
-): { text: string; attention: boolean } {
+function boardChip(board: Board, t: TFunction): { text: string; attention: boolean } {
   const counts: Record<string, number> = {};
   for (const item of board.items) counts[item.state] = (counts[item.state] || 0) + 1;
   const attn: string[] = [];
-  if (counts.blocked) attn.push(t("board.chip_blocked", { n: counts.blocked }));
-  if (counts.review) attn.push(t("board.chip_review", { n: counts.review }));
+  if (counts.blocked) attn.push(t("rail.board_chip_blocked", { count: counts.blocked }));
+  if (counts.review) attn.push(t("rail.board_chip_review", { count: counts.review }));
   if (attn.length) return { text: attn.join(" · "), attention: true };
   const active = (counts.in_progress || 0) + (counts.open || 0);
-  return { text: active ? t("board.chip_active", { n: active }) : "", attention: false };
+  return { text: active ? t("rail.board_chip_active", { count: active }) : "", attention: false };
 }
 
 function ProgressSummary({ running, toolNames, todo }: { running: boolean; toolNames: string[]; todo: TodoItem[] }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   if (todo.length) {
     return (
       <div className="rail-todo-list">
@@ -489,9 +487,7 @@ function ProgressSummary({ running, toolNames, todo }: { running: boolean; toolN
         ))}
         {running && (
           <div className="rail-muted">
-            {toolNames.length
-              ? t("rightrail.tool_calls_so_far", { n: toolNames.length })
-              : t("rightrail.working")}
+            {toolNames.length ? t("rail.tool_calls", { count: toolNames.length }) : t("rail.working")}
           </div>
         )}
       </div>
@@ -500,15 +496,13 @@ function ProgressSummary({ running, toolNames, todo }: { running: boolean; toolN
   if (running) {
     return (
       <div className="rail-muted">
-        {toolNames.length
-          ? t("rightrail.working_with_calls", { n: toolNames.length })
-          : t("rightrail.working")}
+        {toolNames.length ? t("rail.working_task_with_tools", { count: toolNames.length }) : t("rail.working_task")}
       </div>
     );
   }
   return (
     <div className="rail-muted">
-      For longer multi-step tasks, progress will appear here while OpenWorker plans, uses tools, waits for approval, and produces artifacts.
+      {t("rail.empty_state")}
     </div>
   );
 }
@@ -585,7 +579,7 @@ function ArtifactViewer({
   // Folder listings: open a child entry in the viewer (files and subfolders alike).
   onOpenEntry?: (path: string) => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [reloadKey, setReloadKey] = useState(0);
   // UX-038: the ambiguous icon cluster collapsed into ONE labeled ⋯ menu; the
   // breadcrumb parent is the back action and ✕ closes. Copy CONTENTS is the
@@ -605,7 +599,7 @@ function ArtifactViewer({
   const isApp = content?.kind === "sheet" || content?.kind === "pdf" || content?.kind === "office";
   // Text-bearing kinds can copy their contents; images/PDFs/sheets have nothing textual to copy.
   const copyableText = typeof content?.content === "string" && !content?.error;
-  const crumbRoot = artifact.origin === "files" ? t("rightrail.files") : t("rightrail.artifacts");
+  const crumbRoot = artifact.origin === "files" ? t("rail.crumb_files") : t("rail.artifacts_title");
   const item = (
     testid: string,
     icon: Parameters<typeof Icon>[0]["name"],
@@ -634,7 +628,7 @@ function ArtifactViewer({
               className="artifact-crumb-link"
               data-testid="artifact-crumb-back"
               onClick={onBack}
-              title={t("rightrail.back_to", { root: crumbRoot })}
+              title={t("rail.back_to", { name: crumbRoot })}
             >
               {crumbRoot}
             </button>
@@ -651,8 +645,8 @@ function ArtifactViewer({
                 await onReload();
                 setReloadKey((k) => k + 1);
               }}
-              aria-label={t("rightrail.reload_preview")}
-              title={t("rightrail.reload")}
+              aria-label={t("rail.reload_preview")}
+              title={t("rail.reload")}
             >
               <Icon name="refresh" size={16} />
             </button>
@@ -661,8 +655,8 @@ function ArtifactViewer({
             <button
               className="artifact-icon-btn"
               data-testid="artifact-more"
-              aria-label={t("rightrail.more_actions")}
-              title={t("rightrail.more")}
+              aria-label={t("rail.more_actions")}
+              title={t("rail.more")}
               onClick={() => setMenuOpen((v) => !v)}
             >
               <Icon name="moreHorizontal" size={16} />
@@ -670,22 +664,22 @@ function ArtifactViewer({
             {menuOpen && (
               <div className="artifact-menu" data-testid="artifact-menu">
                 {copyableText &&
-                  item("artifact-copy-contents", "copy", t("rightrail.copy_contents"), () =>
+                  item("artifact-copy-contents", "copy", t("rail.copy_contents"), () =>
                     navigator.clipboard?.writeText(content?.content || ""),
                   )}
-                {item("artifact-copy-path", "file", t("rightrail.copy_path"), () =>
+                {item("artifact-copy-path", "file", t("rail.copy_path"), () =>
                   navigator.clipboard?.writeText(artifact.abs_path || artifact.path),
                 )}
                 <div className="artifact-menu-div" />
                 {isHtml &&
-                  item("artifact-open-browser", "panelOpen", t("rightrail.open_in_browser"), () =>
+                  item("artifact-open-browser", "panelOpen", t("rail.open_in_browser"), () =>
                     revealArtifact(sessionId, artifact.path, "open"),
                   )}
                 {isApp &&
-                  item("artifact-open-app", "panelOpen", t("rightrail.open_default_app"), () =>
+                  item("artifact-open-app", "panelOpen", t("rail.open_in_default"), () =>
                     revealArtifact(sessionId, artifact.path, "open"),
                   )}
-                {item("artifact-reveal", "folder", t("rightrail.show_in_folder"), () =>
+                {item("artifact-reveal", "folder", t("rail.reveal_in_finder"), () =>
                   revealArtifact(sessionId, artifact.path, "reveal"),
                 )}
               </div>
@@ -695,8 +689,8 @@ function ArtifactViewer({
             className="artifact-icon-btn"
             data-testid="artifact-close"
             onClick={onBack}
-            aria-label={t("rightrail.close_viewer")}
-            title={t("rightrail.close")}
+            aria-label={t("rail.close_viewer")}
+            title={t("rail.close")}
           >
             <Icon name="x" size={16} />
           </button>
@@ -704,7 +698,7 @@ function ArtifactViewer({
       </div>
       <div className="artifact-preview">
         {!content ? (
-          <div className="rail-muted">{t("rightrail.loading")}</div>
+          <div className="rail-muted">{t("rail.loading")}</div>
         ) : content.error ? (
           <div className="rail-error">{content.error}</div>
         ) : content.kind === "html" ? (
@@ -741,14 +735,14 @@ function ArtifactViewer({
                 {!e.dir && <span className="artifact-folder-size">{formatBytes(e.size)}</span>}
               </button>
             ))}
-            {!content.entries?.length && <div className="rail-muted">{t("rightrail.folder_empty")}</div>}
+            {!content.entries?.length && <div className="rail-muted">{t("rail.folder_empty")}</div>}
           </div>
         ) : content.kind === "office" ? (
           <div className="artifact-open-prompt">
             <Icon name="panelOpen" size={28} />
-            <p>{t("rightrail.office_cannot_preview", { kind: /\.pptx?$/i.test(artifact.name) ? t("rightrail.kind_powerpoint") : t("rightrail.kind_word") })}</p>
+            <p>{t("rail.office_no_preview", { type: /\.pptx?$/i.test(artifact.name) ? "PowerPoint" : "Word" })}</p>
             <button className="btn sm" onClick={() => revealArtifact(sessionId, artifact.path, "open")}>
-              {t("rightrail.open_default_app")}
+              {t("rail.open_in_default")}
             </button>
           </div>
         ) : (
@@ -762,7 +756,7 @@ function ArtifactViewer({
 const MAX_TABLE_ROWS = 500;
 
 function GridTable({ rows, note }: { rows: unknown[][]; note?: string }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [head, ...body] = rows;
   return (
     <div className="artifact-tablewrap">
@@ -781,9 +775,7 @@ function GridTable({ rows, note }: { rows: unknown[][]; note?: string }) {
       {(note || body.length > MAX_TABLE_ROWS) && (
         <div className="rail-muted artifact-table-note">
           {note}
-          {body.length > MAX_TABLE_ROWS
-            ? t("rightrail.table_note_truncated", { shown: MAX_TABLE_ROWS, total: body.length })
-            : ""}
+          {body.length > MAX_TABLE_ROWS ? ` ${t("rail.table_truncated", { max: MAX_TABLE_ROWS, total: body.length })}` : ""}
         </div>
       )}
     </div>
@@ -826,9 +818,9 @@ function parseCsv(text: string): string[][] {
 }
 
 function CsvTable({ text }: { text: string }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const rows = parseCsv(text);
-  if (!rows.length) return <div className="rail-muted artifact-table-note">{t("rightrail.empty_file")}</div>;
+  if (!rows.length) return <div className="rail-muted artifact-table-note">{t("rail.empty_file")}</div>;
   return <GridTable rows={rows} />;
 }
 
@@ -837,6 +829,7 @@ function CsvTable({ text }: { text: string }) {
 // WKWebView has no inline PDF plugin (<embed> shows a gray pane in the Tauri shell), so we
 // rasterize pages with pdf.js onto stacked canvases — same lazy-chunk pattern as SheetViewer.
 function PdfViewer({ dataUrl }: { dataUrl: string }) {
+  const { t } = useTranslation();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const holder = useRef<HTMLDivElement | null>(null);
@@ -876,17 +869,17 @@ function PdfViewer({ dataUrl }: { dataUrl: string }) {
     };
   }, [dataUrl]);
 
-  const { t } = useT();
-  if (error) return <div className="rail-error artifact-table-note">{t("rightrail.could_not_render_pdf", { error })}</div>;
+  if (error) return <div className="rail-error artifact-table-note">{t("rail.pdf_error", { error })}</div>;
   return (
     <div className="artifact-pdfjs">
-      {loading && <div className="rail-muted artifact-table-note">{t("rightrail.rendering_pdf")}</div>}
+      {loading && <div className="rail-muted artifact-table-note">{t("rail.pdf_rendering")}</div>}
       <div ref={holder} />
     </div>
   );
 }
 
 function SheetViewer({ dataUrl }: { dataUrl: string }) {
+  const { t } = useTranslation();
   const [sheets, setSheets] = useState<{ name: string; rows: unknown[][] }[] | null>(null);
   const [error, setError] = useState("");
   const [active, setActive] = useState(0);
@@ -914,9 +907,8 @@ function SheetViewer({ dataUrl }: { dataUrl: string }) {
     };
   }, [dataUrl]);
 
-  const { t } = useT();
-  if (error) return <div className="rail-error artifact-table-note">{t("rightrail.could_not_parse_sheet", { error })}</div>;
-  if (!sheets) return <div className="rail-muted artifact-table-note">{t("rightrail.parsing_sheet")}</div>;
+  if (error) return <div className="rail-error artifact-table-note">{t("rail.sheet_error", { error })}</div>;
+  if (!sheets) return <div className="rail-muted artifact-table-note">{t("rail.sheet_parsing")}</div>;
   const sheet = sheets[active];
   return (
     <div className="sheet-viewer">
@@ -929,7 +921,7 @@ function SheetViewer({ dataUrl }: { dataUrl: string }) {
           ))}
         </div>
       )}
-      {sheet.rows.length ? <GridTable rows={sheet.rows} /> : <div className="rail-muted artifact-table-note">{t("rightrail.empty_sheet")}</div>}
+      {sheet.rows.length ? <GridTable rows={sheet.rows} /> : <div className="rail-muted artifact-table-note">{t("rail.sheet_empty")}</div>}
     </div>
   );
 }

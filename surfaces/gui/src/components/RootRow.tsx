@@ -1,7 +1,7 @@
+import { useTranslation } from "react-i18next";
 import type { RootInfo } from "../api";
 import { Icon } from "./Icon";
 import { baseName } from "../paths";
-import { useT } from "../i18n/I18nProvider";
 
 // One directory row, shared by the composer popover and the session start panel. The primary is the
 // session's bound workspace — the repo/folder for Code/Ops (shown by name), or a throwaway scratch
@@ -22,7 +22,7 @@ export function RootRow({
   onToggle: (r: RootInfo) => void;
   onRemove: (path: string) => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const label = root.primary
     ? scratchPrimary
       ? t("root.temporary_space")
@@ -34,7 +34,7 @@ export function RootRow({
       <span className="root-text" title={root.path}>
         <span className="root-label">
           {label}
-          {root.primary && !scratchPrimary && <span className="root-tag">{t("root.main_tag")}</span>}
+          {root.primary && !scratchPrimary && <span className="root-tag"> {t("root.main")}</span>}
           {branch && (
             <span className="root-tag root-branch">
               {" "}
@@ -49,12 +49,12 @@ export function RootRow({
         className={"root-access" + (root.writable ? " rw" : " ro")}
         onClick={() => onToggle(root)}
         disabled={busy || root.primary}
-        title={root.primary ? t("root.title_primary") : t("root.title_toggle")}
+        title={root.primary ? t("root.primary_always_rw") : t("root.toggle_rw")}
       >
         {root.writable ? t("root.read_write") : t("root.read_only")}
       </button>
       {!root.primary && (
-        <button className="root-x" onClick={() => onRemove(root.path)} disabled={busy} title={t("root.title_remove")}>
+        <button className="root-x" onClick={() => onRemove(root.path)} disabled={busy} title={t("common.remove")}>
           ×
         </button>
       )}

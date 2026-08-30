@@ -4,9 +4,9 @@
 // PRE-SPAWNS the worker sessions. The chat checkbox is the USER's call (default
 // OFF, ⓘ per mock); no in-card reply surface: editing happens by replying.
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import type { Item } from "../types";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 export function TeamRequestCard({
   item,
@@ -15,14 +15,14 @@ export function TeamRequestCard({
   item: Extract<Item, { kind: "teamreq" }>;
   onRespond: (approved: boolean, feedback?: string, enableChat?: boolean) => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [chat, setChat] = useState(!!item.enable_chat);
   return (
     <div className="dirreq-card teamreq-card" data-testid="teamreq-card">
       <div className="teamreq-head">
         <Icon name="diamond" size={15} />
         <span className="teamreq-title">
-          {t("teamreq.title", { n: item.members.length })}
+          {t("team.proposed", { count: item.members.length })}
         </span>
       </div>
       {item.note && <div className="teamreq-note">{item.note}</div>}
@@ -31,7 +31,7 @@ export function TeamRequestCard({
           <span className="teamreq-diamond">◆</span>
           <span className="teamreq-body">
             {m.name && <b className="teamreq-name">{m.name}</b>}
-            {m.name ? t("teamreq.name_sep") : ""}
+            {m.name ? " — " : ""}
             <code>{m.persona}</code>
             {m.model && <span className="teamreq-model"> · {m.model}</span>}
             {m.reason && <span className="teamreq-reason"> — {m.reason}</span>}
@@ -46,30 +46,24 @@ export function TeamRequestCard({
           onChange={(e) => setChat(e.target.checked)}
         />
         <span>
-          {t("teamreq.enable_chat_pre")}
-          <b>{t("teamchat.title")}</b>
+          <Trans i18nKey="team.enable_chat" components={{ b: <b /> }} />
         </span>
-        <span
-          className="teamreq-info"
-          title={t("teamreq.chat_info")}
-        >
+        <span className="teamreq-info" title={t("team.chat_info")}>
           i
         </span>
       </label>
       <div className="dirreq-actions">
-        <span className="teamreq-grant">
-          {t("teamreq.grant_note")}
-        </span>
+        <span className="teamreq-grant">{t("team.grant_note")}</span>
         <span className="spacer" />
         <button className="btn" onClick={() => onRespond(false)}>
-          {t("teamreq.not_now")}
+          {t("team.not_now")}
         </button>
         <button
           className="btn primary"
           data-testid="teamreq-approve"
           onClick={() => onRespond(true, undefined, chat)}
         >
-          {t("teamreq.create_start")}
+          {t("team.create_start")}
         </button>
       </div>
     </div>

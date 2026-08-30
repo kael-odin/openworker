@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   cloudLogin,
   getCloudGallery,
@@ -14,7 +15,6 @@ import { BrandIcon } from "./brandIcons";
 import { Icon } from "./Icon";
 import { Markdown } from "./Markdown";
 import { PersonaHero } from "./PersonaHero";
-import { useT } from "../i18n/I18nProvider";
 
 // The Persona Gallery, as a screen-sized modal over Settings ▸ Personas (the catalog
 // wants room the inline section never had; installs finish back on the Personas page,
@@ -53,6 +53,7 @@ export function GalleryModal({
   onClose: () => void;
   onInstalled?: () => void;
 }) {
+  const { t } = useTranslation();
   const [cloud, setCloud] = useState<CloudStatus | null>(null);
   const [cards, setCards] = useState<GalleryPersona[]>([]);
   const [installed, setInstalled] = useState<Set<string>>(new Set());
@@ -66,7 +67,6 @@ export function GalleryModal({
   const [detailSlug, setDetailSlug] = useState<string | null>(null);
   const [detail, setDetail] = useState<GalleryDetail | null>(null);
   const [justInstalled, setJustInstalled] = useState(false);
-  const { t } = useT();
 
   const reload = async () => {
     setLoading(true);
@@ -114,7 +114,7 @@ export function GalleryModal({
     setMsg(null);
     setJustInstalled(false);
     const d = await getCloudGalleryDetail(slug).catch(() => null);
-    setDetail(d ?? { ok: false, error: t("gallery.err_detail") });
+    setDetail(d ?? { ok: false, error: t("gallery.could_not_load") });
   };
 
   const install = async (slug: string) => {
@@ -123,7 +123,7 @@ export function GalleryModal({
     const r = await installPersona({ gallery_slug: slug });
     setBusy(false);
     if (!r.ok) {
-      setMsg(r.error || t("gallery.err_install"));
+      setMsg(r.error || t("gallery.install_failed"));
       return;
     }
     setInstalled((s) => new Set(s).add(slug));
@@ -145,11 +145,11 @@ export function GalleryModal({
       <div className="flex items-center gap-2 mb-4">
         {(
           [
-            ["all", "gallery.source_all"],
-            ["openworker", "gallery.source_openworker"],
-            ["team", "gallery.source_team"],
+            ["all", t("gallery.filter_all")],
+            ["openworker", t("gallery.filter_brand")],
+            ["team", t("gallery.filter_team")],
           ] as [Source, string][]
-        ).map(([key, labelKey]) => (
+        ).map(([key, label]) => (
           <button
             key={key}
             className={
@@ -160,7 +160,7 @@ export function GalleryModal({
             }
             onClick={() => setSource(key)}
           >
-            {t(labelKey)}
+            {label}
           </button>
         ))}
       </div>
@@ -217,7 +217,7 @@ export function GalleryModal({
                   <span className="font-semibold text-[13px]">{p.name}</span>
                   <span className={CHIP}>{p.family}</span>
                   <span className="text-[11px] text-faint">
-                    v{p.version} · {p.publisher}
+                    {t("gallery.version_publisher", { version: p.version, publisher: p.publisher })}
                   </span>
                 </div>
                 <div className="text-[13px] text-muted mb-1.5">{p.tagline}</div>
@@ -245,7 +245,7 @@ export function GalleryModal({
               ? t("gallery.empty_team")
               : q
               ? t("gallery.empty_search")
-              : t("gallery.empty_published")}
+              : t("gallery.empty_none")}
           </div>
         )}
       </div>
@@ -266,12 +266,12 @@ export function GalleryModal({
         className="text-[13px] text-muted hover:text-ink mb-3"
         onClick={() => setDetailSlug(null)}
       >
-        {t("gallery.back")}
+        {t("gallery.back_to_gallery")}
       </button>
       {!detail ? (
-        <div className="text-[13px] text-muted">{t("gallery.loading_detail")}</div>
+        <div className="text-[13px] text-muted">{t("gallery.loading")}</div>
       ) : !detail.ok || !card ? (
-        <div className="text-[13px] text-danger">{detail.error || t("gallery.err_detail")}</div>
+        <div className="text-[13px] text-danger">{detail.error || t("gallery.could_not_load")}</div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
@@ -282,7 +282,7 @@ export function GalleryModal({
               </div>
               <div className="text-[13px] text-muted">{card.tagline}</div>
               <div className="text-[12px] text-faint mt-1">
-                v{card.version} · {card.publisher} · {card.risk_summary}
+                {t("gallery.detail_meta", { version: card.version, publisher: card.publisher, risk: card.risk_summary })}
               </div>
             </div>
             <div className="shrink-0">
@@ -322,21 +322,21 @@ export function GalleryModal({
                 {t("gallery.capabilities_title")}
               </div>
               <div className="text-[12px] text-faint mb-3">
-                {t("gallery.capabilities_sub")}
+                {t("gallery.capabilities_desc")}
               </div>
               <div className="space-y-2 text-[13px]">
                 <div>
                   <span className="text-muted">{t("gallery.tools_label")}</span>
-                  {caps.tools.join(", ") || "none"}
+                  {caps.tools.join(", ") || t("gallery.none")}
                   {caps.risk.length > 0 && (
-                    <span className="text-faint">{t("gallery.risk_label")}{caps.risk.join(", ")}</span>
+                    <span className="text-faint"> {t("gallery.risk_suffix", { risk: caps.risk.join(", ") })}</span>
                   )}
                 </div>
                 <div>
                   <span className="text-muted">{t("gallery.permissions_label")}</span>
-                  {caps.recommended_mode}{t("gallery.perm_mode")}
-                  {caps.messaging ? t("gallery.perm_messaging") : ""}
-                  {caps.mcp.length > 0 ? `${t("gallery.perm_mcp")}${caps.mcp.join(", ")}` : ""}
+                  {t("gallery.mode_suffix", { mode: caps.recommended_mode })}
+                  {caps.messaging ? ` · ${t("gallery.can_message")}` : ""}
+                  {caps.mcp.length > 0 ? ` · ${t("gallery.mcp_suffix", { mcp: caps.mcp.join(", ") })}` : ""}
                 </div>
                 {(detail.recommends?.length ?? 0) > 0 && (
                   <div>
@@ -347,14 +347,14 @@ export function GalleryModal({
                           <span className={CHIP + " inline-flex items-center gap-1 shrink-0"}>
                             <BrandIcon name={r.ref} size={12} />
                             {r.ref}
-                            {r.tier === "core" ? t("gallery.works_core") : ""}
+                            {r.tier === "core" ? ` · ${t("gallery.core_tag")}` : ""}
                           </span>
                           <span className="text-[12px] text-faint">{r.reason}</span>
                         </div>
                       ))}
                     </div>
                     <div className="text-[12px] text-faint mt-2">
-                      {t("gallery.works_hint")}
+                      {t("gallery.connect_yourself_note")}
                     </div>
                   </div>
                 )}
@@ -374,14 +374,14 @@ export function GalleryModal({
           <div className="min-w-0 flex-1">
             <div className="text-[14px] font-semibold">{t("gallery.title")}</div>
             <div className="text-[12px] text-muted">
-              {t("gallery.sub")}
+              {t("gallery.subtitle")}
             </div>
           </div>
           {cloud?.signed_in && !detailSlug && (
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("gallery.search_ph")}
+              placeholder={t("gallery.search_placeholder")}
               className="w-[180px] px-3 py-1.5 rounded-lg border border-line bg-paper text-[13px] text-ink outline-none focus:border-accent"
             />
           )}
@@ -398,7 +398,7 @@ export function GalleryModal({
         <div className="overflow-y-auto hairline-scroll p-5">
           {loading ? (
             <div className="space-y-2" data-testid="gallery-loading" aria-busy="true">
-              <div className="text-[13px] text-muted mb-3">{t("gallery.loading")}</div>
+              <div className="text-[13px] text-muted mb-3">{t("gallery.loading_gallery")}</div>
               {[0, 1, 2].map((i) => (
                 <div key={i} className={CARD + " p-3.5 animate-pulse"}>
                   <div className="h-3.5 w-44 rounded bg-line mb-2.5" />
@@ -411,11 +411,11 @@ export function GalleryModal({
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-[14px] mb-1">{t("gallery.signin_title")}</div>
                 <div className="text-[13px] text-muted leading-relaxed">
-                  {t("gallery.signin_sub")}
+                  {t("gallery.signin_desc")}
                 </div>
               </div>
               <button className={BTN_ACCENT} onClick={signIn} disabled={signingIn}>
-                {signingIn ? t("gallery.check_browser") : t("gallery.signin")}
+                {signingIn ? t("gallery.check_browser") : t("gallery.sign_in")}
               </button>
             </div>
           ) : detailSlug ? (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   disconnectConnector,
   getCloudStatus,
@@ -22,22 +23,11 @@ import { GmailDetail } from "./GmailDetail";
 import { HubSpotDetail } from "./HubSpotDetail";
 import { SlackDetail } from "./SlackDetail";
 import { GRP } from "./ui";
-import { useT, currentLang } from "../../i18n/I18nProvider";
-import zh from "../../i18n/zh.json";
-import en from "../../i18n/en.json";
 
 // Connectors surface = LIST ⇄ per-connector DETAIL SUBPAGE (UX-DECISIONS §21). The
 // Integrations sub-nav never grows per-connector items; detail pages live behind a
 // `‹ Connectors` breadcrumb. Connectors without a bespoke page get GenericDetail so
 // every connected row navigates from day one.
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-const EN: Dict = en as Dict;
-function tt(key: string): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  return d[key] ?? EN[key] ?? key;
-}
 
 export interface DetailProps {
   c: Connector;
@@ -64,12 +54,12 @@ const DETAIL_PAGES: Record<string, (p: DetailProps) => JSX.Element> = {
 };
 
 export function ConnectorsSection() {
+  const { t: tt } = useTranslation();
   const [detail, setDetail] = useState<string | null>(null);
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
   const [cloud, setCloud] = useState<CloudStatus | null>(null);
   const [slack, setSlack] = useState<SlackStatus | null>(null);
-  const { t } = useT();
 
   const refresh = () => {
     getConnectors().then(setConnectors).catch(() => setConnectors([]));
@@ -81,8 +71,8 @@ export function ConnectorsSection() {
     refresh();
     // Poll: recent senders/parked arrive over time; sign-in + managed connects finish
     // in the system browser and surface on the next tick.
-    const timer = setInterval(refresh, 5000);
-    return () => clearInterval(timer);
+    const t = setInterval(refresh, 5000);
+    return () => clearInterval(t);
   }, []);
 
   // While an MCP test/sign-in is in flight, poll fast so the chip flips to its
@@ -105,10 +95,10 @@ export function ConnectorsSection() {
           data-testid="connectors-breadcrumb"
           onClick={() => setDetail(null)}
         >
-          ‹ {t("int.tab_connectors")}
+          ‹ Connectors
         </button>
         {!s ? (
-          <div className="text-[13px] text-muted">{t("rightrail.loading")}</div>
+          <div className="text-[13px] text-muted">Loading…</div>
         ) : (
           <McpServerDetail server={s} onChanged={refresh} onGone={() => setDetail(null)} />
         )}
@@ -126,10 +116,10 @@ export function ConnectorsSection() {
           data-testid="connectors-breadcrumb"
           onClick={() => setDetail(null)}
         >
-          {t("conn.breadcrumb")}
+          {tt("connector.back_to_connectors")}
         </button>
         {!c ? (
-          <div className="text-[13px] text-muted">{t("conn.loading")}</div>
+          <div className="text-[13px] text-muted">{tt("connector.loading")}</div>
         ) : !c.connected ? (
           /* Pre-connect page (§38). When a connect completes, the poll flips
              c.connected and this same route re-renders as the connected page. */
@@ -171,6 +161,7 @@ function GenericDetail({
   onChanged,
   onGone,
 }: DetailProps & { onGone: () => void }) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="flex items-center gap-3.5 mb-5">
@@ -179,7 +170,7 @@ function GenericDetail({
           <h2 className="text-[20px] font-semibold tracking-tight leading-tight">{c.title}</h2>
           <div className="text-[13px] text-muted flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-ok" />
-            {c.account || (c.auth === "none" ? tt("conn.built_in") : tt("conn.connected"))}
+            {c.account || (c.auth === "none" ? t("connector.built_in") : t("connector.connected"))}
           </div>
         </div>
         {c.auth !== "none" && (
@@ -191,7 +182,7 @@ function GenericDetail({
               onGone();
             }}
           >
-            {tt("conn.disconnect")}
+            {t("connector.disconnect")}
           </button>
         )}
       </div>

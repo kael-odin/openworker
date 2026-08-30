@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   deleteAllMemory,
   deleteMemory,
@@ -13,7 +14,6 @@ import {
 import { Icon } from "./Icon";
 import { PanelHead } from "./IntegrationsView";
 import { Toggle } from "./Toggle";
-import { useT } from "../i18n/I18nProvider";
 
 // MEMORY-SPEC §5.3: the one memory screen. A plain-language list of remembered facts
 // (edit/delete per row), the on/off toggle, delete-all, and the User Rules textarea —
@@ -26,7 +26,7 @@ const BTN_ACCENT =
   "text-[13px] px-3 py-2 rounded-lg bg-accent text-white shrink-0 disabled:opacity-40";
 
 export function MemorySection() {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<MemorySettings | null>(null);
   const [entries, setEntries] = useState<MemoryEntry[] | null>(null);
   // State-change copy (§5.3): shown under the toggle / list after an action.
@@ -55,24 +55,13 @@ export function MemorySection() {
     if (!settings) return;
     const next = await setMemorySettings({ enabled: !settings.enabled });
     setSettings(next);
-    setToggleMsg(
-      next.enabled
-        ? t("memory.toggle_on_msg")
-        : t("memory.toggle_off_msg"),
-    );
+    setToggleMsg(next.enabled ? t("memory.on_msg") : t("memory.off_msg"));
   };
 
   const wipeAll = async () => {
-    if (
-      !window.confirm(
-        t("memory.wipe_confirm"),
-      )
-    )
-      return;
+    if (!window.confirm(t("memory.wipe_confirm"))) return;
     await deleteAllMemory();
-    setListMsg(
-      t("memory.wipe_done"),
-    );
+    setListMsg(t("memory.wiped_msg"));
     refresh();
   };
 
@@ -81,10 +70,7 @@ export function MemorySection() {
 
   return (
     <section>
-      <PanelHead
-        title={t("memory.title")}
-        sub={t("memory.sub")}
-      />
+      <PanelHead title={t("settings.tab.memory")} sub={t("memory.section_sub")} />
 
       {/* On/off — one switch, no other setup (§5.4). */}
       <div className={CARD + " p-4 mb-4"} data-testid="memory-toggle-card">
@@ -92,9 +78,7 @@ export function MemorySection() {
           <Toggle checked={settings.enabled} onChange={toggleEnabled} title={t("memory.toggle_title")} />
           <div className="min-w-0 flex-1">
             <div className={FIELD_LABEL}>{t("memory.toggle_label")}</div>
-            <div className="text-[12px] text-muted mt-0.5">
-              {t("memory.toggle_help")}
-            </div>
+            <div className="text-[12px] text-muted mt-0.5">{t("memory.toggle_help")}</div>
           </div>
         </div>
         {toggleMsg && (
@@ -108,7 +92,7 @@ export function MemorySection() {
           message ("what I already know is kept, delete it below") points here. */}
       <div className={CARD + " p-4 mb-4"} data-testid="memory-list-card">
         <div className="flex items-center gap-2">
-          <div className={FIELD_LABEL + " flex-1"}>{t("memory.learned_label")}</div>
+          <div className={FIELD_LABEL + " flex-1"}>{t("memory.learned_title")}</div>
           {entries.length > 0 && (
             <button
               className="text-[12px] text-danger/80 hover:text-danger"
@@ -119,9 +103,7 @@ export function MemorySection() {
             </button>
           )}
         </div>
-        <div className={FIELD_HELP}>
-          {t("memory.learned_help")}
-        </div>
+        <div className={FIELD_HELP}>{t("memory.learned_help")}</div>
         {listMsg && (
           <div className="text-[13px] text-muted mt-2.5" data-testid="memory-list-msg">
             {listMsg}
@@ -156,7 +138,7 @@ function UserRulesCard({
   settings: MemorySettings;
   onSaved: (s: MemorySettings) => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [draft, setDraft] = useState(settings.user_rules);
   const [savedMsg, setSavedMsg] = useState(false);
 
@@ -169,10 +151,8 @@ function UserRulesCard({
 
   return (
     <div className={CARD + " p-4"} data-testid="user-rules-card">
-      <div className={FIELD_LABEL}>{t("memory.rules_label")}</div>
-      <div className={FIELD_HELP}>
-        {t("memory.rules_help")}
-      </div>
+      <div className={FIELD_LABEL}>{t("memory.rules_title")}</div>
+      <div className={FIELD_HELP}>{t("memory.rules_help")}</div>
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -188,12 +168,10 @@ function UserRulesCard({
           disabled={draft === settings.user_rules}
           data-testid="user-rules-save"
         >
-          {t("memory.rules_save")}
+          {t("memory.save")}
         </button>
         {savedMsg && (
-          <span className="text-[13px] text-muted">
-            {t("memory.rules_saved_msg")}
-          </span>
+          <span className="text-[13px] text-muted">{t("memory.rules_saved")}</span>
         )}
       </div>
     </div>
@@ -201,7 +179,7 @@ function UserRulesCard({
 }
 
 function MemoryRow({ entry, onChanged }: { entry: MemoryEntry; onChanged: () => void }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(entry.content);
 
@@ -235,10 +213,10 @@ function MemoryRow({ entry, onChanged }: { entry: MemoryEntry; onChanged: () => 
         />
         <div className="flex items-center gap-2.5 mt-1.5">
           <button className={BTN_ACCENT} onClick={() => void save()}>
-            {t("memory.rules_save")}
+            {t("memory.save")}
           </button>
           <button className="text-[13px] text-muted hover:text-ink" onClick={() => setEditing(false)}>
-            {t("memory.cancel")}
+            {t("manage.cancel")}
           </button>
         </div>
       </div>
@@ -249,7 +227,7 @@ function MemoryRow({ entry, onChanged }: { entry: MemoryEntry; onChanged: () => 
       <div className="min-w-0 flex-1 text-[13px] leading-relaxed">{entry.content}</div>
       <button
         className="text-faint hover:text-ink shrink-0 mt-0.5"
-        title={t("memory.fix")}
+        title={t("memory.fix_tip")}
         data-testid={`memory-edit-btn-${entry.id}`}
         onClick={() => {
           setDraft(entry.content);
@@ -260,7 +238,7 @@ function MemoryRow({ entry, onChanged }: { entry: MemoryEntry; onChanged: () => 
       </button>
       <button
         className="text-faint hover:text-danger shrink-0 mt-0.5"
-        title={t("memory.delete")}
+        title={t("memory.delete_tip")}
         data-testid={`memory-delete-${entry.id}`}
         onClick={() => void remove()}
       >

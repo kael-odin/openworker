@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Item } from "../types";
 import { chooseFolder } from "../tauri";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 type DirReqItem = Extract<Item, { kind: "dirreq" }>;
 
@@ -17,7 +17,7 @@ export function DirectoryRequestCard({
 }) {
   const [path, setPath] = useState(item.path || "");
   const [writable, setWritable] = useState(!!item.writable);
-  const { t } = useT();
+  const { t } = useTranslation();
 
   const browse = async () => {
     const picked = await chooseFolder();
@@ -28,23 +28,26 @@ export function DirectoryRequestCard({
     <div className="dirreq-card">
       <div className="dirreq-head">
         <Icon name="folderPlus" size={16} className="ico" />
-        <span>{item.primary ? t("dirreq.head_primary") : t("dirreq.head")}</span>
+        <span>
+          {item.primary
+            ? t("dirreq.requesting_workspace")
+            : t("dirreq.requesting_access")}
+        </span>
       </div>
       {item.reason && <div className="dirreq-reason">“{item.reason}”</div>}
       {item.primary && (
         <div className="dirreq-reason">
-          Granting makes this folder the session's primary working directory (read-write);
-          the scratch directory stays available for temporary files and artifacts.
+          {t("dirreq.primary_note")}
         </div>
       )}
       <div className="dirreq-pathrow">
         <input
           className="dirreq-path"
-          placeholder={t("dirreq.placeholder")}
+          placeholder={t("dirreq.path_placeholder")}
           value={path}
           onChange={(e) => setPath(e.target.value)}
         />
-        <button className="btn icon-only" onClick={browse} title={t("dirreq.choose")} aria-label={t("dirreq.choose")}>
+        <button className="btn icon-only" onClick={browse} title={t("dirreq.choose_location")} aria-label={t("dirreq.choose_location")}>
           <Icon name="folder" size={15} />
         </button>
       </div>
@@ -52,7 +55,7 @@ export function DirectoryRequestCard({
         {!item.primary && (
           <label className="dirreq-access">
             <input type="checkbox" checked={writable} onChange={(e) => setWritable(e.target.checked)} />
-            {t("dirreq.allow_write")}
+            {t("dirreq.allow_writing")}
           </label>
         )}
         <span className="spacer" />
@@ -64,7 +67,7 @@ export function DirectoryRequestCard({
           disabled={!path.trim()}
           onClick={() => onRespond(true, path.trim(), item.primary ? true : writable)}
         >
-          {item.primary ? t("dirreq.make_workspace") : t("dirreq.grant")}
+          {item.primary ? t("dirreq.make_workspace") : t("dirreq.grant_access")}
         </button>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import type { InboxItem } from "../api";
 import type { QuestionOption } from "../types";
 import { humanizeApprovalTitle } from "../humanize";
-import { useT } from "../i18n/I18nProvider";
 import {
   approvalActionLabels,
   PreviewBlock,
@@ -91,7 +91,7 @@ function specsFor(item: InboxItem): QSpec[] {
 // -- one question (options + free-text escape) --------------------------------
 
 function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) => void }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string[]>([]);
   const [text, setText] = useState("");
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
@@ -191,7 +191,7 @@ function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) 
             disabled={!selected.length}
             onClick={() => onAnswer(selected.join(", "))}
           >
-            {selected.length ? t("inbox.send_n", { n: selected.length }) : t("inbox.send")}
+            {selected.length ? t("inbox.send_count", { count: selected.length }) : t("common.send")}
           </button>
         </div>
       )}
@@ -199,7 +199,7 @@ function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) 
         <div className="flex items-center gap-2 mt-2.5">
           <input
             className={INPUT}
-            placeholder={options.length ? t("inbox.own_answer") : t("inbox.your_answer")}
+            placeholder={options.length ? t("inbox.or_type_answer") : t("inbox.your_answer")}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -207,7 +207,7 @@ function QuestionBlock({ spec, onAnswer }: { spec: QSpec; onAnswer: (a: string) 
             }}
           />
           <button className={BTN_PRIMARY} disabled={!text.trim()} onClick={() => onAnswer(text)}>
-            {t("inbox.send")}
+            {t("common.send")}
           </button>
         </div>
       )}
@@ -226,6 +226,7 @@ function QuestionCard({
   onResolve: (id: string, resolution: string) => void;
   chip?: ReactNode;
 }) {
+  const { t } = useTranslation();
   const specs = specsFor(item);
   const grouped = (item.questions?.length ?? 0) > 0;
   const [step, setStep] = useState(0);
@@ -235,10 +236,6 @@ function QuestionCard({
   // The answer map is keyed by header (falling back to the question text) — the same key the
   // server's answer_result() hands the agent.
   const keyFor = (s: QSpec) => s.header || s.question;
-  const { t } = useT();
-  // Stepper labels: "第 1 题 / 共 2 题", next-question chip "下一题 ›".
-  const questionLabel = (n: number) => t("inbox.question_n", { n });
-  const ofLabel = (cur: number, total: number) => t("inbox.step_of", { cur, total });
 
   const submit = (a: string) => {
     if (!grouped) {
@@ -266,16 +263,17 @@ function QuestionCard({
           </button>
         )}
         <span className={grouped ? "text-accent" : undefined}>
-          {spec.header || (grouped ? questionLabel(step + 1) : t("inbox.kind_question"))}
+          {spec.header ||
+            (grouped ? t("inbox.question_n", { n: step + 1 }) : t("inbox.question_label"))}
         </span>
         {grouped && (
           <>
             <span>·</span>
-            <span>{ofLabel(step + 1, specs.length)}</span>
+            <span>{t("inbox.step_of", { step: step + 1, total: specs.length })}</span>
             {next && (
               <>
                 <span>·</span>
-                <span>{questionLabel(step + 2) + " ›"}</span>
+                <span>{(next.header || t("inbox.question_n", { n: step + 2 })) + " ›"}</span>
               </>
             )}
           </>
@@ -303,15 +301,8 @@ export function InboxItemCard({
   chip?: ReactNode; // optional "go to session" affordance (shown in the Inbox list, not inline)
   compact?: boolean;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const isQuestion = item.kind === "question";
-  const kindLabel = (k: string) =>
-    k === "approval" ? t("inbox.kind_approval")
-    : k === "question" ? t("inbox.kind_question")
-    : k === "directory" ? t("inbox.kind_directory")
-    : k === "plan" ? t("inbox.kind_plan")
-    : k === "notice" ? t("inbox.kind_notice")
-    : k;
   return (
     <div
       className={
@@ -337,7 +328,7 @@ export function InboxItemCard({
         </div>
       ) : isQuestion ? null : ( // QuestionCard owns its header + title (stepper needs them)
         <>
-          <div className={SEC}>{kindLabel(item.kind)}</div>
+          <div className={SEC}>{item.kind}</div>
           <div className="text-[14px] font-semibold mt-0.5 leading-snug">{item.title}</div>
         </>
       )}
@@ -366,17 +357,20 @@ export function InboxItemCard({
           {item.data?.task_id && item.data?.standing_target && (
             <button
               className={BTN_BORDERED}
-              title={t("inbox.always_task_title", { target: item.data.standing_target, task: item.data.task_title || t("inbox.always_task_default") })}
+              title={t("inbox.always_task_title", {
+                target: item.data.standing_target,
+                task: item.data.task_title || t("approval.btn.this_automation"),
+              })}
               onClick={() => onResolve(item.id, "always_task")}
             >
-              {t("inbox.allow_every_time")}
+              {t("approval.btn.allow_every_time")}
             </button>
           )}
           <button
             className={item.data?.tool ? BTN_QUIET : BTN_BORDERED}
             onClick={() => onResolve(item.id, "deny")}
           >
-            {item.data?.tool ? approvalActionLabels(item.data.tool).deny : t("inbox.deny")}
+            {item.data?.tool ? approvalActionLabels(item.data.tool).deny : t("approval.deny")}
           </button>
         </div>
       ) : isQuestion ? (
@@ -400,12 +394,12 @@ export function InboxItemCard({
           >
             {item.data?.path
               ? item.data?.primary
-                ? t("dirreq.make_workspace")
+                ? t("inbox.make_workspace")
                 : t("inbox.grant")
               : t("inbox.grant_no_folder")}
           </button>
           <button className={BTN_BORDERED} onClick={() => onResolve(item.id, JSON.stringify({ granted: false }))}>
-            {t("inbox.deny")}
+            {t("approval.deny")}
           </button>
         </div>
       ) : item.kind === "plan" ? (

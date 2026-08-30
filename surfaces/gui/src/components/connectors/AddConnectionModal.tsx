@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   connectConnector,
   connectManaged,
@@ -11,7 +12,6 @@ import { ConnectorBadge } from "../../connectors/ConnectorIcon";
 import { ConnectSetup } from "../ManageTabs";
 import { CloudSignInInline, CloudStatusPending } from "./CloudSignIn";
 import { PILL_ACCENT, PILL_LINE, TAG_ACCENT } from "./ui";
-import { useT } from "../../i18n/I18nProvider";
 
 // The ONE place a connection gets added (UX-DECISIONS §21): the detail page's header
 // button (or the list's Connect pill) opens this sheet. Connectors with two connect
@@ -34,8 +34,7 @@ export function AddConnectionModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
-  const { t } = useT();
-  const header = title || t("conn.connect_title", { title: c.title });
+  const { t } = useTranslation();
   // MCP-backed one-click (§42): local OAuth against the vendor's hosted MCP server —
   // with manual fields alongside (jira, asana) it's a second mode; alone (monday)
   // it IS the connect flow.
@@ -55,20 +54,22 @@ export function AddConnectionModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const defaultTitle = t("modal.connect_title", { title: c.title });
+
   return (
     <div className="fixed inset-0 z-40" data-testid="add-connection-modal">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div
         className="absolute left-1/2 top-[14%] -translate-x-1/2 w-[480px] max-w-[calc(100vw-2rem)] bg-panel rounded-2xl border border-line shadow-2xl"
         role="dialog"
-        aria-label={header}
+        aria-label={title || defaultTitle}
       >
         <div className="flex items-center gap-3 px-5 pt-5">
           <ConnectorBadge connector={c} size={34} title={c.title} />
           <div className="flex-1 font-semibold text-[16px] tracking-tight">
-            {header}
+            {title || defaultTitle}
           </div>
-<button className="text-faint hover:text-ink text-[20px] leading-none" onClick={onClose} title={t("conn.close")}>
+          <button className="text-faint hover:text-ink text-[20px] leading-none" onClick={onClose} title={t("modal.close")}>
             ×
           </button>
         </div>
@@ -87,7 +88,7 @@ export function AddConnectionModal({
                     }
                     onClick={() => setPane(p)}
                   >
-                    {p === "one" ? t("conn.one_click") : t("conn.manual")}
+                    {p === "one" ? t("modal.one_click") : t("modal.manual")}
                   </button>
                 ))}
               </div>
@@ -131,12 +132,12 @@ export function AddConnectionModal({
 // client secret, no broker, no OpenWorker sign-in required). Poll until the card
 // flips to connected, then close.
 function McpOneClick({ c, onConnected }: { c: Connector; onConnected: () => void }) {
+  const { t: tt } = useTranslation();
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
   useEffect(() => {
     if (!waiting) return;
-    const timer = setInterval(async () => {
+    const t = setInterval(async () => {
       try {
         const list = await getConnectors();
         if (list.find((x) => x.name === c.name)?.connected) onConnected();
@@ -144,18 +145,18 @@ function McpOneClick({ c, onConnected }: { c: Connector; onConnected: () => void
         /* keep polling */
       }
     }, 2000);
-    return () => clearInterval(timer);
+    return () => clearInterval(t);
   }, [waiting, c.name, onConnected]);
   const go = async () => {
     setError(null);
     const res = await connectMcpBacked(c.name);
     if (res.ok) setWaiting(true);
-    else setError(res.error || t("conn.err_start_connect"));
+    else setError(res.error || tt("modal.could_not_start_connect"));
   };
   return (
     <div className="px-5 py-4 space-y-3">
       <p className="text-[13px] text-muted">
-        {t("conn.mcp_blurb", { title: c.title })}
+        {tt("modal.mcp_blurb", { title: c.title })}
       </p>
       <button
         className={PILL_ACCENT + " w-full !py-2"}
@@ -163,11 +164,11 @@ function McpOneClick({ c, onConnected }: { c: Connector; onConnected: () => void
         onClick={go}
         disabled={waiting}
       >
-        {waiting ? t("conn.check_browser") : t("conn.connect_title", { title: c.title })}
+        {waiting ? tt("cloud.check_browser") : tt("modal.connect_title", { title: c.title })}
       </button>
       {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
-        <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.mcp_foot", { title: c.title })}
+        <span className={TAG_ACCENT}>{tt("modal.recommended")}</span> {tt("modal.mcp_recommended_foot", { title: c.title })}
       </p>
     </div>
   );
@@ -176,19 +177,19 @@ function McpOneClick({ c, onConnected }: { c: Connector; onConnected: () => void
 // One-click pane for generic managed connectors (Notion, Attio, …): sign in
 // with the service in the browser; each consent lands as its own account.
 function GenericOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null }) {
+  const { t: tt } = useTranslation();
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
   const go = async () => {
     setError(null);
     const res = await connectManaged(c.name);
     if (res.ok) setWaiting(true);
-    else setError(res.error || t("conn.err_start_connect"));
+    else setError(res.error || tt("modal.could_not_start_connect"));
   };
   return (
     <div className="px-5 py-4 space-y-3">
       <p className="text-[13px] text-muted">
-        {t("conn.generic_blurb", { title: c.title })}
+        {tt("modal.generic_blurb", { title: c.title })}
       </p>
       {cloud?.signed_in ? (
         <button
@@ -197,7 +198,7 @@ function GenericOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null
           onClick={go}
           disabled={waiting}
         >
-          {waiting ? t("conn.check_browser") : t("conn.connect_title", { title: c.title })}
+          {waiting ? tt("cloud.check_browser") : tt("modal.connect_title", { title: c.title })}
         </button>
       ) : cloud ? (
         <CloudSignInInline />
@@ -206,30 +207,30 @@ function GenericOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null
       )}
       {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
-        <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.tokens_local")}
+        <span className={TAG_ACCENT}>{tt("modal.recommended")}</span> {tt("modal.tokens_stay_local")}
       </p>
     </div>
   );
 }
 
 function SlackOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null }) {
+  const { t: tt } = useTranslation();
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
   const go = async () => {
     setError(null);
     const res = await connectManaged(c.name);
     if (res.ok) setWaiting(true);
-    else setError(res.error || t("conn.err_start_install"));
+    else setError(res.error || tt("modal.could_not_start_install"));
   };
   return (
     <div className="px-5 py-4 space-y-3">
       <p className="text-[13px] text-muted">
-        {t("conn.slack_blurb")}
+        {tt("modal.slack_blurb")}
       </p>
       {cloud?.signed_in ? (
         <button className={PILL_ACCENT + " w-full !py-2"} data-testid="modal-add-to-slack" onClick={go} disabled={waiting}>
-          {waiting ? t("conn.check_browser") : t("conn.add_to_slack")}
+          {waiting ? tt("cloud.check_browser") : tt("modal.add_to_slack")}
         </button>
       ) : cloud ? (
         <CloudSignInInline />
@@ -238,33 +239,33 @@ function SlackOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null }
       )}
       {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
-        <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.slack_foot")}
+        <span className={TAG_ACCENT}>{tt("modal.recommended")}</span> {tt("modal.slack_recommended_foot")}
       </p>
     </div>
   );
 }
 
 function GithubOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null }) {
+  const { t: tt } = useTranslation();
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
   const go = async () => {
     setError(null);
     const res = await connectManaged(c.name);
     if (res.ok) setWaiting(true);
-    else setError(res.error || t("conn.err_start_install"));
+    else setError(res.error || tt("modal.could_not_start_install"));
   };
   return (
     <div className="px-5 py-4 space-y-3">
       <p className="text-[13px] text-muted">
-        {t("conn.github_blurb")}
+        {tt("modal.github_blurb")}
       </p>
       {cloud?.signed_in ? (
         /* One button: the broker is authorize-first — it links an existing installation or
            redirects the same tab on to the install page (the old "Already installed? Link
            it" question and the Configure dead-end are gone). */
         <button className={PILL_ACCENT + " w-full !py-2"} data-testid="modal-install-github-app" onClick={() => go()} disabled={waiting}>
-          {waiting ? t("conn.check_browser") : t("conn.connect_github")}
+          {waiting ? tt("cloud.check_browser") : tt("modal.connect_github")}
         </button>
       ) : cloud ? (
         <CloudSignInInline />
@@ -273,34 +274,35 @@ function GithubOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null 
       )}
       {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center flex items-center justify-center gap-1.5">
-        <span className={TAG_ACCENT}>{t("conn.recommended")}</span> {t("conn.github_foot")}
+        <span className={TAG_ACCENT}>{tt("modal.recommended")}</span> {tt("modal.github_recommended_foot")}
       </p>
     </div>
   );
 }
 
 function HubSpotOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null }) {
+  const { t: tt } = useTranslation();
   const [access, setAccess] = useState<"read" | "write">("read");
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
   const go = async () => {
     setError(null);
     const res = await connectManaged(c.name, { access });
     if (res.ok) setWaiting(true);
-    else setError(res.error || t("conn.err_start_connect"));
+    else setError(res.error || tt("modal.could_not_start_connect"));
   };
-  const options: { value: "read" | "write"; labelKey: string; blurbKey: string }[] = [
-    { value: "read", labelKey: "conn.hubspot_readonly", blurbKey: "conn.hubspot_readonly_blurb" },
-    { value: "write", labelKey: "conn.hubspot_readwrite", blurbKey: "conn.hubspot_readwrite_blurb" },
-  ];
   return (
     <div className="px-5 py-4 space-y-3">
       <p className="text-[13px] text-muted">
-        {t("conn.hubspot_blurb")}
+        {tt("modal.hubspot_blurb")}
       </p>
       <div className="space-y-1.5" data-testid="hubspot-access">
-        {options.map(({ value, labelKey, blurbKey }) => (
+        {(
+          [
+            ["read", tt("modal.hubspot_readonly"), tt("modal.hubspot_readonly_blurb")],
+            ["write", tt("modal.hubspot_readwrite"), tt("modal.hubspot_readwrite_blurb")],
+          ] as const
+        ).map(([value, label, blurb]) => (
           <label key={value} className="flex items-start gap-2 text-[13px] cursor-pointer">
             <input
               type="radio"
@@ -311,15 +313,15 @@ function HubSpotOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null
               onChange={() => setAccess(value)}
             />
             <span>
-              <span className="font-medium">{t(labelKey)}</span>
-              <span className="block text-[12px] text-muted">{t(blurbKey)}</span>
+              <span className="font-medium">{label}</span>
+              <span className="block text-[12px] text-muted">{blurb}</span>
             </span>
           </label>
         ))}
       </div>
       {cloud?.signed_in ? (
         <button className={PILL_ACCENT + " w-full !py-2"} data-testid="modal-connect-hubspot" onClick={go} disabled={waiting}>
-          {waiting ? t("conn.check_browser") : t("conn.connect_hubspot")}
+          {waiting ? tt("cloud.check_browser") : tt("modal.connect_hubspot")}
         </button>
       ) : cloud ? (
         <CloudSignInInline />
@@ -328,41 +330,41 @@ function HubSpotOneClick({ c, cloud }: { c: Connector; cloud: CloudStatus | null
       )}
       {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-faint text-center">
-        {t("conn.hubspot_foot")}
+        {tt("modal.hubspot_foot")}
       </p>
     </div>
   );
 }
 
 function SlackManual({ onConnected }: { onConnected: () => void }) {
+  const { t: tt } = useTranslation();
   const [bot, setBot] = useState("");
   const [app, setApp] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
   const submit = async () => {
     setBusy(true);
     setError(null);
     const res = await connectConnector("slack", { bot_token: bot.trim(), app_token: app.trim() });
     setBusy(false);
     if (res.ok) onConnected();
-    else setError(res.error || t("conn.err_connect"));
+    else setError(res.error || tt("modal.could_not_connect"));
   };
   return (
     <div className="px-5 py-4 space-y-3">
       <ol className="list-decimal pl-4 text-[13px] text-muted space-y-1">
-        <li>{t("conn.slack_manual_step1")}</li>
-        <li>{t("conn.slack_manual_step2")}</li>
-        <li>{t("conn.slack_manual_step3")}</li>
+        <li>{tt("modal.slack_manual_step1")}</li>
+        <li>{tt("modal.slack_manual_step2")}</li>
+        <li>{tt("modal.slack_manual_step3")}</li>
       </ol>
-      <input className={INPUT} type="password" placeholder={t("conn.bot_token_ph")} value={bot} spellCheck={false} onChange={(e) => setBot(e.target.value)} />
-      <input className={INPUT} type="password" placeholder={t("conn.app_token_ph")} value={app} spellCheck={false} onChange={(e) => setApp(e.target.value)} />
+      <input className={INPUT} type="password" placeholder={tt("modal.bot_token_placeholder")} value={bot} spellCheck={false} onChange={(e) => setBot(e.target.value)} />
+      <input className={INPUT} type="password" placeholder={tt("modal.app_token_placeholder")} value={app} spellCheck={false} onChange={(e) => setApp(e.target.value)} />
       <button className={PILL_LINE + " w-full !py-2"} onClick={submit} disabled={busy || !bot.trim() || !app.trim()}>
-        {busy ? t("conn.validating") : t("conn.connect")}
+        {busy ? tt("modal.validating") : tt("modal.connect")}
       </button>
       {error && <div className="text-[13px] text-danger">{error}</div>}
       <p className="text-[12px] text-warnInk text-center">
-        {t("conn.slack_manual_warn")}
+        {tt("modal.slack_manual_pause_note")}
       </p>
     </div>
   );

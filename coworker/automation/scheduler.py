@@ -75,15 +75,16 @@ class Scheduler:
 
     async def _tick(self, *, trigger: str) -> None:
         for task in self.store.due():
-            if task.id in self._running_ids:
-                continue
             # Spawn, don't await: a run can suspend on a parked approval (standing
             # scoped approvals, §25) and one blocked automation must never stall the
-            # scheduler loop, other due tasks, or self-wake resumption. Overlap is
-            # still guarded inside run_task via _running_ids, but filtering here
-            # avoids spawning a second waiter that will both await the same gate
-            # and double-increment run_count when it unblocks.
-            spawned = asyncio.create_task(self.run_task(task, trigger=trigger))
+            # scheduler loop, other due tasks, or self-wake resumption. The overlap
+            # guard must be claimed *here*, before the spawn: this due() snapshot
+            # goes stale, and if the in-flight run finishes before a spawned
+            # duplicate gets its first step, a guard checked inside the spawn is
+            # already clear — the task runs twice.
+            if not self._claim(task.id):
+                continue
+            spawned = asyncio.create_task(self._run_claimed(task, trigger=trigger))
             self._spawned.add(spawned)
             spawned.add_done_callback(self._spawned.discard)
         if self.extra_tick is not None:
@@ -92,31 +93,36 @@ class Scheduler:
             except Exception:
                 logger.exception("scheduler extra_tick (wake resume) failed")
 
+    def _claim(self, task_id: str) -> bool:
+        if task_id in self._running_ids:  # skip-on-overlap
+            logger.info("skipping %s — previous run still going", task_id)
+            return False
+        self._running_ids.add(task_id)
+        return True
+
     async def run_task(self, task: ScheduledTask, *, trigger: str) -> Optional[TaskRun]:
-        if task.id in self._running_ids:  # skip-on-overlap
-            logger.info("skipping %s — previous run still going", task.id)
+        if not self._claim(task.id):
             return None
-        self._running_ids.add(task.id)
+        return await self._run_claimed(task, trigger=trigger)
+
+    async def _run_claimed(
+        self, task: ScheduledTask, *, trigger: str
+    ) -> Optional[TaskRun]:
         try:
-            try:
-                run = await self.runner(task, trigger)
-            except Exception as exc:
-                logger.exception("task %s run failed", task.id)
-                run = TaskRun(
-                    task_id=task.id, status="error", error=str(exc), trigger=trigger
-                )
-                self.store.add_run(run)
-            # advance the task (run_count/last_run) → save recomputes next_run.
-            # The overlap guard must be held until next_run is rewritten to the
-            # future — otherwise a tick landing between the guard release and the
-            # save would see the stale next_run==1.0 and double-fire the same
-            # task (observed as run_count==2 on the blocked-run test).
-            fresh = self.store.get(task.id)
-            if fresh is not None:
-                fresh.run_count += 1
-                fresh.last_run = run.started_at if run else None
-                fresh.last_status = run.status if run else "error"
-                self.store.save(fresh)
-            return run
+            run = await self.runner(task, trigger)
+        except Exception as exc:
+            logger.exception("task %s run failed", task.id)
+            run = TaskRun(
+                task_id=task.id, status="error", error=str(exc), trigger=trigger
+            )
+            self.store.add_run(run)
         finally:
             self._running_ids.discard(task.id)
+        # advance the task (run_count/last_run) → save recomputes next_run.
+        fresh = self.store.get(task.id)
+        if fresh is not None:
+            fresh.run_count += 1
+            fresh.last_run = run.started_at if run else None
+            fresh.last_status = run.status if run else "error"
+            self.store.save(fresh)
+        return run

@@ -9,26 +9,15 @@
 // Both render the same Board data App owns; mutations go through the /board
 // endpoints and act as the USER.
 import { useEffect, useState } from "react";
+import type { TFunction } from "i18next";
+import { Trans, getI18n, useTranslation } from "react-i18next";
 import type { Board, BoardItem, BoardItemDetail, BoardTimelineEvent } from "../api";
 import { Icon } from "./Icon";
-import { useT, currentLang } from "../i18n/I18nProvider";
-import zh from "../i18n/zh.json";
-import en from "../i18n/en.json";
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-// Module-scope helper for non-component paths (boardSummary, timelineLine).
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  let raw = d[key] ?? DICTS.en[key] ?? key;
-  if (params) for (const [k, v] of Object.entries(params)) raw = raw.replace(`{${k}}`, String(v));
-  return raw;
-}
 
 // Rail display order: needs-attention first (mock UX-030: "blocked on top").
 const RAIL_GROUPS: { state: string; labelKey: string }[] = [
   { state: "blocked", labelKey: "board.state_blocked" },
-  { state: "review", labelKey: "board.state_review" },
+  { state: "review", labelKey: "board.state_awaiting_review" },
   { state: "in_progress", labelKey: "board.state_in_progress" },
   { state: "open", labelKey: "board.state_queued" },
   { state: "done", labelKey: "board.state_done" },
@@ -44,13 +33,15 @@ function dotClass(state: string): string {
 }
 
 export function boardSummary(board: Board): string {
+  const t = getI18n().t;
   const counts: Record<string, number> = {};
   for (const item of board.items) counts[item.state] = (counts[item.state] || 0) + 1;
   const parts: string[] = [];
-  if (counts.blocked) parts.push(tt("board.chip_blocked", { n: counts.blocked }));
-  if (counts.review) parts.push(tt("board.chip_review", { n: counts.review }));
-  if (counts.in_progress) parts.push(tt("board.sum_in_progress", { n: counts.in_progress }));
-  if (counts.open) parts.push(tt("board.sum_open", { n: counts.open }));
+  if (counts.blocked) parts.push(t("board.summary_blocked", { count: counts.blocked }));
+  if (counts.review) parts.push(t("board.summary_review", { count: counts.review }));
+  if (counts.in_progress)
+    parts.push(t("board.summary_in_progress", { count: counts.in_progress }));
+  if (counts.open) parts.push(t("board.summary_open", { count: counts.open }));
   return parts.join(" · ");
 }
 
@@ -68,7 +59,7 @@ export function BoardSection({
   // outlives its sessions, so finished history from a past effort would greet
   // every fresh session as a long stale list. Done/canceled sit behind a quiet
   // count; the expanded overlay keeps the full picture.
-  const { t } = useT();
+  const { t } = useTranslation();
   const [showFinished, setShowFinished] = useState(false);
   const finished = board.items.filter(
     (i) => i.state === "done" || i.state === "canceled"
@@ -86,7 +77,7 @@ export function BoardSection({
     <div className="board-rail" data-testid="board-rail">
       {groups.length === 0 && (
         <div className="board-rail-quiet" data-testid="board-rail-quiet">
-          {t("board.no_active")}
+          {t("board.no_active_work")}
         </div>
       )}
       {groups.map((group) => (
@@ -116,7 +107,9 @@ export function BoardSection({
           data-testid="board-finished-toggle"
           onClick={() => setShowFinished((v) => !v)}
         >
-          {showFinished ? t("board.hide_finished") : t("board.finished_show", { n: finished })}
+          {showFinished
+            ? t("board.hide_finished")
+            : t("board.finished_show", { count: finished })}
         </button>
       )}
     </div>
@@ -128,7 +121,7 @@ export function BoardSection({
 // just stuck — the red dot + blocker fact carry the difference.
 const LIST_SECTIONS: { labelKey: string; states: string[] }[] = [
   { labelKey: "board.state_in_progress", states: ["in_progress", "blocked"] },
-  { labelKey: "board.state_review", states: ["review"] },
+  { labelKey: "board.state_awaiting_review", states: ["review"] },
   { labelKey: "board.state_queued", states: ["open"] },
 ];
 
@@ -154,7 +147,7 @@ export function BoardOverlay({
   onOpenWorker?: (actor: string) => void;
   initialItem?: number | null;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [detail, setDetail] = useState<BoardItemDetail | null>(null);
   const [showFinished, setShowFinished] = useState(false);
   useEffect(() => {
@@ -206,7 +199,12 @@ export function BoardOverlay({
       <span className="board-lrow-end">
         {item.assignee}
         {item.state === "blocked" && (
-          <>{t("board.blocked_tag", { blocker: item.blocker ? `：${item.blocker}` : "" })}</>
+          <>
+            {" · "}
+            {item.blocker
+              ? t("board.blocked_with", { blocker: item.blocker })
+              : t("board.blocked_label")}
+          </>
         )}
       </span>
     </button>
@@ -218,10 +216,15 @@ export function BoardOverlay({
         <div className="board-overlay-head">
           <div className="board-overlay-title">
             <Icon name="table" size={16} />
-            <span>{t("board.title")}</span>
+            <span>{t("rail.board_title")}</span>
             <span className="board-overlay-space">{board.name}</span>
           </div>
-          <button className="artifact-icon-btn" onClick={onClose} aria-label={t("board.close_board")} title={t("rightrail.close")}>
+          <button
+            className="artifact-icon-btn"
+            onClick={onClose}
+            aria-label={t("board.close_board")}
+            title={t("rail.close")}
+          >
             <Icon name="x" size={16} />
           </button>
         </div>
@@ -234,7 +237,7 @@ export function BoardOverlay({
               </div>
             ))}
             {sections.length === 0 && (
-              <div className="board-rail-quiet">{t("board.no_active")}</div>
+              <div className="board-rail-quiet">{t("board.no_active_work")}</div>
             )}
             {finished.length > 0 && (
               <>
@@ -245,7 +248,7 @@ export function BoardOverlay({
                 >
                   {showFinished
                     ? t("board.hide_finished")
-                    : t("board.finished_show", { n: finished.length })}
+                    : t("board.finished_show", { count: finished.length })}
                 </button>
                 {showFinished && (
                   <div>
@@ -271,14 +274,18 @@ export function BoardOverlay({
   );
 }
 
-const STATE_KEY: Record<string, string> = {
+const STATE_LABEL_KEYS: Record<string, string> = {
   open: "board.state_queued",
   in_progress: "board.state_in_progress",
   blocked: "board.state_blocked",
-  review: "board.state_review",
+  review: "board.state_in_review",
   done: "board.state_done",
   canceled: "board.state_canceled",
 };
+
+function stateLabel(t: TFunction, state: string): string {
+  return STATE_LABEL_KEYS[state] ? t(STATE_LABEL_KEYS[state]) : state;
+}
 
 function ItemDetail({
   detail,
@@ -293,7 +300,7 @@ function ItemDetail({
   loadAttachment?: (stored: string) => Promise<string | null>;
   onOpenWorker?: (actor: string) => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   // "Request changes…" discloses a comment box; the verdict rides the transition.
   const [changesOpen, setChangesOpen] = useState(false);
   const [changesText, setChangesText] = useState("");
@@ -308,7 +315,7 @@ function ItemDetail({
       </div>
       <div className="board-detail-meta">
         <span className={"board-detail-st st-" + detail.state}>
-          {(STATE_KEY[detail.state] && t(STATE_KEY[detail.state])) || detail.state}
+          {stateLabel(t, detail.state)}
         </span>
         {detail.assignee && (
           <>
@@ -327,15 +334,19 @@ function ItemDetail({
             )}
           </>
         )}
-        {t("board.filed_by")}
-        {detail.creator}
+        {" · "}
+        {t("board.filed_by", { creator: detail.creator })}
       </div>
       {detail.description && (
         <div className="board-detail-desc">{detail.description}</div>
       )}
       {detail.criteria && (
         <div className="board-detail-crit">
-          <span className="board-detail-label">{t("board.done_when")}</span> — {detail.criteria}
+          <Trans
+            i18nKey="board.done_when_line"
+            values={{ criteria: detail.criteria }}
+            components={{ label: <span className="board-detail-label" /> }}
+          />
         </div>
       )}
       <div className="board-tl">
@@ -368,7 +379,7 @@ function NoteComposer({
   detail: BoardItemDetail;
   onAddNote: (item: number, body: string) => Promise<void>;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   useEffect(() => setText(""), [detail.id]);
   const submit = async () => {
@@ -381,8 +392,8 @@ function NoteComposer({
     <input
       className="board-note-input"
       data-testid="board-note-input"
-      placeholder={t("board.note_ph")}
-      title={t("board.note_title")}
+      placeholder={t("board.add_note_placeholder")}
+      title={t("board.add_note_title")}
       value={text}
       onChange={(e) => setText(e.target.value)}
       onKeyDown={(e) => {
@@ -407,7 +418,7 @@ function DetailActions({
   changesText: string;
   setChangesText: (v: string) => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   if (detail.state === "review") {
     return (
       <div className="board-detail-actions">
@@ -415,7 +426,7 @@ function DetailActions({
           <div className="board-changes" data-testid="board-changes">
             <textarea
               autoFocus
-              placeholder={t("board.changes_ph")}
+              placeholder={t("board.changes_placeholder")}
               value={changesText}
               onChange={(e) => setChangesText(e.target.value)}
             />
@@ -429,7 +440,7 @@ function DetailActions({
                   onTransition(detail.id, "in_progress", changesText.trim())
                 }
               >
-                {t("board.request_changes")}
+                {t("plan.request_changes")}
               </button>
               <button className="board-btn ghost" onClick={() => setChangesOpen(false)}>
                 {t("board.cancel")}
@@ -465,29 +476,24 @@ function DetailActions({
   return (
     <div className="board-detail-actions">
       <button className="board-btn ghost" onClick={() => onTransition(detail.id, "canceled")}>
-        {t("board.remove")}
+        {t("common.remove")}
       </button>
     </div>
   );
 }
 
-function timelineLine(
-  event: BoardTimelineEvent,
-  t: (key: string, params?: Record<string, string | number>) => string,
-): string {
+function timelineLine(t: TFunction, event: BoardTimelineEvent): string {
   switch (event.kind) {
     case "created":
       return t("board.tl_filed");
     case "assigned":
-      return t("board.tl_assigned", { name: event.assignee || "" });
+      return t("board.tl_assigned", { assignee: event.assignee });
     case "claimed":
       return t("board.tl_claimed");
     case "moved":
       return event.to === "in_progress"
         ? t("board.tl_started")
-        : t("board.tl_moved", {
-            to: (STATE_KEY[event.to || ""] && t(STATE_KEY[event.to || ""])) || event.to || "",
-          });
+        : t("board.tl_moved", { state: stateLabel(t, event.to || "").toLowerCase() });
     case "comment":
       return t("board.tl_commented");
     default:
@@ -502,7 +508,7 @@ function TimelineRow({
   event: BoardTimelineEvent;
   loadAttachment?: (stored: string) => Promise<string | null>;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const shots = (event.refs || []).filter((r) => r.startsWith("attachment://"));
   const when = new Date(event.ts).toLocaleTimeString([], {
     hour: "2-digit",
@@ -519,7 +525,7 @@ function TimelineRow({
   return (
     <div className={"board-tl-ev" + tone}>
       <div className="board-tl-line">
-        <b>{event.actor}</b> {timelineLine(event, t)} · {when}
+        <b>{event.actor}</b> {timelineLine(t, event)} · {when}
       </div>
       {event.body && <p className="board-tl-body">{event.body}</p>}
       {loadAttachment &&

@@ -14,37 +14,24 @@
 // for keyboard focus too; the ids are also mirrored into the header `title` for quick reference.
 
 import { useState, type CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import type { MessageSource } from "../api";
 import { ConnectorBadge, hexToRgba, NEUTRAL } from "../connectors/ConnectorIcon";
 import { resolveConnector } from "../connectors/registry";
-import { currentLang } from "../i18n/I18nProvider";
-import zh from "../i18n/zh.json";
-import en from "../i18n/en.json";
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-const EN: Dict = en as Dict;
-
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  const raw = d[key] ?? EN[key] ?? key;
-  if (!params) return raw;
-  return raw.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
-}
 
 /** Coarse relative time from epoch seconds: "just now" / "5m ago" / "2h ago" / "3d ago" / a date. */
-function relativeTime(tsSeconds: number): string {
+function relativeTime(tsSeconds: number, t: (key: string, opts?: any) => string): string {
   if (!tsSeconds || !isFinite(tsSeconds)) return "";
   const then = tsSeconds * 1000;
   const diff = Date.now() - then;
-  if (diff < 0) return tt("connector.just_now");
-  if (diff < 45_000) return tt("connector.just_now");
+  if (diff < 0) return t("inbox.rel_just_now");
+  if (diff < 45_000) return t("inbox.rel_just_now");
   const mins = Math.round(diff / 60_000);
-  if (mins < 60) return tt("connector.minutes_ago", { n: mins });
+  if (mins < 60) return t("inbox.rel_minutes_ago", { count: mins });
   const hrs = Math.round(diff / 3_600_000);
-  if (hrs < 24) return tt("connector.hours_ago", { n: hrs });
+  if (hrs < 24) return t("inbox.rel_hours_ago", { count: hrs });
   const days = Math.round(diff / 86_400_000);
-  if (days < 7) return tt("connector.days_ago", { n: days });
+  if (days < 7) return t("inbox.rel_days_ago", { count: days });
   return new Date(then).toLocaleDateString();
 }
 
@@ -62,6 +49,7 @@ export function ConnectorMessageCard({
   brandColor?: string;
 }) {
   const [showIds, setShowIds] = useState(false);
+  const { t } = useTranslation();
   const { key, entry } = resolveConnector(source.connector);
   const color = (brandColor || "").trim() || NEUTRAL;
   const soft = hexToRgba(color, 0.12) || "var(--line)";
@@ -99,11 +87,11 @@ export function ConnectorMessageCard({
             </span>
             <span className="text-faint">·</span>
             <span className="text-[13px] font-medium">{source.sender_name}</span>
-            <span className="text-[11px] text-faint ml-0.5">{tt("connector.via", { label: entry.label })}</span>
+            <span className="text-[11px] text-faint ml-0.5">{t("inbox.connector_via", { label: entry.label })}</span>
           </>
         )}
         <time className="ml-auto text-[11px] text-faint whitespace-nowrap" title={clockTime(source.ts)}>
-          {relativeTime(source.ts)}
+          {relativeTime(source.ts, t)}
         </time>
       </header>
       <div className="px-3.5 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap">{source.text}</div>

@@ -1,8 +1,8 @@
+import { useTranslation } from "react-i18next";
 import type { TodoItem } from "../types";
-import { useT } from "../i18n/I18nProvider";
 
 export function TodoPanel({ items }: { items: TodoItem[] }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   if (!items || items.length === 0) return null;
   const box = (s: string) => (s === "done" ? "☑" : s === "in_progress" ? "◉" : "☐");
   return (

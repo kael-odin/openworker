@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   checkForUpdate,
   clearPendingUpdate,
@@ -7,7 +8,6 @@ import {
   isTauri,
   type UpdateInfo,
 } from "../tauri";
-import { useT } from "../i18n/I18nProvider";
 
 // Auto-update prompt (desktop shell only — the browser build never renders this).
 // Deliberately a PROMPT, not a silent background install: swapping the app under a
@@ -32,7 +32,7 @@ const RECHECK_MS = 30 * 60_000;
 type Phase = "downloading" | "ready" | "fallback" | "installing" | "error";
 
 export function UpdateBanner() {
-  const { t } = useT();
+  const { t } = useTranslation();
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const [phase, setPhase] = useState<Phase>("downloading");
   // Per-run, per-version dismissal — no localStorage, so a restart re-offers, and a
@@ -57,10 +57,10 @@ export function UpdateBanner() {
   useEffect(() => {
     if (!isTauri()) return;
     const check = () => checkForUpdate().then((u) => u && offer(u)).catch(() => {});
-    const timer = setTimeout(check, FIRST_CHECK_MS);
+    const t = setTimeout(check, FIRST_CHECK_MS);
     const i = setInterval(check, RECHECK_MS);
     return () => {
-      clearTimeout(timer);
+      clearTimeout(t);
       clearInterval(i);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,13 +90,13 @@ export function UpdateBanner() {
       role="status"
       data-testid="update-banner"
     >
-      <div className="text-[13px] font-semibold">{t("update.title")}</div>
+      <div className="text-[13px] font-semibold">{t("update.banner_title")}</div>
       <div className="text-[12px] text-muted mt-0.5">
         {t("update.ready", { version: update.version })}
       </div>
       {phase === "error" && (
         <div className="text-[12px] text-warnInk mt-1.5">
-          {t("update.err")}
+          {t("update.install_failed")}
         </div>
       )}
       <div className="flex items-center gap-2 mt-2.5">
@@ -106,7 +106,7 @@ export function UpdateBanner() {
           disabled={busy}
           data-testid="update-install"
         >
-          {busy ? t("update.downloading") : t("update.restart")}
+          {busy ? t("update.downloading") : t("update.restart_to_update")}
         </button>
         <button
           className="px-2 py-1.5 text-[13px] text-faint hover:text-muted"

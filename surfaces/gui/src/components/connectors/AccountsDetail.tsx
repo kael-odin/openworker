@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   connectManaged,
   disconnectAccount,
@@ -10,7 +11,6 @@ import { ConnectSetup } from "../ManageTabs";
 import type { DetailProps } from "./ConnectorsSection";
 import { ToolsDisclosure } from "./ToolsDisclosure";
 import { FOOT, GRP, GRP_H, PILL_ACCENT, ROW, TAG_ACCENT, XBTN } from "./ui";
-import { useT } from "../../i18n/I18nProvider";
 
 // The generic detail page for multi-account connectors on the accounts layer
 // (Notion, Attio, PostHog, Mixpanel, Amplitude, Apollo, Hunter — batch 2).
@@ -20,11 +20,11 @@ import { useT } from "../../i18n/I18nProvider";
 // always available underneath — signed out or in, local-only stays first-class.
 
 export function AccountsDetail({ c, cloud, slack: _slack, onChanged }: DetailProps) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const accounts = (c.accounts ?? []) as AccountRow[];
   const canOneClick = c.managed && !!cloud?.signed_in;
-  const { t } = useT();
 
   const addManaged = async () => {
     setBusy(true);
@@ -45,11 +45,11 @@ export function AccountsDetail({ c, cloud, slack: _slack, onChanged }: DetailPro
               <>
                 <span className="w-2 h-2 rounded-full bg-ok" />
                 <span data-testid="accounts-status">
-                  {t(accounts.length === 1 ? "conn.account_n_one" : "conn.account_n", { n: accounts.length })}
+                  {t("connector.account_count", { count: accounts.length })}
                 </span>
               </>
             ) : (
-              <span>{t("conn.not_connected")}</span>
+              <span>{t("connector.not_connected")}</span>
             )}
           </div>
         </div>
@@ -60,17 +60,17 @@ export function AccountsDetail({ c, cloud, slack: _slack, onChanged }: DetailPro
           disabled={busy}
           title={
             c.managed && !cloud?.signed_in
-              ? t("conn.signin_first_managed")
+              ? t("cloud.sign_in_oneclick")
               : ""
           }
         >
-          {busy ? t("conn.check_browser") : t("conn.add_account")}
+          {busy ? t("cloud.check_browser") : t("accounts.add_account")}
         </button>
       </div>
 
       {accounts.length > 0 && (
         <>
-          <div className={GRP_H + " !mt-0"}>{t("conn.accounts")}</div>
+          <div className={GRP_H + " !mt-0"}>{t("accounts.accounts")}</div>
           <div className={GRP} data-testid="accounts-group">
             {accounts.map((a) => (
               <Row key={a.account_id} connector={c.name} a={a} onChanged={onChanged} />
@@ -82,7 +82,7 @@ export function AccountsDetail({ c, cloud, slack: _slack, onChanged }: DetailPro
       {(showManual || !c.connected) && (
         <>
           <div className={GRP_H + (accounts.length ? "" : " !mt-0")}>
-            {c.managed ? t("conn.add_manually") : t("conn.add_an_account")}
+            {c.managed ? t("accounts.add_manually") : t("accounts.add_an_account")}
           </div>
           <div className={GRP} data-testid="accounts-manual-add">
             <div className="px-1.5 py-1">
@@ -101,7 +101,7 @@ export function AccountsDetail({ c, cloud, slack: _slack, onChanged }: DetailPro
 
       <ToolsDisclosure c={c} onChanged={onChanged} />
       <div className={FOOT + " mt-2"}>
-        {t("conn.accounts_foot")}
+        {t("accounts.foot")}
       </div>
     </div>
   );
@@ -116,8 +116,8 @@ function Row({
   a: AccountRow;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
-  const { t } = useT();
   return (
     <div className={ROW} data-testid={`account-${a.account_id}`}>
       <span className="min-w-0 flex-1 flex items-center gap-2">
@@ -127,7 +127,7 @@ function Row({
             {a.account_id}
           </span>
         )}
-        {a.default && <span className={TAG_ACCENT}>{t("conn.default")}</span>}
+        {a.default && <span className={TAG_ACCENT}>{t("connector.default")}</span>}
       </span>
       {!a.default && (
         <button
@@ -138,12 +138,12 @@ function Row({
             onChanged();
           }}
         >
-          {t("conn.make_default")}
+          {t("connector.make_default")}
         </button>
       )}
       <button
         className={XBTN}
-        title={t("conn.disconnect_account")}
+        title={t("accounts.disconnect_account_title")}
         data-testid={`account-disconnect-${a.account_id}`}
         disabled={busy}
         onClick={async () => {

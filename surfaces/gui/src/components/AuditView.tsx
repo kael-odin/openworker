@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getAudit, type AuditEvent } from "../api";
 import { PanelHead } from "./IntegrationsView";
-import { useT } from "../i18n/I18nProvider";
 
 // Activity — connector/browser tool history, restructured onto the IntegrationsView page shell
 // (centered panel + PanelHead + cards), replacing the legacy `page-view` layout. Read-only:
@@ -15,7 +15,7 @@ export function AuditView() {
   const [sessionFilter, setSessionFilter] = useState("");
   const [connectorFilter, setConnectorFilter] = useState("");
   const [toolFilter, setToolFilter] = useState("");
-  const { t } = useT();
+  const { t } = useTranslation();
 
   const refresh = () =>
     getAudit({
@@ -41,16 +41,16 @@ export function AuditView() {
           />
 
           <div className="flex items-center gap-2 flex-wrap mb-4">
-            <input className={INPUT} placeholder={t("audit.filter_session")} value={sessionFilter} onChange={(e) => setSessionFilter(e.target.value)} />
-            <input className={INPUT} placeholder={t("audit.filter_connector")} value={connectorFilter} onChange={(e) => setConnectorFilter(e.target.value)} />
-            <input className={INPUT} placeholder={t("audit.filter_tool")} value={toolFilter} onChange={(e) => setToolFilter(e.target.value)} />
+            <input className={INPUT} placeholder={t("audit.placeholder_session")} value={sessionFilter} onChange={(e) => setSessionFilter(e.target.value)} />
+            <input className={INPUT} placeholder={t("audit.placeholder_connector")} value={connectorFilter} onChange={(e) => setConnectorFilter(e.target.value)} />
+            <input className={INPUT} placeholder={t("audit.placeholder_tool")} value={toolFilter} onChange={(e) => setToolFilter(e.target.value)} />
             <button className={BTN_ACCENT} onClick={refresh}>
-              {t("audit.filter_btn")}
+              {t("audit.filter")}
             </button>
           </div>
 
           {events.length === 0 ? (
-            <div className={CARD + " p-4 text-[13px] text-muted"}>{t("audit.empty")}</div>
+            <div className={CARD + " p-4 text-[13px] text-muted"}>{t("audit.no_events")}</div>
           ) : (
             <div className="space-y-2">
               {events.map((ev) => (
@@ -65,7 +65,7 @@ export function AuditView() {
 }
 
 function AuditRow({ ev }: { ev: AuditEvent }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   return (
     <div className={CARD + " p-3.5"}>
       <div className="flex items-center gap-2 flex-wrap">
@@ -75,9 +75,9 @@ function AuditRow({ ev }: { ev: AuditEvent }) {
         </span>
       </div>
       <div className="text-[12px] text-muted mt-0.5">
-        {t("audit.session_label")} {ev.session_id || "-"} {ev.approval ? `· ${ev.approval}` : ""} {ev.status ? `· ${ev.status}` : ""}
+        {t("audit.session")} {ev.session_id || "-"} {ev.approval ? `· ${ev.approval}` : ""} {ev.status ? `· ${ev.status}` : ""}
       </div>
-      {ev.resource && <div className="text-[12px] text-faint mt-0.5">{t("audit.resource_label")}{ev.resource}</div>}
+      {ev.resource && <div className="text-[12px] text-faint mt-0.5">{t("audit.resource", { value: ev.resource })}</div>}
       {ev.args && Object.keys(ev.args).length > 0 && (
         <div className="font-mono text-[12px] text-muted mt-1.5 break-words">{formatAuditArgs(ev.args)}</div>
       )}

@@ -1,6 +1,6 @@
+import { Trans, useTranslation } from "react-i18next";
 import type { Item } from "../types";
 import { Icon } from "./Icon";
-import { useT } from "../i18n/I18nProvider";
 
 type ToolReqItem = Extract<Item, { kind: "toolreq" }>;
 
@@ -14,18 +14,26 @@ export function ToolRequestCard({
   item: ToolReqItem;
   onRespond: (approved: boolean) => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   return (
     <div className="dirreq-card">
       <div className="dirreq-head">
         <Icon name="wrench" size={16} className="ico" />
         <span>
-          {t("toolreq.needs_pre")}<code>{item.tool}</code>
+          <Trans
+            i18nKey="toolreq.needs"
+            values={{ tool: item.tool }}
+            components={{ code: <code /> }}
+          />
         </span>
       </div>
       {item.reason && (
         <div className="dirreq-reason">
-          <span className="toolreq-label">{t("toolreq.reason")}</span> “{item.reason}”
+          <Trans
+            i18nKey="toolreq.reason_line"
+            values={{ reason: item.reason }}
+            components={{ label: <span className="toolreq-label" /> }}
+          />
         </div>
       )}
       {/* The fact strip is the PRODUCT speaking (registry metadata), styled apart from the
@@ -40,14 +48,14 @@ export function ToolRequestCard({
             {item.summary && <span className="toolreq-fact">{item.summary}</span>}
           </div>
           <div className="toolreq-explain">
-            {t("toolreq.install_note", { source: item.source ? ` ${t("toolreq.from")} ${item.source}` : "" })}
+            {item.source
+              ? t("toolreq.installs_with_source", { source: item.source })
+              : t("toolreq.installs")}
           </div>
         </div>
       ) : (
         <div className="toolreq-facts">
-          <div className="toolreq-explain">
-            {t("toolreq.no_build")}
-          </div>
+          <div className="toolreq-explain">{t("toolreq.no_build")}</div>
         </div>
       )}
       <div className="dirreq-actions">

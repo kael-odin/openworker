@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getI18n, useTranslation } from "react-i18next";
 import {
   allowUser,
   connectConnector,
@@ -21,30 +22,18 @@ import {
 import { CloudSignInInline, CloudStatusPending } from "./connectors/CloudSignIn";
 import { ModelChecklist } from "./ModelChecklist";
 import { ProviderCards, ProviderForm, useProviderSetup } from "../providers/ProviderSetup";
-import { useT, currentLang } from "../i18n/I18nProvider";
-import zh from "../i18n/zh.json";
-import en from "../i18n/en.json";
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-const EN: Dict = en as Dict;
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  let raw = d[key] ?? EN[key] ?? key;
-  if (params) for (const [k, v] of Object.entries(params)) raw = raw.replace(`{${k}}`, String(v));
-  return raw;
-}
 
 // "2h ago"-style label for the providers' Last-used line (null when never used).
 const relTime = (epoch?: number | null): string | null => {
   if (!epoch) return null;
+  const t = getI18n().getFixedT(null, "translation");
   const secs = Math.max(0, Math.floor(Date.now() / 1000 - epoch));
-  if (secs < 90) return tt("mtab.just_now");
+  if (secs < 90) return t("manage.reltime_just_now");
   const mins = Math.floor(secs / 60);
-  if (mins < 60) return tt("mtab.m_ago", { n: mins });
+  if (mins < 60) return t("manage.reltime_min", { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 48) return tt("mtab.h_ago", { n: hrs });
-  return tt("mtab.d_ago", { n: Math.floor(hrs / 24) });
+  if (hrs < 48) return t("manage.reltime_hour", { n: hrs });
+  return t("manage.reltime_day", { n: Math.floor(hrs / 24) });
 };
 
 // Shared tab bodies for the Settings and Integrations pages (the old top-tab ManageModal was retired
@@ -69,15 +58,15 @@ function initials(name: string): string {
 // key…" affordance, the global composer-picker card (gallery view), and the
 // per-provider ModelChecklist / read-only model preview (form view).
 export function ModelsTab() {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<ModelSettings | null>(null);
   const refreshSettings = () => getSettings().then(setSettings).catch(() => setSettings(null));
   const ps = useProviderSetup({ onSaved: refreshSettings });
-  const { t } = useT();
   useEffect(() => {
     refreshSettings();
   }, []);
 
-  if (!settings) return <div className="text-[13px] text-muted">{t("mtab.loading")}</div>;
+  if (!settings) return <div className="text-[13px] text-muted">{t("manage.loading")}</div>;
 
   const info = ps.info;
   const knownNames = ps.providers.map((p) => p.name);
@@ -102,10 +91,10 @@ export function ModelsTab() {
               className="text-[13px] text-danger/80 hover:text-danger hover:underline underline-offset-2"
               data-testid="set-remove-key"
               onClick={() => {
-                if (window.confirm(t("mtab.remove_key", { title: info?.title || "" }))) ps.removeKey();
+                if (window.confirm(t("manage.remove_key_confirm", { title: info?.title || "" }))) ps.removeKey();
               }}
             >
-              {t("mtab.remove_key_btn")}
+              {t("manage.remove_key")}
             </button>
           ) : null
         }
@@ -113,15 +102,15 @@ export function ModelsTab() {
 
       {ps.sel === "openai" && settings.source === "env" && (
         <p className="text-[12px] text-muted mt-3 leading-relaxed">
-          {t("mtab.openai_env_pre")}<code>{t("mtab.openai_env_code")}</code>{t("mtab.openai_env_post")}
+          {t("manage.openai_env_help")}
         </p>
       )}
 
       {info?.configured ? (
         <div className="mt-6">
-          <div className={SEC_H + " mb-1.5"}>{t("mtab.models")}</div>
+          <div className={SEC_H + " mb-1.5"}>{t("manage.models")}</div>
           <p className="text-[12px] text-muted mb-2.5 leading-relaxed">
-            {t("mtab.models_sub")}
+            {t("manage.models_help")}
           </p>
           <ModelChecklist
             provider={ps.sel}
@@ -138,9 +127,9 @@ export function ModelsTab() {
         // key unlocks is part of deciding to get one at all (owner ask, 2026-07-04).
         (info?.suggested_models?.length || 0) > 0 && (
           <div className="mt-6" data-testid="model-preview">
-            <div className={SEC_H + " mb-1.5"}>{t("mtab.included_models")}</div>
+            <div className={SEC_H + " mb-1.5"}>{t("manage.included_models")}</div>
             <p className="text-[12px] text-muted mb-2.5 leading-relaxed">
-              {t("mtab.included_models_sub")}
+              {t("manage.included_models_help")}
             </p>
             <div className="space-y-1">
               {(info?.suggested_models || []).map((m) => {
@@ -175,7 +164,7 @@ function ComposerPickerCard({
   providers: ProviderInfo[];
   onChanged: () => void;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const names = providers.map((p) => p.name);
   const provOf = (id: string) => {
     const i = id.indexOf(":");
@@ -187,9 +176,9 @@ function ComposerPickerCard({
   };
   return (
     <div className="mt-6" data-testid="composer-picker">
-      <div className={SEC_H + " mb-1.5"}>{t("mtab.composer_picker")}</div>
+      <div className={SEC_H + " mb-1.5"}>{t("manage.composer_picker_title")}</div>
       <p className="text-[12px] text-muted mb-2.5 leading-relaxed">
-        {t("mtab.composer_picker_sub")}
+        {t("manage.composer_picker_help")}
       </p>
       <div className="mlist">
         {settings.models.map((id) => {
@@ -201,7 +190,7 @@ function ComposerPickerCard({
                   type="checkbox"
                   checked
                   disabled={isDefault}
-                  title={isDefault ? t("mtab.default_title_default") : t("mtab.remove_from_picker")}
+                  title={isDefault ? t("models.default_locked") : t("manage.remove_from_picker")}
                   onChange={() => removeModel(id).then((r) => r.ok && onChanged())}
                 />
                 <span className="mlist-name" title={id}>
@@ -210,10 +199,10 @@ function ComposerPickerCard({
               </label>
               <span className="text-[11px] text-faint mr-2 shrink-0">{tag(id)}</span>
               {isDefault ? (
-                <span className="mlist-default">{t("mtab.default_badge")}</span>
+                <span className="mlist-default">{t("models.default_badge")}</span>
               ) : (
                 <button className="mlist-make" onClick={() => setDefaultModel(id).then(() => onChanged())}>
-                  {t("mtab.make_default")}
+                  {t("models.make_default")}
                 </button>
               )}
             </div>
@@ -244,7 +233,7 @@ export function UnauthorizedBlock({
   onChanged: () => void;
   teamId?: string;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const items = (c.unauthorized ?? []).filter(
     (m) => teamId === undefined || m.team_id === teamId,
   );
@@ -259,14 +248,14 @@ export function UnauthorizedBlock({
       data-testid={teamId ? `unauthorized-${c.name}-${teamId}` : `unauthorized-${c.name}`}
     >
       <div className={SEC_H + " mb-2"}>
-        {t("mtab.unauth_title", { n: items.length })}
+        {t("manage.parked_title", { n: items.length })}
       </div>
       <div className="space-y-2">
         {items.map((m) => (
           <div key={m.id} className="rounded-xl border border-line bg-paper p-2.5">
             <div className="flex items-center gap-2 text-[12px] text-muted">
               <span className="font-medium text-ink">{m.user_name || m.user_id}</span>
-              <span>{t("mtab.in_chat")} {m.chat_name || m.chat_id}</span>
+              <span>{t("manage.parked_in", { chat: m.chat_name || m.chat_id })}</span>
               <span className="ml-auto shrink-0">{relTime(m.ts) || ""}</span>
             </div>
             <div className="text-[13px] mt-1 break-words">{m.text}</div>
@@ -274,26 +263,26 @@ export function UnauthorizedBlock({
               <button
                 className="text-[12px] px-2 py-1 rounded-md bg-accent text-white"
                 data-testid={`parked-allow-deliver-${m.id}`}
-                title={t("mtab.allow_deliver_title")}
+                title={t("manage.parked_allow_deliver_tip")}
                 onClick={() => act(m.id, "allow_deliver")}
               >
-                {t("mtab.allow_deliver")}
+                {t("manage.parked_allow_deliver")}
               </button>
               <button
                 className={BTN_BORDERED}
                 data-testid={`parked-allow-${m.id}`}
-                title={t("mtab.allow_only_title")}
+                title={t("manage.parked_allow_tip")}
                 onClick={() => act(m.id, "allow")}
               >
-                {t("mtab.allow_only")}
+                {t("manage.parked_allow_only")}
               </button>
               <button
                 className="text-[12px] px-2 py-1 rounded-md text-faint hover:text-danger"
                 data-testid={`parked-dismiss-${m.id}`}
-                title={t("mtab.dismiss_title")}
+                title={t("manage.parked_dismiss_tip")}
                 onClick={() => act(m.id, "dismiss")}
               >
-                {t("mtab.dismiss")}
+                {t("manage.parked_dismiss")}
               </button>
             </div>
           </div>
@@ -307,8 +296,8 @@ export function UnauthorizedBlock({
 // Channel-subscriptions table (Integrations ▸ Messaging routing). Subscribing happens from a
 // session's Sources ▸ Channels panel; here the owner can see and revoke.
 export function ListeningSessionsBlock({ c }: { c: Connector }) {
+  const { t } = useTranslation();
   const [subs, setSubs] = useState<Subscription[] | null>(null);
-  const { t } = useT();
   const load = () => getSubscriptions().then(setSubs).catch(() => setSubs([]));
   useEffect(() => {
     load();
@@ -318,10 +307,10 @@ export function ListeningSessionsBlock({ c }: { c: Connector }) {
   const mine = (subs ?? []).filter((s) => platformOf(s.channel) === c.name);
   return (
     <div className="border-t border-line px-3.5 py-3" data-testid={`listening-${c.name}`}>
-      <div className={SEC_H + " mb-2"}>{t("mtab.listening_title", { title: c.title, n: mine.length })}</div>
+      <div className={SEC_H + " mb-2"}>{t("manage.listening_title", { title: c.title, n: mine.length })}</div>
       {mine.length === 0 ? (
         <div className="text-[12px] text-faint">
-          {t("mtab.listening_none")}
+          {t("manage.listening_empty")}
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -336,7 +325,7 @@ export function ListeningSessionsBlock({ c }: { c: Connector }) {
               </span>
               <button
                 className="ml-auto text-faint hover:text-danger shrink-0"
-                title={t("mtab.unsubscribe_session")}
+                title={t("manage.listening_unsub_tip")}
                 onClick={async () => {
                   await unsubscribeChannel(s.session_id, s.channel);
                   load();
@@ -369,7 +358,7 @@ export function AllowlistBlock({
   allowed?: string[];
   allowedNames?: Record<string, string | null>;
 }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const allowedUsers = allowed ?? c.allowed_users;
   const names = allowedNames ?? c.allowed_user_names;
   const recent = (c.recent ?? []).filter(
@@ -380,16 +369,16 @@ export function AllowlistBlock({
   return (
     <div className="border-t border-line px-3.5 py-3 grid grid-cols-2 gap-5">
       <div>
-        <div className={SEC_H + " mb-2"}>{t("mtab.allowed_to_message")}</div>
+        <div className={SEC_H + " mb-2"}>{t("manage.allowed_to_message")}</div>
         <div className="flex flex-wrap gap-1.5">
           {allowedUsers.length === 0 && (
-            <span className="text-[12px] text-faint">{t("mtab.nobody_yet")}</span>
+            <span className="text-[12px] text-faint">{t("manage.allowed_empty")}</span>
           )}
           {allowedUsers.map((u) => (
             <span
               key={u}
               className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-paper border border-line text-[12px]"
-              title={`id ${u}`}
+              title={t("manage.id_title", { id: u })}
             >
               <span className="w-4 h-4 rounded-full bg-accentSoft text-accent grid place-items-center text-[9px] font-bold">
                 {initials(names?.[u] || u)}
@@ -397,7 +386,7 @@ export function AllowlistBlock({
               {names?.[u] || u}
               <button
                 className="w-4 h-4 grid place-items-center text-faint hover:text-danger"
-                title={t("mtab.remove_user")}
+                title={t("common.remove")}
                 onClick={async () => {
                   await disallowUser(c.name, u, teamId);
                   onChanged();
@@ -410,9 +399,9 @@ export function AllowlistBlock({
         </div>
       </div>
       <div>
-        <div className={SEC_H + " mb-2"}>{t("mtab.recent_senders")}</div>
+        <div className={SEC_H + " mb-2"}>{t("manage.recent_senders")}</div>
         {unknownRecent.length === 0 ? (
-          <div className="text-[12px] text-faint">{t("mtab.recent_none")}</div>
+          <div className="text-[12px] text-faint">{t("manage.recent_empty")}</div>
         ) : (
           <div className="space-y-1.5">
             {unknownRecent.map((r) => (
@@ -420,8 +409,8 @@ export function AllowlistBlock({
                 <span className="w-5 h-5 rounded-full bg-paper border border-line grid place-items-center text-[9px] font-bold text-muted shrink-0">
                   {initials(r.user_name || "?")}
                 </span>
-                <span className="min-w-0 truncate" title={`id ${r.user_id}`}>
-                  {r.user_name || t("mtab.unknown")} <span className="text-faint">· {r.chat_type}</span>
+                <span className="min-w-0 truncate" title={t("manage.id_title", { id: r.user_id })}>
+                  {r.user_name || t("manage.unknown")} <span className="text-faint">· {r.chat_type}</span>
                 </span>
                 <button
                   className="ml-auto text-[12px] px-2 py-0.5 rounded-md bg-accent text-white shrink-0"
@@ -430,7 +419,7 @@ export function AllowlistBlock({
                     onChanged();
                   }}
                 >
-                  {t("mtab.allow")}
+                  {t("approval.allow")}
                 </button>
               </div>
             ))}
@@ -442,7 +431,7 @@ export function AllowlistBlock({
 }
 
 export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () => void }) {
-  const { t } = useT();
+  const { t } = useTranslation();
   const toggle = async (toolName: string, enabled: boolean) => {
     await updateConnectorTools(c.name, { [toolName]: enabled });
     onChanged();
@@ -450,12 +439,12 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
   if (!c.tools?.length)
     return (
       <div className="border-t border-line px-3.5 py-3 text-[13px] text-muted">
-        {t("mtab.no_tools_connector")}
+        {t("manage.connector_no_tools")}
       </div>
     );
   return (
     <div className="border-t border-line px-3.5 py-3">
-      <div className={SEC_H + " mb-2"}>{t("mtab.tools_exposed")}</div>
+      <div className={SEC_H + " mb-2"}>{t("manage.tools_exposed")}</div>
       <div className="space-y-1.5">
         {c.tools.map((tool) => (
           <label
@@ -471,7 +460,7 @@ export function ConnectorTools({ c, onChanged }: { c: Connector; onChanged: () =
             <span className="min-w-0">
               <span className="block text-[13px]">{tool.label}</span>
               <span className="block text-[12px] text-faint">
-                {t("mtab.tool_meta", { name: tool.name, kind: tool.kind })}
+                {t("manage.tool_asks_approval", { name: tool.name, kind: tool.kind })}
               </span>
               <span className="block text-[12px] text-faint">{tool.description}</span>
             </span>
@@ -497,11 +486,11 @@ export function ConnectSetup({
   // pill, so don't render the managed block again here.
   manualOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   const [values, setValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(false); // managed flow: browser is open
   const [error, setError] = useState<string | null>(null);
-  const { t } = useT();
 
   const submit = async () => {
     setBusy(true);
@@ -509,7 +498,7 @@ export function ConnectSetup({
     const res = await connectConnector(c.name, values);
     setBusy(false);
     if (res.ok) onConnected();
-    else setError(res.error || t("mtab.err_connect"));
+    else setError(res.error || t("manage.could_not_connect"));
   };
 
   const oneClick = async () => {
@@ -518,7 +507,7 @@ export function ConnectSetup({
     // Completion arrives via the tab's poll: the broker form-POSTs the profile
     // to the sidecar, the connector flips to connected, this card closes itself.
     if (res.ok) setWaiting(true);
-    else setError(res.error || t("mtab.err_managed"));
+    else setError(res.error || t("manage.could_not_start_managed"));
   };
 
   const mcpOneClick = async () => {
@@ -527,7 +516,7 @@ export function ConnectSetup({
     // Completion likewise arrives via the poll — the sidecar flips the connector
     // to connected once the local OAuth flow lands.
     if (res.ok) setWaiting(true);
-    else setError(res.error || t("mtab.err_mcp"));
+    else setError(res.error || t("manage.could_not_start_connect"));
   };
 
   return (
@@ -536,10 +525,10 @@ export function ConnectSetup({
         /* MCP-backed one-click needs no cloud sign-in — the OAuth flow is local. */
         <div className="space-y-2" data-testid="mcp-connect">
           <button className={BTN_ACCENT} onClick={mcpOneClick} disabled={waiting}>
-            {waiting ? t("mtab.check_browser") : t("mtab.connect_one_click", { title: c.title })}
+            {waiting ? t("manage.check_browser") : t("manage.connect_one_click", { title: c.title })}
           </button>
           {c.fields.length > 0 && (
-<div className="text-[12px] text-faint">{t("mtab.or_manual")}</div>
+            <div className="text-[12px] text-faint">{t("manage.or_connect_manually")}</div>
           )}
         </div>
       )}
@@ -550,22 +539,22 @@ export function ConnectSetup({
             // a visibly-parked button, and the manual path below stays fully live.
             <>
               <button className={BTN_ACCENT + " opacity-50"} disabled data-testid="managed-coming-soon">
-                {t("mtab.connect_one_click", { title: c.title })}
+                {t("manage.connect_one_click", { title: c.title })}
                 <span className="ml-2 text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-white/25">
-                  {t("mtab.coming_soon_badge")}
+                  {t("manage.coming_soon")}
                 </span>
               </button>
               <div className="text-[12px] text-faint">
-                {t("mtab.managed_paused_note")}
+                {t("manage.one_click_coming")}
               </div>
             </>
           ) : cloud?.signed_in ? (
             <button className={BTN_ACCENT} onClick={oneClick} disabled={waiting}>
-              {waiting ? t("mtab.check_browser") : t("mtab.connect_one_click", { title: c.title })}
+              {waiting ? t("manage.check_browser") : t("manage.connect_one_click", { title: c.title })}
             </button>
           ) : cloud ? (
             <CloudSignInInline
-              blurb={t("mtab.signin_blurb", { title: c.title })}
+              blurb={t("manage.signin_unlocks", { title: c.title })}
             />
           ) : (
             // Status unknown (fetch pending/failed): never show the sign-in ask to a
@@ -573,7 +562,7 @@ export function ConnectSetup({
             <CloudStatusPending />
           )}
           {!c.managed_paused && cloud?.signed_in && (
-<div className="text-[12px] text-faint">{t("mtab.manual_or")}</div>
+            <div className="text-[12px] text-faint">{t("manage.or_connect_manually")}</div>
           )}
         </div>
       )}
@@ -588,7 +577,7 @@ export function ConnectSetup({
         <label className="conn-field" key={f.key}>
           <span className="conn-field-label">
             {f.label}
-            {!f.required && <em>{t("mtab.optional")}</em>}
+            {!f.required && <em> ({t("manage.optional")})</em>}
           </span>
           <input
             type={f.secret ? "password" : "text"}
@@ -602,7 +591,7 @@ export function ConnectSetup({
       ))}
       <div>
         <button className={BTN_ACCENT} onClick={submit} disabled={busy}>
-          {busy ? t("mtab.validating") : t("mtab.connect_btn")}
+          {busy ? t("manage.validating") : t("manage.connect")}
         </button>
       </div>
       {error && <div className="text-[13px] text-danger">{error}</div>}

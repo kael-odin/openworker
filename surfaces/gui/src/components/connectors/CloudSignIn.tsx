@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { announceCloudChanged, cloudLogin, waitForCloudSignIn } from "../../api";
-import { useT } from "../../i18n/I18nProvider";
 
 // The signed-out state of every one-click pane: a REAL sign-in button, not a
 // hint pointing at another page. Sign-in completes in the system browser; this
@@ -9,9 +9,9 @@ import { useT } from "../../i18n/I18nProvider";
 // relying on "some other section's 5s poll" left the rail stuck on the prompt
 // (FB-013).
 export function CloudSignInInline({ blurb }: { blurb?: string }) {
+  const { t } = useTranslation();
   const [waiting, setWaiting] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
-  const { t } = useT();
   useEffect(() => () => cancelRef.current?.(), []);
   return (
     <div className="space-y-1.5">
@@ -28,10 +28,10 @@ export function CloudSignInInline({ blurb }: { blurb?: string }) {
           });
         }}
       >
-        {waiting ? t("conn.check_browser") : t("conn.signin_cloud")}
+        {waiting ? t("cloud.check_browser") : t("cloud.sign_in")}
       </button>
       <div className="text-[12px] text-faint">
-        {blurb || t("conn.signin_blurb_default")}
+        {blurb || "Sign-in unlocks one-click connects — or switch to Manual, which works without it."}
       </div>
     </div>
   );
@@ -41,13 +41,13 @@ export function CloudSignInInline({ blurb }: { blurb?: string }) {
 // Rendering the sign-in prompt here told signed-in users they weren't (FB-013) —
 // pending must look like pending.
 export function CloudStatusPending() {
-  const { t } = useT();
+  const { t } = useTranslation();
   return (
     <div
       className="text-[12px] text-faint py-2 text-center"
       data-testid="cloud-status-pending"
     >
-      {t("conn.checking_signin")}
+      {t("cloud.checking")}
     </div>
   );
 }
