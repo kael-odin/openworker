@@ -7,8 +7,8 @@ import { test, expect } from "./fixtures";
 const openSkills = async (page: import("@playwright/test").Page) => {
   await page.goto("/");
   await page.getByTestId("account-row").click();
-  await page.getByRole("button", { name: "设置", exact: true }).click();
-  await page.getByRole("button", { name: "技能", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Skills", exact: true }).click();
 };
 
 test("skills-settings: create via the menu → name-first banner; edit persists", async ({ page }) => {
@@ -18,48 +18,48 @@ test("skills-settings: create via the menu → name-first banner; edit persists"
   // (no standing add-surfaces).
   await expect(page.getByText("weekly-report")).toBeVisible();
   await expect(page.getByText("uploaded")).toBeVisible();
-  await expect(page.getByTitle("显示文件夹")).toContainText("2 个文件");
+  await expect(page.getByTitle("Show folder")).toContainText("2 files");
   await expect(page.getByText("Start a conversation")).toHaveCount(0);
 
   // Add skill ▾ → the three doors, then Write it myself.
-  await page.getByRole("button", { name: /添加技能/ }).click();
-  await expect(page.getByText("导入文件")).toBeVisible();
-  await expect(page.getByText("用 OpenWorker 创建")).toBeVisible();
-  await page.getByText("我自己写").click();
+  await page.getByRole("button", { name: /Add skill/ }).click();
+  await expect(page.getByText("Import a file")).toBeVisible();
+  await expect(page.getByText("Create with OpenWorker")).toBeVisible();
+  await page.getByText("Write it myself").click();
 
-  await page.getByLabel("名称").fill("greet-warmly");
-  await page.getByLabel("描述").fill("Greets people warmly");
-  await page.getByLabel("指令").fill("Always greet warmly.");
-  await page.getByRole("button", { name: "保存技能" }).click();
+  await page.getByLabel("Name").fill("greet-warmly");
+  await page.getByLabel("Description").fill("Greets people warmly");
+  await page.getByLabel("Instructions").fill("Always greet warmly.");
+  await page.getByRole("button", { name: "Save skill" }).click();
 
   // Name-first teal confirmation (§7) + the new row.
   const status = page.getByRole("status");
   await expect(status).toContainText("greet-warmly");
-  await expect(status).toContainText("可以在每次对话中使用它了");
+  await expect(status).toContainText("can now use it in every conversation");
   await expect(page.getByText("Greets people warmly")).toBeVisible();
 
   // Edit: pencil prefills, name locked, save PATCHes through to the re-fetched list.
-  await page.getByTitle("编辑").first().click();
-  const name = page.getByLabel("名称");
+  await page.getByTitle("Edit").first().click();
+  const name = page.getByLabel("Name");
   await expect(name).toBeDisabled();
-  await page.getByLabel("描述").fill("Monday status report, sharper");
-  await page.getByRole("button", { name: "保存技能" }).click();
+  await page.getByLabel("Description").fill("Monday status report, sharper");
+  await page.getByRole("button", { name: "Save skill" }).click();
   await expect(page.getByText("Monday status report, sharper")).toBeVisible();
 });
 
 test("skills-settings: disable → amber everywhere/clean-slate banner; delete is two-step", async ({ page }) => {
   await openSkills(page);
 
-  await page.getByLabel("weekly-report 已启用").click();
+  await page.getByLabel("weekly-report enabled").click();
   const status = page.getByRole("status");
   await expect(status).toContainText("weekly-report");
-  await expect(status).toContainText("已处处关闭");
-  await expect(status).toContainText("开启一个新对话以获得完全干净的状态");
+  await expect(status).toContainText("turned off everywhere");
+  await expect(status).toContainText("start a new one for a completely clean slate");
 
   // Two-step delete: arm, confirm, row gone, banner names the skill.
-  await page.getByLabel("删除 html-to-markdown").click();
+  await page.getByLabel("Delete html-to-markdown").click();
   await expect(page.getByText("html-to-markdown")).toBeVisible(); // armed ≠ deleted
-  await page.getByText("确认删除").click();
+  await page.getByText("Confirm delete").click();
   await expect(page.getByText("html-to-markdown")).toHaveCount(1); // only the banner remains
-  await expect(page.getByRole("status")).toContainText("已移除");
+  await expect(page.getByRole("status")).toContainText("removed");
 });

@@ -9,7 +9,7 @@ test("skills-forcerun: popup pick → inline /name → skill rides the frame →
   await page.getByText("Draft the launch note").first().click();
 
   // "/" opens the popup; picking inserts the inline prefix (no chip) and keeps focus.
-  const box = page.getByPlaceholder(/向协作伙伴提问/);
+  const box = page.getByPlaceholder(/Ask the coworker/);
   await box.fill("/");
   await expect(page.getByTestId("skill-popup")).toBeVisible();
   await page.getByText("/weekly-report").click();
@@ -21,7 +21,7 @@ test("skills-forcerun: popup pick → inline /name → skill rides the frame →
   // ONE user bubble, showing the literal line the user typed — never the model-facing
   // "load this skill…" framing (§6: the _display contract).
   await expect(page.getByText("/weekly-report cover last week")).toHaveCount(1);
-  await expect(page.getByText(/使用了技能/)).toHaveCount(0);
+  await expect(page.getByText(/Use the skill/)).toHaveCount(0);
 
   // The fake agent echoes what actually rode the wire: text WITHOUT the prefix, and the
   // skill as its own field.

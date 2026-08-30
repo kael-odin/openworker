@@ -9,7 +9,7 @@ test("skills-session: new skill offered in '/', disabled one absent", async ({ p
   await page.getByText("Draft the launch note").first().click();
 
   // The seeded menu: both enabled skills offered on "/".
-  const box = page.getByPlaceholder(/向协作伙伴提问/);
+  const box = page.getByPlaceholder(/Ask the coworker/);
   await box.fill("/");
   await expect(page.getByTestId("skill-popup")).toBeVisible();
   await expect(page.getByText("/weekly-report")).toBeVisible();
@@ -18,16 +18,16 @@ test("skills-session: new skill offered in '/', disabled one absent", async ({ p
 
   // Settings round-trip: create one skill, disable another.
   await page.getByTestId("account-row").click();
-  await page.getByRole("button", { name: "设置", exact: true }).click();
-  await page.getByRole("button", { name: "技能", exact: true }).click();
-  await page.getByRole("button", { name: /添加技能/ }).click();
-  await page.getByText("我自己写").click();
-  await page.getByLabel("名称").fill("fresh-skill");
-  await page.getByLabel("指令").fill("Do the fresh thing.");
-  await page.getByRole("button", { name: "保存技能" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Skills", exact: true }).click();
+  await page.getByRole("button", { name: /Add skill/ }).click();
+  await page.getByText("Write it myself").click();
+  await page.getByLabel("Name").fill("fresh-skill");
+  await page.getByLabel("Instructions").fill("Do the fresh thing.");
+  await page.getByRole("button", { name: "Save skill" }).click();
   await expect(page.getByRole("status")).toContainText("fresh-skill");
-  await page.getByLabel("weekly-report 已启用").click();
-  await expect(page.getByRole("status")).toContainText("已处处关闭");
+  await page.getByLabel("weekly-report enabled").click();
+  await expect(page.getByRole("status")).toContainText("turned off everywhere");
 
   // Back in the session: the popup reflects the new state — created offered, disabled gone.
   await page.getByText("Draft the launch note").first().click();
