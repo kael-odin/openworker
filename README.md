@@ -111,7 +111,6 @@ OpenWorker 本地优先。一切都在你的机器上：agent 循环、你的对
   - 工具链解析支持 PATHEXT（`gitleaks.exe` 等）；25 个仅 Windows 失败的测试全部修复（icacls GBK 编码、symlink 特权、tzset 等），Windows 下测试套件全绿。
 - **发布通道**：fork 自建带签名的 release 与自动更新清单（`latest.json`），应用内自动更新走 fork releases。
 - **本地构建链整理**：`scripts/` 下提供 `install_deps.sh`（一键建 `.venv` 装后端依赖）与 `tauri_dev.cmd`（Windows 编译运行桌面 app，含 MSVC/cmake/LIBCLANG_PATH 环境激活说明）。
-- **文档与审查报告**：`docs/` 收纳 `AUDIT_REPORT.md`（fork 全量审计报告，中文）与 `USAGE_GUIDE.md`（从源码运行指南）。
 
 ## 从源码运行
 
@@ -149,7 +148,7 @@ standalone server 启动时会在 `<state-dir>/sidecar-8765.token` 生成一个�
 | `surfaces/gui/` | 桌面应用 —— React UI + 监督 server 的 Tauri 外壳 |
 | `stt/` | 语音输入 sidecar（Rust） |
 | `packaging/` | 安装包构建（macOS DMG、Windows）、自动更新 manifest、dev 引导 |
-| `docs/` | 设计规格、决策记录、本 fork 的审计报告与使用指南 |
+| `docs/` | 设计规格、决策记录、示例配置 |
 | `assets/readme/` | README 用的 SVG 视觉资源 |
 | `tests/` | 后端测试套件 |
 

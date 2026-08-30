@@ -19,4 +19,4 @@ scripts\tauri_dev.cmd
 ## 路径说明
 脚本内的绝对路径（`D:\Github_Open\openworker\...`）是本机仓库路径。clone 到别处需自行改路径，或设 `COWORKER_SERVER_BIN` 等环境变量覆盖。
 
-详见 `docs/USAGE_GUIDE.md` 的「从源码运行」部分。
+详见主 README 的「从源码运行」部分。
