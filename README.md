@@ -8,7 +8,7 @@
 
 <p align="center"><a href="https://trendshift.io/repositories/91434?utm_source=trendshift-badge&utm_medium=badge&utm_campaign=badge-trendshift-91434" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/91434/daily" alt="andrewyng%2Fopenworker | Trendshift" width="250" height="55"/></a></p>
 
-> **📦 关于本仓库**：这是 [andrewyng/openworker](https://github.com/andrewyng/openworker) 的**中文增强版 fork**（`kael-odin/openworker`），**追平上游**并保持同步。新增**全量中文汉化**与若干能力增强，详见下文[「汉化说明」](#汉化说明)与[「能力增强说明」](#能力增强说明)。
+> **📦 关于本仓库**：这是 [andrewyng/openworker](https://github.com/andrewyng/openworker) 的**中文增强版 fork**（`kael-odin/openworker`），**追平上游**并保持同步。在上游 i18n 之外补齐 **agent 侧中文**（persona/审批/压缩摘要/连接器目录）与 **Windows + 国内网络环境加固**，详见下文[「汉化说明」](#汉化说明)与[「能力增强说明」](#能力增强说明)。
 
 > **Beta** — OpenWorker 处于公开测试阶段：完全可用、可自动更新，我们正在持续打磨粗糙的边角。欢迎提 [Issue](https://github.com/andrewyng/openworker/issues)。
 
@@ -92,23 +92,26 @@ OpenWorker 本地优先。一切都在你的机器上：agent 循环、你的对
 
 ## 汉化说明
 
-本 fork 的核心增量是**全量中文汉化**，覆盖前后端所有用户可见文案：
+**上游已内置 GUI 中英 i18n**（react-i18next + `src/locales/`，跟随系统语言，设置页可切换），因此本 fork **不再自建前端 i18n 框架**，直接采用上游架构。fork 的汉化增量在上游覆盖不到的地方：
 
-- **前端 i18n 框架**：自建轻量 i18n（不引第三方库，仿 `theme.ts` 的 `localStorage` + `CustomEvent` 跨组件同步模式），`I18nProvider` Context + `useT()` hook，扁平点号字典 `zh.json` / `en.json`，`{name}` 插值，缺失 key 在 dev 下 `console.warn`。默认语言 **中文优先**（`DEFAULT="zh"`），设置页可一键切换中/英。
-- **后端直译中文**（不做运行时切换，贴合 fork 中文优先定位）：连接器目录（`descriptors.py` + `catalog_copy.py`，40 个 connector 的标题/说明/字段）、persona 名称与 tagline、persona 系统 prompt（`ops.md` 等，让 LLM 中文优先响应）、审批卡标题/正文、权限决策 reason、错误信息、会话自动标题 prompt。
-- **上下文压缩（compaction）文案中文化**：`compaction.py` 的摘要系统 prompt、续作契约、工作状态抽取、压缩块全部中文化 —— 长会话自动生成**中文**摘要，让 agent 在更小的上下文里继续工作。`<compacted-history>` 结构标签与 `"compacted"` 事件类型保持英文（API 协议字段，不翻译）。
-- **测试断言同步**：前后端测试中所有英文断言已同步改为对应中文值，确保汉化不破坏既有契约。`json.dumps` 统一 `ensure_ascii=False`，避免中文被转义成 `\uXXXX` 破坏断言。
+- **Agent 侧中文（核心增量）**：上游 i18n 只覆盖界面，agent 自己"说的话"仍是英文。本 fork 将其汉化为中文——persona 系统 prompt（`personas/builtin/*.md`，协作伙伴默认中文思考与产出）、权限决策 reason（`permissions.py`）、上下文压缩全链路（`compaction.py`：摘要 prompt、续作契约、工作状态抽取，长会话自动生成**中文**摘要）、引擎通知（模型切换/压缩失败等）、审批交互文案（批准/拒绝）。`<compacted-history>` 等协议字段保持英文。
+- **连接器目录中文**：`descriptors.py` + `catalog_copy.py`，40 个 connector 的标题/说明/字段全中文。
+- **GUI 补充键**：在上游 locales 之上补齐 `humanize.*`（工具调用的单行 human-readable 文案，上游设计为英文）与 transcript 通知回退串的中文，键位与占位符和上游契约测试保持对齐。
+- **中文回复行为**：persona prompt 引导模型中文优先，而非机械翻译输出。
 
-**与上游的关系**：本仓库 `upstream` 追踪 `andrewyng/openworker`，`origin` 为本 fork。定期 `git fetch upstream` → `git merge upstream/main` → 推 `origin`，能力与上游保持一致。当前已追平上游 v0.2.1（含权限系统重构、MCP 改进、安全修复等）。
+**与上游的关系**：`upstream` 追踪 `andrewyng/openworker`，`origin` 为本 fork。定期 `fetch` → `merge` → 推送，能力与上游一致。**当前已追平上游 main（2026-08-30）**。由于前端 i18n 与上游同架构，后续追平的合并成本已大幅降低。
 
 ## 能力增强说明
 
-除汉化外，本 fork 面向「中文用户 + 本地从源码构建」场景做了若干增强与整理：
+除汉化外，本 fork 面向「中文用户 + Windows + 本地从源码构建」场景做了增强：
 
-- **中文优先**：UI 默认中文，可切英文；后端 agent 系统 prompt 中文优先，让协作伙伴默认用中文工作与产出。
+- **Windows/国内网络环境加固**：
+  - URL 守卫放行 `198.18.0.0/15`（Clash/surge TUN 的 fake-ip DNS 段）——上游实现下这类用户的 web_fetch 会被一律拒绝；
+  - grep 修复 ripgrep 输出在 Windows 盘符路径上的解析，且排除 glob 不再误伤 `AppData` 祖先目录；
+  - 工具链解析支持 PATHEXT（`gitleaks.exe` 等）；25 个仅 Windows 失败的测试全部修复（icacls GBK 编码、symlink 特权、tzset 等），Windows 下测试套件全绿。
+- **发布通道**：fork 自建带签名的 release 与自动更新清单（`latest.json`），应用内自动更新走 fork releases。
 - **本地构建链整理**：`scripts/` 下提供 `install_deps.sh`（一键建 `.venv` 装后端依赖）与 `tauri_dev.cmd`（Windows 编译运行桌面 app，含 MSVC/cmake/LIBCLANG_PATH 环境激活说明）。
 - **文档与审查报告**：`docs/` 收纳 `AUDIT_REPORT.md`（fork 全量审计报告，中文）与 `USAGE_GUIDE.md`（从源码运行指南）。
-- **审计驱动修复**：fork 已通过多轮安全与回归审计，修复了一批上游潜在问题（详见 `docs/AUDIT_REPORT.md`）。
 
 ## 从源码运行
 
