@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "../test-utils";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ConnectorMessageCard } from "./ConnectorMessageCard";
 import { itemsFromMessages } from "../itemsFromMessages";
 import type { MessageSource } from "../api";
@@ -23,7 +23,7 @@ describe("ConnectorMessageCard", () => {
     expect(screen.getByText("#ocw-test")).toBeTruthy();
     expect(screen.getByText("Jordan Lee")).toBeTruthy();
     expect(screen.getByText(/staging deploy go out/)).toBeTruthy();
-    expect(screen.getByText("经由 Slack")).toBeTruthy();
+    expect(screen.getByText("via Slack")).toBeTruthy();
     // ids are not shown until hover.
     expect(screen.queryByText(/C0BD7KZ1AH5/)).toBeNull();
   });

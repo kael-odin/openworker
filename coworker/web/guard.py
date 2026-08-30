@@ -36,13 +36,19 @@ MAX_REDIRECTS = 5
 # is the same "reach the machine's network position" class as RFC1918.
 _CGNAT = ipaddress.ip_network("100.64.0.0/10")
 
+# RFC 2544 benchmarking range — unused for real addressing, but it is where local proxy
+# clients (Clash/surge TUN mode, "fake-ip" DNS) map every hostname. Allowing it keeps
+# web fetches working under those setups: the connection still rides the tunnel to the
+# real destination, and the range has no reachable internal network to expose.
+_FAKE_IP = ipaddress.ip_network("198.18.0.0/15")
+
 
 def _blocked_reason(ip: ipaddress._BaseAddress) -> Optional[str]:
     if ip.is_loopback:
         return "loopback"
     if ip.is_link_local:
         return "link-local (includes the cloud metadata endpoint)"
-    if ip.is_private:
+    if ip.is_private and ip not in _FAKE_IP:
         return "a private network"
     if ip.version == 4 and ip in _CGNAT:
         return "shared address space (CGNAT / RFC 6598)"

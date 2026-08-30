@@ -5,7 +5,6 @@ import type { SessionInfo } from "../types";
 import { isProjectScoped, shortPersonaName } from "../personaScope";
 import { Icon } from "./Icon";
 import { baseName } from "../paths";
-import { useT } from "../i18n/I18nProvider";
 
 // Command-palette search (Codex-style): clicking Search opens this overlay over the whole app
 // rather than filtering the sidebar in place (which made the grouped list collapse). It searches
@@ -29,7 +28,6 @@ export function SearchModal({
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { t } = useT();
 
   useEffect(() => {
     inputRef.current?.focus();

@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
+import sys
 
 import pytest
 
@@ -16,6 +17,9 @@ from coworker import toolchain
 
 
 def _make_exe(path, body: str = "#!/bin/sh\necho hi\n"):
+    # Windows executables carry a PATHEXT extension; shutil.which won't resolve a bare name.
+    if sys.platform == "win32" and path.suffix == "":
+        path = path.with_suffix(".exe")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body)
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
@@ -158,5 +162,6 @@ def test_install_writes_a_verified_binary(tmp_path, monkeypatch):
     assert toolchain.resolve("osv-scanner") == path
     # And linked under the stable bin dir, so a shell with that dir on PATH picks the
     # tool up by name the moment the install finishes — no respawn, no full paths.
-    linked = toolchain.bin_dir() / "osv-scanner"
+    exe = "osv-scanner.exe" if sys.platform == "win32" else "osv-scanner"
+    linked = toolchain.bin_dir() / exe
     assert linked.exists() and open(linked, "rb").read() == payload

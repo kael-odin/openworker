@@ -67,9 +67,15 @@ def test_secrets_file_is_restricted(tmp_path):
     path = tmp_path / "secrets.json"
     SecretStore(path).put("x", {"a": 1})
     if sys.platform == "win32":
+        # icacls speaks the ANSI code page (GBK on zh-CN Windows); a UTF-8 decode
+        # of "NT AUTHORITY\已..." crashes the reader thread and yields stdout=None.
         out = subprocess.run(
-            ["icacls", str(path)], capture_output=True, text=True
-        ).stdout
+            ["icacls", str(path)],
+            capture_output=True,
+            text=True,
+            encoding="mbcs",
+            errors="replace",
+        ).stdout or ""
         user = os.environ.get("USERNAME", "")
         assert user and user in out  # current user is granted
         # Inherited broad principals must be gone after /inheritance:r.

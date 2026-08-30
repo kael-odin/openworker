@@ -20,6 +20,24 @@ def _resolves_to(monkeypatch, ip: str):
     )
 
 
+@pytest.fixture(autouse=True)
+def _hermetic_dns(monkeypatch):
+    """Default every hostname in this module to a public address.
+
+    The redirect/open-url helpers re-vet names through the real resolver; on machines
+    whose DNS answers with proxy fake-IPs (198.18.0.0/15) or a captive portal, the
+    unpatched tests would judge the network instead of the guard. Tests that exercise
+    specific answers call _resolves_to afterwards and win. `localhost` keeps resolving
+    to loopback so the literal-hostname test keeps its meaning.
+    """
+
+    def _stub(host, *a, **k):
+        ip = "127.0.0.1" if str(host).lower() == "localhost" else "93.184.216.34"
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, 80))]
+
+    monkeypatch.setattr(guard.socket, "getaddrinfo", _stub)
+
+
 # -- literals -----------------------------------------------------------------
 
 @pytest.mark.parametrize("url,needle", [

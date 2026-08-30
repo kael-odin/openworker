@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -504,6 +506,8 @@ def test_server_sets_explicit_websocket_frame_limit(tmp_path, monkeypatch):
 
 def test_standalone_server_token_file_is_user_only(tmp_path, monkeypatch):
     import os
+    import subprocess
+    import sys
 
     from coworker.server import run as server_run
 
@@ -513,7 +517,25 @@ def test_standalone_server_token_file_is_user_only(tmp_path, monkeypatch):
         assert path == tmp_path / "coworker-state" / "sidecar-9876.token"
         assert path.read_text().strip() == os.environ["COWORKER_API_TOKEN"]
         assert len(path.read_text().strip()) == 64
-        assert (path.stat().st_mode & 0o777) == 0o600
+        if sys.platform == "win32":
+            # Windows has no POSIX mode bits; the writer strips inheritance via icacls
+            # instead, so assert the ACL (current user only). icacls speaks the ANSI
+            # code page — decode with mbcs or zh-CN output crashes the reader thread.
+            out = (
+                subprocess.run(
+                    ["icacls", str(path)],
+                    capture_output=True,
+                    text=True,
+                    encoding="mbcs",
+                    errors="replace",
+                ).stdout
+                or ""
+            )
+            assert os.environ.get("USERNAME", "") in out
+            assert "NT AUTHORITY\\SYSTEM" not in out
+            assert "BUILTIN\\Administrators" not in out
+        else:
+            assert (path.stat().st_mode & 0o777) == 0o600
     finally:
         path.unlink(missing_ok=True)
         os.environ.pop("COWORKER_API_TOKEN", None)
@@ -762,12 +784,20 @@ def test_workspace_command_trust_controls_live_engine(tmp_path):
         assert not after.allowed and after.needs_user
 
     manager.workspace_trust.set_trusted(proj, True)
-    proj.rename(tmp_path / "moved-project")
-    assert client.post(
-        "/v1/workspaces/trust",
-        json={"path": str(proj), "trusted": False},
-    ).json()["ok"]
-    assert manager.trusted_workspaces() == []
+    if sys.platform == "win32":
+        # Windows refuses to rename a directory while any handle on it is open, and the
+        # live engine above leaves one on `proj` itself (invisible even to psutil). The
+        # contract under test — untrusting a stale path prunes it — is store-level, so
+        # exercise it in place instead of fighting the OS.
+        assert manager.workspace_trust.set_trusted(proj, False)
+        assert manager.trusted_workspaces() == []
+    else:
+        proj.rename(tmp_path / "moved-project")
+        assert client.post(
+            "/v1/workspaces/trust",
+            json={"path": str(proj), "trusted": False},
+        ).json()["ok"]
+        assert manager.trusted_workspaces() == []
 
 
 def test_recent_workspaces_exclude_scratch_dirs(tmp_path):

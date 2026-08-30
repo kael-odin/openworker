@@ -54,8 +54,28 @@ async def _run(engine) -> list:
     return [e async for e in engine.run("check this repo")]
 
 
+def _pin_for_platform(monkeypatch):
+    """Pretend gitleaks has a pinned build for the running platform.
+
+    The catalog only pins darwin/linux today, so on Windows `describe()` returns None
+    and every request is denied before the flow under test even starts. These tests
+    cover the request/decline/recheck flow, not the catalog.
+    """
+    from coworker import toolchain
+
+    monkeypatch.setattr(
+        toolchain,
+        "describe",
+        lambda name: {"version": "8.30.1", "sha256": "0" * 64, "url": "https://example.invalid", "summary": "x", "source": "s"}
+        if name == "gitleaks"
+        else None,
+    )
+
+
 @pytest.mark.asyncio
-async def test_emits_tool_requested_and_reports_install(tmp_path):
+async def test_emits_tool_requested_and_reports_install(tmp_path, monkeypatch):
+    _pin_for_platform(monkeypatch)
+
     async def requester(args, tool_call_id=None):
         assert args["name"] == "gitleaks"
         return {"installed": True, "path": "/tmp/gitleaks", "version": "8.30.1"}
@@ -76,6 +96,7 @@ async def test_declining_tells_the_agent_to_fall_back_openly(tmp_path, monkeypat
     # Truly absent — otherwise the decline-time re-check (below) would find the dev
     # machine's real gitleaks and turn this into the user-provided-copy path.
     monkeypatch.setattr(toolchain, "resolve", lambda name: None)
+    _pin_for_platform(monkeypatch)
 
     async def requester(args, tool_call_id=None):
         return {"installed": False, "reason": "the user declined to install it"}
@@ -99,6 +120,7 @@ async def test_decline_recheck_finds_a_copy_the_user_installed_themselves(tmp_pa
     from coworker import toolchain
 
     monkeypatch.setattr(toolchain, "resolve", lambda name: "/opt/homebrew/bin/gitleaks")
+    _pin_for_platform(monkeypatch)
 
     async def requester(args, tool_call_id=None):
         return {"installed": False, "reason": "the user declined to install it"}

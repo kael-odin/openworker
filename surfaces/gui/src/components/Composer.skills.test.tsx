@@ -2,8 +2,7 @@
 // slash, lists only the session's effective (enabled) menu, filters while typing, and the
 // picked skill rides onSend as its own field — never as message text.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "../test-utils";
-import { I18nProvider } from "../i18n/I18nProvider";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Composer } from "./Composer";
 
 const MENU = {
@@ -40,7 +39,7 @@ const props = (extra: Partial<Parameters<typeof Composer>[0]> = {}) => ({
   ...extra,
 });
 
-const box = () => screen.getByPlaceholderText(/向协作伙伴提问/);
+const box = () => screen.getByPlaceholderText(/Ask the coworker/);
 
 afterEach(() => {
   cleanup();
@@ -135,14 +134,12 @@ describe("Composer — the doorway prefill (SKILLS-SPEC §5.2)", () => {
     // The doorway does both in one render: new session (resetKey) + prefill. The clear
     // effect must run BEFORE the prefill effect or the prefill is wiped (regression).
     rerender(
-      <I18nProvider>
-        <Composer
-          {...props({
-            resetKey: "s2",
-            prefill: { text: "Build a new skill for me: release procedure", nonce: 1 },
-          })}
-        />
-      </I18nProvider>,
+      <Composer
+        {...props({
+          resetKey: "s2",
+          prefill: { text: "Build a new skill for me: release procedure", nonce: 1 },
+        })}
+      />,
     );
     await waitFor(() => {
       expect((box() as HTMLTextAreaElement).value).toBe(

@@ -115,14 +115,19 @@ def search_tools(workspace: str) -> list:
             # last because ripgrep resolves conflicting globs with the later one winning.
             for ignored in sorted(_IGNORE_DIRS):
                 cmd += ["--glob", f"!**/{ignored}/**"]
-            cmd.append(str(base))
+            # Run inside `base` with a root-relative path: exclusion globs match the
+            # components rg sees, and an absolute path would let an ANCESTOR named like
+            # an ignored dir (…\AppData\… on Windows temp dirs) hide the whole workspace.
+            cmd.append(".")
             try:
-                out = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                out = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=30, cwd=str(base)
+                )
             except Exception as exc:
                 return {"error": f"grep failed: {exc}"}
             if out.returncode not in (0, 1):  # 1 = no matches
                 return {"error": (out.stderr or "ripgrep error").strip()[:300]}
-            return {"engine": "ripgrep", **_parse_rg(out.stdout, root, n)}
+            return {"engine": "ripgrep", **_parse_rg(out.stdout, root, base, n)}
 
         return {"engine": "python", **_py_grep(root, base, pattern, glob, n)}
 
@@ -139,22 +144,30 @@ def search_tools(workspace: str) -> list:
     return [grep]
 
 
-def _rel(path: str, root: Path) -> str:
+def _rel(path: str, root: Path, base: Optional[Path] = None) -> str:
+    p = Path(path)
+    if not p.is_absolute() and base is not None:
+        p = base / p
     try:
-        return str(Path(path).resolve().relative_to(root))
+        return str(p.resolve().relative_to(root))
     except (ValueError, OSError):
         return path
 
 
-def _parse_rg(stdout: str, root: Path, n: int) -> dict[str, Any]:
+_RG_LINE = re.compile(r"^(.+?):(\d+):(.*)$", re.DOTALL)
+
+
+def _parse_rg(stdout: str, root: Path, base: Path, n: int) -> dict[str, Any]:
     matches: list[dict[str, Any]] = []
     for line in stdout.splitlines():
-        parts = line.split(":", 2)
-        if len(parts) == 3:
-            f, ln, txt = parts
+        # Non-greedy up to `:digits:` — a split(":") breaks on Windows drive letters
+        # ("C:\ws\a.py:2:hello" would come apart at the colon after the drive).
+        m = _RG_LINE.match(line)
+        if m:
+            f, ln, txt = m.group(1), m.group(2), m.group(3)
             matches.append(
                 {
-                    "file": _rel(f, root),
+                    "file": _rel(f, root, base),
                     "line": int(ln) if ln.isdigit() else 0,
                     "text": txt[:300],
                 }

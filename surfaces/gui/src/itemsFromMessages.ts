@@ -7,18 +7,9 @@
 
 import type { ConversationMessage } from "./api";
 import type { Attachment, Item } from "./types";
-import { currentLang } from "./i18n/I18nProvider";
-import zh from "./i18n/zh.json";
-import en from "./i18n/en.json";
-
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-function tt(key: string, params?: Record<string, string | number>): string {
-  const d = DICTS[currentLang()] ?? DICTS.zh;
-  const raw = d[key] ?? DICTS.en[key] ?? key;
-  if (!params) return raw;
-  return raw.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
-}
+// Localized fork: notice fallbacks resolve through the i18next singleton (see humanize.ts).
+// Server-persisted m.text always wins over these — the fallbacks only cover bare markers.
+import i18next from "i18next";
 
 export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
   const items: Item[] = [];
@@ -104,24 +95,32 @@ export function itemsFromMessages(messages: ConversationMessage[]): Item[] {
       // the Transcript only offers the button when it's the transcript tail.
       items.push(
         m.kind === "interrupted"
-          ? { kind: "notice", tone: "warn", text: tt("app.notice_interrupted") }
+          ? { kind: "notice", tone: "warn", text: i18next.t("app.notice.interrupted") }
           : m.kind === "model_switch"
-            ? { kind: "notice", tone: "info", text: m.text || tt("app.notice_model_switched") }
+            ? { kind: "notice", tone: "info", text: m.text || i18next.t("app.notice.model_switched") }
             : m.kind === "compacted"
               ? // The subtle "compacted here" divider (OPE-27) — the transcript itself is intact.
-                { kind: "notice", tone: "info", text: m.text || tt("app.notice_compacted") }
+                { kind: "notice", tone: "info", text: m.text || i18next.t("app.notice.context_compacted") }
               : m.kind === "mcp_error"
                 ? // A configured MCP server failed to start for this session — informational,
+                  // NOT retriable (retry re-runs the model turn, which can't fix a dead server).
+                  // Renders as one quiet line + disclosure. Legacy notices (persisted before
+                  // the `server` field existed) recover the name from their own text, so old
+                  // transcripts collapse too instead of keeping the wall of stderr.
                   mcpNoticeItem(m)
                 : m.kind === "project_presence"
-                  ? { kind: "notice", tone: "info", text: m.text || "" }
+                  ? // Grant-time pointer (pass 20): the granted folder already has
+                    // memory/board — informational, one quiet line.
+                    { kind: "notice", tone: "info", text: m.text || "" }
                   : m.kind === "reviewer_paused"
-                  ? { kind: "notice", tone: "info", text: m.text || tt("app.notice_reviewer_paused") }
-                  : m.kind === "mode_notice"
-                  ? { kind: "notice", tone: "info", title: (m as any).title || tt("app.notice_mode_notice_title"), text: m.text || "" }
-                  : m.kind === "mode_switch"
-                  ? { kind: "notice", tone: "info", text: m.text || "" }
-                  : { kind: "notice", tone: "warn", text: tt("app.notice_error_prefix") + (m.text || tt("app.notice_unknown")), retriable: true },
+                    ? // §8.4 breaker: auto-approve paused itself for the rest of the turn.
+                      { kind: "notice", tone: "info", text: m.text || i18next.t("app.notice.reviewer_paused") }
+                    : m.kind === "mode_notice"
+                      ? // The once-per-session Auto-Approve explainer, in place forever.
+                        { kind: "notice", tone: "info", title: (m as any).title || i18next.t("app.notice.mode_notice_title"), text: m.text || "" }
+                      : m.kind === "mode_switch"
+                        ? { kind: "notice", tone: "info", text: m.text || "" }
+                        : { kind: "notice", tone: "warn", text: i18next.t("app.notice.error") + (m.text || i18next.t("app.notice.unknown")), retriable: true },
       );
     }
     // system messages are omitted; tool-result messages are folded into the tool row above
@@ -134,13 +133,13 @@ function mcpNoticeItem(m: ConversationMessage): Item {
   const server =
     (m.server && String(m.server)) || (text.match(/MCP server [“"]([^”"]+)[”"]/) || [])[1];
   if (!server)
-    return { kind: "notice", tone: "warn", text: text || "An MCP server failed to start" };
+    return { kind: "notice", tone: "warn", text: text || i18next.t("app.notice.mcp_not_started") };
   // The old format appended a plain-text Settings pointer — the button replaces it.
   const detail = text.replace(/\s*—\s*see Settings ▸ Connectors\s*$/u, "");
   return {
     kind: "notice",
     tone: "warn",
-    text: `MCP server “${server}” didn’t start — its tools are unavailable here`,
+    text: i18next.t("app.notice.mcp_server_down", { server }),
     server,
     detail: detail || undefined,
   };

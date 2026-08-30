@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "../test-utils";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Sidebar } from "./Sidebar";
 import type { SessionInfo } from "../types";
 
@@ -80,11 +80,11 @@ describe("Sidebar group/filter control", () => {
     render(<Sidebar {...baseProps} />);
 
     // personas load drives the surfaces; the RECENT header's group/filter control is always present.
-    const control = await screen.findByLabelText("对话分组与筛选");
+    const control = await screen.findByLabelText("Group and filter conversations");
 
     // Open the popover and choose "Group by → Coworker".
     fireEvent.click(control);
-    fireEvent.click(await screen.findByText("按角色"));
+    fireEvent.click(await screen.findByText("Coworker"));
 
     // POSTs the new layout pref.
     await waitFor(() => {
@@ -140,7 +140,7 @@ describe("Chronological list row actions (⋮ menu)", () => {
     openOpsMenu();
     fireEvent.click(screen.getByTestId("row-menu-delete"));
     expect(baseProps.onDeleteSession).not.toHaveBeenCalled();
-    expect(screen.getByTestId("row-menu-delete").textContent).toContain("确认删除？");
+    expect(screen.getByTestId("row-menu-delete").textContent).toContain("Delete?");
     fireEvent.click(screen.getByTestId("row-menu-delete"));
     expect(baseProps.onDeleteSession).toHaveBeenCalledWith("s-ops-1");
   });
@@ -198,7 +198,7 @@ describe("From Slack group (§31)", () => {
 });
 
 describe("New session button", () => {
-  it("is a plain button (no ▾ picker — UX-029 moved the pick to the composer) starting the last-used coworker", async () => {
+  it("is a plain button (no \u25be picker \u2014 UX-029 moved the pick to the composer) starting the last-used coworker", async () => {
     stubFetch([
       { match: "/v1/personas", method: "GET", json: PERSONAS },
       { match: "/v1/settings", method: "GET", json: { nav_layout: "flat" } },
@@ -206,8 +206,8 @@ describe("New session button", () => {
     render(<Sidebar {...baseProps} />);
     await screen.findByText("incident watch");
 
-    expect(screen.queryByLabelText("选择一个角色")).toBeNull();
-    fireEvent.click(screen.getByText("新建会话"));
+    expect(screen.queryByLabelText("Choose a persona")).toBeNull();
+    fireEvent.click(screen.getByText("New session"));
     expect(baseProps.onNewSession).toHaveBeenCalledWith("cowork");
   });
 });

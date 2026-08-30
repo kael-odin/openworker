@@ -2,7 +2,7 @@
 // into the model id (`bedrock:claude/…`, `vertex:openweight/…`); plain providers keep
 // the bare add-model row.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "../test-utils";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ModelChecklist } from "./ModelChecklist";
 
 vi.mock("../api", () => ({
@@ -35,10 +35,10 @@ function renderList(provider: string) {
 }
 
 function addTyped(id: string) {
-  fireEvent.change(screen.getByPlaceholderText("添加其他模型…"), {
+  fireEvent.change(screen.getByPlaceholderText("Add another model…"), {
     target: { value: id },
   });
-  fireEvent.click(screen.getByText("添加"));
+  fireEvent.click(screen.getByText("Add"));
 }
 
 describe("ModelChecklist add-model family dropdown", () => {

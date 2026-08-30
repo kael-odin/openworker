@@ -67,11 +67,14 @@ def project_label(key: str, *, home: Optional[str] = None) -> dict[str, Any]:
     is_git = (p / ".git").exists()
     full = key
     h = home or str(Path.home())
+    h = h.rstrip("/\\")
     shown = key
     if shown == h:
         shown = "~"
-    elif shown.startswith(h + "/"):
-        shown = "~" + shown[len(h):]
+    elif shown.startswith(h + "/") or shown.startswith(h + "\\"):
+        # Display form uses forward slashes everywhere, so the same ~/a/b label
+        # works whether the key came from POSIX or a Windows path.
+        shown = ("~" + shown[len(h):]).replace("\\", "/")
     return {
         "kind": "git" if is_git else "folder",
         "label": p.name if is_git else shown,

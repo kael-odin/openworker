@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -23,6 +24,17 @@ from coworker.server.manager import SessionManager
 def _write_json(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data), encoding="utf-8")
+
+
+def _crash_argv(message: str, code: int = 2) -> dict:
+    """A stdio server command that prints to stderr and exits nonzero, on any OS.
+    /bin/sh doesn't exist on Windows; cmd /c takes over there."""
+    if sys.platform == "win32":
+        return {
+            "command": "cmd",
+            "args": ["/c", f"echo {message} 1>&2 & exit /b {code}"],
+        }
+    return {"command": "/bin/sh", "args": ["-c", f"echo '{message}' >&2; exit {code}"]}
 
 
 def _fake_tool(name, schema=None, description="desc"):
@@ -268,8 +280,7 @@ async def test_stdio_startup_crash_captures_stderr_tail(tmp_path, monkeypatch):
     server = MCPServerDef(
         name="doomed",
         transport="stdio",
-        command="/bin/sh",
-        args=["-c", "echo 'usage: doomed --flag' >&2; exit 7"],
+        **_crash_argv("usage: doomed --flag", code=7),
     )
     with pytest.raises(Exception):
         await mgr.ensure(server)
@@ -289,9 +300,8 @@ async def test_prepare_records_failure_status_and_session_notice(
         {
             "mcpServers": {
                 "sales-db": {
-                    "command": "/bin/sh",
-                    "args": ["-c", "echo 'boom: bad args' >&2; exit 2"],
                     "enabled": True,
+                    **_crash_argv("boom: bad args"),
                 }
             }
         },
@@ -327,9 +337,8 @@ async def test_connect_mcp_failure_includes_stderr_tail(tmp_path, monkeypatch):
         {
             "mcpServers": {
                 "doomed": {
-                    "command": "/bin/sh",
-                    "args": ["-c", "echo 'usage: doomed --flag' >&2; exit 7"],
                     "enabled": True,
+                    **_crash_argv("usage: doomed --flag", code=7),
                 }
             }
         },

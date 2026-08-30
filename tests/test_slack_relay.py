@@ -83,8 +83,12 @@ def _event_frame(team, channel, user, text="hi", ts="1.0"):
     }
 
 
+async def _no_slack_get(team_id, method, params):
+    return None
+
+
 def _adapter(frames, *, close_after=False, **kw) -> SlackRelayAdapter:
-    return SlackRelayAdapter(
+    adapter = SlackRelayAdapter(
         "wss://relay.test/ws",
         token_provider=lambda: "jwt-token",
         teams=dict(TEAMS),
@@ -92,6 +96,11 @@ def _adapter(frames, *, close_after=False, **kw) -> SlackRelayAdapter:
         reconnect_delay=0.0,
         **kw,
     )
+    # Name resolution must never hit the real Slack API in tests: on a network where
+    # slack.com hangs (rather than failing fast) dispatch would stall past the
+    # wait_dispatched window. Tests that exercise resolution overwrite _slack_get.
+    adapter._slack_get = _no_slack_get
+    return adapter
 
 
 def _collect(adapter):
@@ -236,6 +245,7 @@ async def test_relay_watchdog_reconnects():
         transport_factory=_factory(t1, t2),
         reconnect_delay=0.0,
     )
+    adapter._slack_get = _no_slack_get
     events: list = []
 
     async def handler(e):

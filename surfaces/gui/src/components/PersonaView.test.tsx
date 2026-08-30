@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "../test-utils";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { PersonaView } from "./PersonaView";
 
 // A hermetic fetch stub routing by URL substring + method. Records calls so tests can assert POSTs.
@@ -77,9 +77,9 @@ describe("PersonaView", () => {
     fireEvent.click(screen.getByTestId("tool-calls-disclosure"));
     expect(screen.getByText(/files · search · shell/)).toBeTruthy();
     // a connected row shows the Ready chip; unconnected ones offer Connect/Add
-    expect(screen.getAllByText(/就绪/).length).toBeGreaterThan(0);
-    expect(screen.getByText("连接")).toBeTruthy(); // datadog (core, not connected)
-    expect(screen.getByText("添加")).toBeTruthy(); // filesystem (mcp, not connected)
+    expect(screen.getAllByText(/Ready/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Connect")).toBeTruthy(); // datadog (core, not connected)
+    expect(screen.getByText("Add")).toBeTruthy(); // filesystem (mcp, not connected)
     // defaults footer
     expect(screen.getByText("claude-opus-4-8")).toBeTruthy();
   });

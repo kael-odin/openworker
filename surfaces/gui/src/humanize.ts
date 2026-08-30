@@ -3,22 +3,15 @@
 // per-tool templates. `run_shell` is the exception: its optional `description` argument is
 // model-written intent and is preferred when present. Fallback: "Used <tool> — <short args>".
 //
-// i18n: this module is a pure function (no React), so it reads the current lang via
-// currentLang() and pulls strings from the shared dictionaries. Output is localized;
-// missing keys fall back to English then to the key (see I18nProvider).
+// Localized fork: strings live in src/locales/*.json under the `humanize` group and are
+// resolved through the i18next singleton (initialized in main.tsx before the first render;
+// test-setup pins English). Missing keys fall back to English, then to the key itself.
+// Single-brace {n} placeholders are filled here with .replace — i18next leaves them alone.
 
+import i18next from "i18next";
 import { shortArgs } from "./components/ApprovalCard";
-import { currentLang } from "./i18n/I18nProvider";
-import zh from "./i18n/zh.json";
-import en from "./i18n/en.json";
 
-type Dict = Record<string, string>;
-const DICTS: Record<string, Dict> = { zh: zh as Dict, en: en as Dict };
-function t(key: string): string {
-  const lang = currentLang();
-  const d = DICTS[lang] ?? DICTS.zh;
-  return d[key] ?? DICTS.en[key] ?? key;
-}
+const t = (key: string): string => i18next.t(key);
 
 // A one-line sentence in three segments so the UI can emphasize the object:
 // "Read " + <b>runbook.md</b> + " from the shared folder".
@@ -32,16 +25,13 @@ const trunc = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…
 const baseName = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 // send_message targets are "platform:chat" or "platform:chat:thread" — show the platform
-// by name and the last human-ish segment of the chat id.
+// by name and the last human-ish segment of the chat id. Brand names aren't translated.
 function messageTarget(target: string): { platform: string; tail: string } {
   const [platform, ...rest] = String(target).split(":");
   const chat = rest[0] || "";
   const tail = chat.includes("/") ? chat.split("/").pop() || chat : chat;
-  // Platform brand names are keys; the dict maps slack→"Slack", telegram→"Telegram"
-  // (same in both locales — brand names aren't translated).
-  const platformKey = `humanize.platform.${platform}`;
-  const platformLabel = t(platformKey);
-  return { platform: platformLabel !== platformKey ? platformLabel : platform, tail };
+  const names: Record<string, string> = { slack: "Slack", telegram: "Telegram" };
+  return { platform: names[platform] || platform, tail };
 }
 
 export function humanizeTool(name: string, args: any): HumanLine {

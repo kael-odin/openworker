@@ -168,6 +168,16 @@ def _managed_path(tool: ManagedTool) -> Path:
     return managed_dir() / tool.name / tool.version / exe
 
 
+def _disk_candidates(name: str) -> list[str]:
+    """Names a tool can have on disk for a PATH-less lookup. On Windows executables are
+    `name.exe`/`name.cmd`/…, and `shutil.which` only applies PATHEXT to PATH entries —
+    the fallback dirs below would otherwise miss an installed `gitleaks.exe`."""
+    if sys.platform != "win32":
+        return [name]
+    exts = [e for e in os.environ.get("PATHEXT", "").split(";") if e]
+    return [name] + [name + e.lower() for e in exts]
+
+
 def resolve(name: str) -> Optional[str]:
     """Absolute path to `name`, or None. PATH first (the user's choice wins), then the
     dirs a GUI launch can't see, then anything we installed ourselves."""
@@ -176,9 +186,10 @@ def resolve(name: str) -> Optional[str]:
         return str(Path(found).resolve())
 
     for raw in _KNOWN_DIRS:
-        candidate = Path(raw).expanduser() / name
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return str(candidate.resolve())
+        for cand in _disk_candidates(name):
+            candidate = Path(raw).expanduser() / cand
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return str(candidate.resolve())
 
     tool = MANAGED.get(name)
     if tool:

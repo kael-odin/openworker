@@ -6,7 +6,7 @@ import { humanizeTool } from "./humanize";
 describe("humanizeTool(load_skill)", () => {
   it("renders the Used-skill line with the skill name", () => {
     const line = humanizeTool("load_skill", { name: "incident-summary" });
-    expect(line.pre).toBe("使用了技能：");
+    expect(line.pre).toBe("Used skill: ");
     expect(line.obj).toBe("incident-summary");
   });
 

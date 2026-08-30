@@ -228,6 +228,13 @@ async def test_one_hub_fans_out_to_both_adapters(monkeypatch):
         hub=hub,
     )
     github = GitHubRelayAdapter(hub, installs={"101": {"account_login": "acme"}})
+
+    # Never touch the real Slack API from dispatch: SLACK_API_URL alone isn't enough on
+    # Windows, where httpx picks up system proxy env and 127.0.0.1:9 can stall.
+    async def _no_slack_get(team_id, method, params):
+        return None
+
+    slack._slack_get = _no_slack_get
     slack_events: list[MessageEvent] = []
     github_events: list[MessageEvent] = []
 
