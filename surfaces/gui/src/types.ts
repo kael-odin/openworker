@@ -45,6 +45,12 @@ export type ApprovalDecision =
   | "always_command"
   | "always_domain"
   | "always_task"
+  // OPE-136 §4: durable per-MCP-tool trust — writes a rule to the user-local
+  // override store; survives sessions; revocable on the server's detail page.
+  | "always_trust"
+  // OPE-136 run grant: covers the exact tool for the remainder of the current
+  // answer only; in-memory, cleared at the run boundary. EXTERNAL family only.
+  | "this_run"
   | "readonly_session";
 
 export interface TodoItem {
@@ -152,7 +158,7 @@ export type Item =
       // when the card was raised — the grant description names the actual destination.
       searchProvider?: string;
       // OPE-114 §1: set when the action would run a file the agent itself created or
-      // downloaded this session ("setup.py was created by the agent 3 steps ago"). The
+      // downloaded this session ("setup.py 由 agent 3 步之前创建"). The
       // one fact that cannot be read off the command text. Engine-authored, fixed
       // vocabulary — never file contents.
       provenance?: string;
@@ -162,6 +168,10 @@ export type Item =
       // Server-classified: this shell command only reads locally, so the card may offer
       // the session-wide "Allow read-only commands" grant.
       readonlyOk?: boolean;
+      // OPE-136 finding 4: where an MCP call actually goes, from the server DEF (the
+      // user's own config, never the server's claims). Drives the honest scope chip —
+      // "leaves this computer → host" (http) / "runs a local program" (stdio).
+      mcpDestination?: { transport: string; host?: string };
       resolved?: ApprovalDecision;
     }
   | {

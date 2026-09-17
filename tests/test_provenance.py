@@ -28,7 +28,7 @@ def test_agent_written_script_is_flagged_when_run(files):
     _wrote(files, "scripts/setup.py", 12)
     match = files.match("run_shell", {"command": "python scripts/setup.py"}, step=15)
     assert match is not None
-    assert match.render() == "scripts/setup.py was created by the agent 3 steps ago"
+    assert match.render() == "scripts/setup.py 由 agent 3 步之前创建"
     assert not match.downloaded
 
 
@@ -40,8 +40,8 @@ def test_pre_existing_file_produces_no_fact(files):
 
 def test_step_distance_reads_naturally(files):
     _wrote(files, "a.py", 5)
-    assert "just now" in files.match("run_shell", {"command": "python a.py"}, step=5).render()
-    assert "1 step ago" in files.match("run_shell", {"command": "python a.py"}, step=6).render()
+    assert "刚刚" in files.match("run_shell", {"command": "python a.py"}, step=5).render()
+    assert "1 步之前" in files.match("run_shell", {"command": "python a.py"}, step=6).render()
 
 
 # -- path normalisation --------------------------------------------------------
@@ -54,7 +54,9 @@ def test_one_file_one_key_however_it_is_spelled(files, tmp_path, spelling):
 def test_absolute_spelling_matches_the_relative_write(files, tmp_path):
     _wrote(files, "a.py", 3)
     absolute = (tmp_path / "a.py").as_posix()
-    assert files.match("run_shell", {"command": f"python {absolute}"}, step=4) is not None
+    # Quoted: Windows usernames with spaces make pytest tmp dirs space-containing, and an
+    # unquoted spaced path is genuinely two shell tokens — no textual splitter can vouch.
+    assert files.match("run_shell", {"command": f'python "{absolute}"'}, step=4) is not None
 
 
 # -- what counts as "created" --------------------------------------------------
@@ -184,4 +186,4 @@ def test_fact_is_fixed_vocabulary_and_never_carries_content(files):
     )
     rendered = files.match("run_shell", {"command": "python a.py"}, step=2).render()
     assert "sk-live" not in rendered and "SECRET_TOKEN" not in rendered
-    assert rendered == "a.py was created by the agent 1 step ago"
+    assert rendered == "a.py 由 agent 1 步之前创建"

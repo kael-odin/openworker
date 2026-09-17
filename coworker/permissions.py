@@ -13,7 +13,7 @@ import shlex
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from urllib.parse import urlsplit
 
 # Constructs whose *contents* we cannot evaluate, so a command carrying one is never
@@ -41,6 +41,15 @@ _INTERPRETERS = {
 }
 # Flags that turn a search/list tool into an execution or deletion tool.
 _DANGEROUS_FLAGS = {"-exec", "-execdir", "-delete", "-ok", "-okdir", "-fprintf"}
+
+# Machine-matched decision reasons — engine.py keys approval-origin chips off these exact
+# strings (bypass / trusted_rule / trusted_server / run_grant). The fork localizes the
+# user-facing reasons; constants keep both modules honest. Reword here only, or with the
+# engine.py matches in the same breath.
+REASON_FULL_ACCESS = "完全访问"
+REASON_TRUSTED_RULE = "受信任的 MCP 工具（用户信任规则）"
+REASON_TRUSTED_SERVER = "受信任的 MCP 工具（服务器标记为免询问）"
+REASON_RUN_GRANT = "本次请求内已允许此工具"
 
 
 def _split_commands(command: str) -> list[str]:
@@ -286,6 +295,13 @@ class PermissionEngine:
     auto_allow_tools: set[str] = field(default_factory=set)
     session_allow_tools: set[str] = field(default_factory=set)
     session_allow_commands: set[str] = field(default_factory=set)
+    # OPE-136 run grants ("Allow for this request"): tool names covered for the
+    # REMAINDER OF THE CURRENT RUN only. In-memory by design — the engine clears the
+    # set when the run finishes or is interrupted, and a process restart ending the
+    # run makes the empty set correct, not a loss. Minted only for EXTERNAL-risk
+    # tools (server-validated in manager._grant_offered); unlike the session grant
+    # this one exists FOR connectors and MCP — the loop/retry/pagination shapes.
+    run_allow_tools: set[str] = field(default_factory=set)
     # Egress domains that auto-run without a prompt: `allowed_domains` from user config, plus
     # `session_allow_domains` minted by "Always allow this domain". Matched by exact host or
     # subdomain suffix (see `_domain_allowed`).
@@ -300,6 +316,13 @@ class PermissionEngine:
     task_rules: dict[str, set[str]] = field(default_factory=dict)
     # User-local risk override resolver (Phase 2). None → use the base classification.
     risk_overrides: Optional[RiskOverrides] = None
+    # OPE-136 durable trust: tool name → has the user minted a standing "don't ask" rule?
+    # (RiskOverrideStore.trusted). Waives only the card, only outside AUTO_APPROVE —
+    # never the class, the mode gates, or the audit trail. None → no trust rules.
+    trust_overrides: Optional[Callable[[str], bool]] = None
+    # The write half (RiskOverrideStore.set_trust) — how ApprovalOutcome.ALWAYS_TRUST
+    # lands on disk. Kept as an injected callable so this module never imports the store.
+    grant_trust: Optional[Callable[[str], None]] = None
     # Shared, possibly-mutable list of roots (RootDir-like / dicts). When omitted, the single
     # `workspace_root` is the sole writable root (back-compat). Kept by reference and re-read on
     # every check, so runtime add/remove of folders takes effect without rebuilding the engine.
@@ -332,7 +355,15 @@ class PermissionEngine:
         is_write = risk is RiskClass.WRITE_LOCAL
         is_shell = risk is RiskClass.EXEC
         is_egress = risk is RiskClass.EGRESS
-        consequential = is_consequential(risk)
+        # Persistent-authority tools are consequential BY NAME: their risk class can
+        # read as READ (no base-table/catalog entry), but granting standing authority is
+        # a side effect — read-only modes must DENY them, not offer a grant card. The
+        # OPE-117 comment below always promised "read-only modes still hard-deny above
+        # this"; the OPE-136 gate-order pin caught that the class-based check alone
+        # didn't deliver it (save_skill in Discuss reached the human-only card).
+        consequential = (
+            is_consequential(risk) or tool_name in PERSISTENT_AUTHORITY_TOOLS
+        )
 
         # SELF-PROTECTION FLOOR — runs before mode, allowlists and every auto-approve path,
         # because the escalation it blocks happens in the DEFAULT mode. No verdict below can
@@ -404,7 +435,7 @@ class PermissionEngine:
 
         # Full access.
         if self.mode is Mode.BYPASS_APPROVALS:
-            return Decision(True, "完全访问")
+            return Decision(True, REASON_FULL_ACCESS)
 
         # interactive / custom / auto-approve: allowlists.
         #
@@ -450,6 +481,30 @@ class PermissionEngine:
             and not is_connector
         ):
             return Decision(True, "该会话已允许此工具")
+        # Run grant (OPE-136 "Allow for this request"): same checkpoint, shorter life —
+        # and no connector exclusion, because EXTERNAL is exactly who it exists for.
+        # §1.5 still applies: an in-flow click never skips the Auto-Approve judge.
+        if honor_session_grants and tool_name in self.run_allow_tools:
+            return Decision(True, REASON_RUN_GRANT)
+
+        # OPE-136: MCP trust waives only the card, in the one mode where the card is the
+        # deciding voice. Two sources, one branch: a per-tool trust RULE the user minted
+        # from the card ("Always allow this tool" → risk_overrides.json), or the legacy
+        # server-level `requires_approval: false` (which no longer reclassifies — the MCP
+        # floor in risk.classify keeps these tools EXTERNAL). Everything above still
+        # applied: read-only modes denied before this line, the persistent-authority and
+        # protected-file floors returned before it, and Bypass already returned.
+        # Deliberately NOT honored in AUTO_APPROVE: v1 keeps §1.5 conservative — the
+        # reviewer judges trusted MCP calls (falling through to needs_user routes
+        # there); only hand-authored config allowlists skip the judge.
+        if (
+            getattr(metadata, "category", "") == "mcp"
+            and self.mode is not Mode.AUTO_APPROVE
+        ):
+            if self.trust_overrides is not None and self.trust_overrides(tool_name):
+                return Decision(True, REASON_TRUSTED_RULE)
+            if not bool(getattr(metadata, "requires_approval", True)):
+                return Decision(True, REASON_TRUSTED_SERVER)
 
         # Task-scoped standing rules (§25): tool + exact target, owned by the automation.
         # Deliberately NOT subject to the connector exclusion above — the exact-target
@@ -474,6 +529,24 @@ class PermissionEngine:
     # -- session memory ---------------------------------------------------------
     def allow_tool_for_session(self, tool_name: str) -> None:
         self.session_allow_tools.add(tool_name)
+
+    def allow_tool_for_run(self, tool_name: str) -> None:
+        self.run_allow_tools.add(tool_name)
+
+    def clear_run_allowances(self) -> None:
+        """The run boundary IS the grant's expiry: the engine calls this when a run
+        finishes or is interrupted, so "Allow for this request" never outlives the
+        answer the user was watching."""
+        self.run_allow_tools.clear()
+
+    def grant_trust_for_tool(self, tool_name: str) -> None:
+        """OPE-136 durable trust: persist a per-tool "don't ask" rule (survives sessions).
+        Falls back to the session grant when no store is wired (ephemeral engines in
+        tests) — the card's promise degrades to session scope rather than to nothing."""
+        if self.grant_trust is not None:
+            self.grant_trust(tool_name)
+        else:
+            self.session_allow_tools.add(tool_name)
 
     def allow_command_for_session(self, command: str) -> None:
         if command:

@@ -94,15 +94,16 @@ class Match:
         return self.origin.kind == DOWNLOADED
 
     def render(self) -> str:
-        """One line, fixed vocabulary — never file content, never outside-authored text."""
-        verb = "downloaded" if self.downloaded else "created"
+        """One line, fixed vocabulary — never file content, never outside-authored text.
+        The fork localizes this user-facing approval-card line to Chinese."""
+        verb = "下载" if self.downloaded else "创建"
         if self.steps_ago <= 0:
-            when = "just now"
+            when = "刚刚"
         elif self.steps_ago == 1:
-            when = "1 step ago"
+            when = "1 步之前"
         else:
-            when = f"{self.steps_ago} steps ago"
-        return f"{self.path} was {verb} by the agent {when}"
+            when = f"{self.steps_ago} 步之前"
+        return f"{self.path} 由 agent {when}{verb}"
 
 
 def resolve(path: str, root: Path) -> str:

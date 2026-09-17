@@ -99,7 +99,7 @@ OpenWorker 本地优先。一切都在你的机器上：agent 循环、你的对
 - **GUI 补充键**：在上游 locales 之上补齐 `humanize.*`（工具调用的单行 human-readable 文案，上游设计为英文）与 transcript 通知回退串的中文，键位与占位符和上游契约测试保持对齐。
 - **中文回复行为**：persona prompt 引导模型中文优先，而非机械翻译输出。
 
-**与上游的关系**：`upstream` 追踪 `andrewyng/openworker`，`origin` 为本 fork。定期 `fetch` → `merge` → 推送，能力与上游一致。**当前已追平上游 main（2026-08-30）**。由于前端 i18n 与上游同架构，后续追平的合并成本已大幅降低。
+**与上游的关系**：`upstream` 追踪 `andrewyng/openworker`，`origin` 为本 fork。定期 `fetch` → `merge` → 推送，能力与上游一致。**当前已追平上游 main（2026-09-17，upstream 5bc10d9：OPE-136 MCP 权限模型的 reason/审批卡/溯源文案已汉化移植）**。由于前端 i18n 与上游同架构，后续追平的合并成本已大幅降低。
 
 ## 能力增强说明
 

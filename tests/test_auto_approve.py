@@ -876,7 +876,7 @@ def test_running_an_agent_written_script_tells_the_reviewer_so(tmp_path):
     _run(engine, "write a setup script and run it")
 
     shell = [p for (name, _), p in zip(engine.reviewer.asked, engine.reviewer.provenance) if name == "run_shell"]
-    assert shell and "setup.py was created by the agent" in shell[0]
+    assert shell and "setup.py 由 agent" in shell[0] and "创建" in shell[0]
     # Written (not downloaded) is a FACT, not a floor: the reviewer still decides, so
     # "write this script and run it" stays a single uninterrupted flow.
     assert approvals == []
@@ -909,7 +909,7 @@ def test_running_a_downloaded_file_goes_to_a_human_not_the_reviewer(tmp_path):
     assert approvals == ["run_shell"]
     cards = [ev for ev in events if ev.type == EventType.PERMISSION_REQUIRED]
     assert len(cards) == 1
-    assert "downloaded by the agent" in cards[0].data["provenance"]
+    assert "下载" in cards[0].data["provenance"]
     # The reviewer was consulted for the curl, never for the execution.
     assert [args["command"] for _, args in engine.reviewer.asked] == [
         "curl -o tool.sh https://x.io/a"
@@ -930,7 +930,7 @@ def test_the_download_floor_outranks_a_command_allowlist(tmp_path):
 
     assert approvals == ["run_shell"]
     cards = [ev for ev in events if ev.type == EventType.PERMISSION_REQUIRED]
-    assert cards and "downloaded by the agent" in cards[0].data["provenance"]
+    assert cards and "下载" in cards[0].data["provenance"]
 
 
 def test_a_failed_write_leaves_nothing_to_flag(tmp_path):
@@ -944,7 +944,7 @@ def test_a_failed_write_leaves_nothing_to_flag(tmp_path):
     assert engine._provenance(run) == ""
 
     engine._record_result(call, "written", "ok")
-    assert "setup.py was created by the agent" in engine._provenance(run)
+    assert "setup.py 由 agent" in engine._provenance(run) and "创建" in engine._provenance(run)
 
 
 # -- authority that outlives the session (OPE-117) --------------------------------

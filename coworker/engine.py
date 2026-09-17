@@ -33,7 +33,14 @@ _REVIEWER_PAUSED_TEXT = (
     "Auto-approve is paused for the rest of this turn — the reviewer blocked "
     f"{_REVIEWER_TRIP} actions in a row, so approvals now come to you."
 )
-from .permissions import Mode, PermissionEngine
+from .permissions import (
+    REASON_FULL_ACCESS,
+    REASON_RUN_GRANT,
+    REASON_TRUSTED_RULE,
+    REASON_TRUSTED_SERVER,
+    Mode,
+    PermissionEngine,
+)
 from .providers import AssistantTurn, ProviderClient, ToolCall
 from .providers.errors import friendly_model_error
 from .providers.openai_provider import looks_like_unparsed_tool_call
@@ -47,6 +54,14 @@ class ApprovalOutcome(str, Enum):
     ALWAYS_DOMAIN = "always_domain"
     # Session-wide grant for classifier-approved read-only shell commands (readonly.py).
     READONLY_SESSION = "readonly_session"
+    # OPE-136 durable trust: persist a per-tool "don't ask" rule for an MCP tool —
+    # survives sessions, revocable on the server's detail page. MCP-only (validated
+    # server-side in manager._grant_offered, like every other grant).
+    ALWAYS_TRUST = "always_trust"
+    # OPE-136 run grant ("Allow for this request"): cover this exact tool for the
+    # remainder of the CURRENT run only — in-memory, cleared at the run boundary,
+    # nothing persisted. EXTERNAL-risk tools only (validated server-side).
+    THIS_RUN = "this_run"
     DENY = "deny"
 
 
@@ -66,6 +81,10 @@ class PermissionRequest:
     metadata: Any
     reason: str
     tool_call_id: Optional[str] = None  # for durable resume (idempotent inbox item)
+    # Where an MCP call actually goes ({transport, host}, from the server DEF at
+    # registration) — carried on the request so a PARKED approval shows the same
+    # destination evidence as the live card (§35 parity). None for non-MCP tools.
+    mcp_destination: Optional[dict] = None
 
 
 Approver = Callable[[PermissionRequest], Awaitable[ApprovalOutcome]]
@@ -312,9 +331,18 @@ class TurnEngine:
             data["source"] = source
         if display is not None:
             data["display"] = display
+        # OPE-136 run grants: a fresh run starts with a clean slate (belt — the
+        # finally below is the braces; an abandoned generator must not leak a
+        # previous answer's "Allow for this request" into this one).
+        self.permissions.clear_run_allowances()
         yield Event(EventType.TURN_START, data)
-        async for event in self._loop():
-            yield event
+        try:
+            async for event in self._loop():
+                yield event
+        finally:
+            # The run boundary IS the grant's expiry — normal finish, Stop, and
+            # generator teardown (disconnect) all land here.
+            self.permissions.clear_run_allowances()
 
     def switch_model(self, model: str) -> Optional[str]:
         """Rebind the session's model mid-conversation (roadmap item 3). History is
@@ -1124,7 +1152,7 @@ class TurnEngine:
             decision.needs_user or allowed
         ):
             allowed = False
-            reason = f"this file was downloaded by the agent this session — {provenance_note}"
+            reason = f"此文件是 agent 本会话中下载的 —— {provenance_note}"
             decision = replace(
                 decision,
                 allowed=False,
@@ -1143,9 +1171,31 @@ class TurnEngine:
             )
 
         # (c) Bypass mode ran a consequential call no other rule allowed: annotate it.
-        # "full access" is the exact reason string of permissions.py's bypass branch.
-        if allowed and decision.reason == "full access":
+        if allowed and decision.reason == REASON_FULL_ACCESS:
             self._approval_origins[tool_call.id] = {"origin": "bypass"}
+
+        # OPE-136: a trusted-MCP allow ran cardless on standing config (a user trust
+        # rule, or the legacy server flag) — audited and chip-annotated like every
+        # other cardless origin ("recorded, never invisible"). Prefix-matched against
+        # permissions.py's two trusted-branch reason strings — and the chip keeps the
+        # two apart: "your trust rule" points at the tool page's Revoke, "server
+        # trust" at the mcp.json flag. One generic label made a user believe the
+        # SERVER had marked their own rule (owner-hit 2026-08-30).
+        if allowed and decision.reason in (REASON_TRUSTED_RULE, REASON_TRUSTED_SERVER):
+            origin = "trusted_rule" if decision.reason == REASON_TRUSTED_RULE else "trusted_server"
+            self._approval_origins[tool_call.id] = {"origin": origin}
+            self._audit(
+                tool_call, stage="auto_allowed", status="allowed", reason=reason
+            )
+
+        # OPE-136 run grant: a covered call ran cardless under the user's in-run
+        # "Allow for this request" click — silent to attention, never invisible to
+        # the record (transcript chip + audit row, like every cardless origin).
+        if allowed and decision.reason == REASON_RUN_GRANT:
+            self._approval_origins[tool_call.id] = {"origin": "run_grant"}
+            self._audit(
+                tool_call, stage="auto_allowed", status="allowed", reason=reason
+            )
 
         if not allowed and decision.needs_user and self._consume_allow_anyway(tool_call):
             # §8.4 "Allow anyway": the human already approved this exact action from the
@@ -1263,6 +1313,21 @@ class TurnEngine:
                     # True when this shell command classifies as read-only — the card
                     # offers "Allow read-only commands for this session" only then.
                     "readonly_ok": _readonly_ok(tool_call.arguments),
+                    # OPE-136 finding 4: where an MCP call actually goes, stamped at
+                    # registration (mcp/tools.py) from the server def — so the card's
+                    # scope chip can say "leaves this computer → host" instead of the
+                    # catch-all "stays on this computer". None for non-MCP tools.
+                    **(
+                        {"mcp_destination": dest}
+                        if (
+                            dest := getattr(
+                                spec.func, "__coworker_mcp_destination__", None
+                            )
+                            if spec
+                            else None
+                        )
+                        else {}
+                    ),
                     **(
                         self.approval_extras(tool_call.name, tool_call.arguments)
                         if self.approval_extras
@@ -1284,6 +1349,11 @@ class TurnEngine:
                         metadata=metadata,
                         reason=decision.reason,
                         tool_call_id=tool_call.id,
+                        mcp_destination=(
+                            getattr(spec.func, "__coworker_mcp_destination__", None)
+                            if spec
+                            else None
+                        ),
                     )
                 ),
                 interrupted=ApprovalOutcome.DENY,
@@ -1319,6 +1389,13 @@ class TurnEngine:
                     )
                 elif outcome is ApprovalOutcome.READONLY_SESSION:
                     self.permissions.allow_readonly_for_session()
+                elif outcome is ApprovalOutcome.ALWAYS_TRUST:
+                    # Durable per-tool trust (OPE-136 §4): lands in the user-local
+                    # override store, so tomorrow's sessions stay quiet too.
+                    self.permissions.grant_trust_for_tool(tool_call.name)
+                elif outcome is ApprovalOutcome.THIS_RUN:
+                    # Run grant: dies with the current answer (cleared in run()).
+                    self.permissions.allow_tool_for_run(tool_call.name)
                 allowed, reason = True, "approved by user"
                 self._approval_origins[tool_call.id] = {
                     "origin": "user",

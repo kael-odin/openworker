@@ -148,6 +148,19 @@ export function humanizeApprovalTitle(name: string, args: any): HumanLine {
       return a.name
         ? { pre: t("humanize.add_skill"), obj: String(a.name), post: t("humanize.add_skill_to_skills") }
         : { pre: t("humanize.add_skill_short") };
+    // Egress cards (OPE-136 finding 5): name the destination in the headline; the full
+    // URL/query renders in the card's expandable preview.
+    case "web_fetch": {
+      let host = "";
+      try {
+        host = new URL(String(a.url ?? "")).host;
+      } catch {
+        /* unparseable url → generic title; the preview still shows the raw string */
+      }
+      return host ? { pre: t("humanize.fetch_from"), obj: host } : { pre: t("humanize.fetch_page") };
+    }
+    case "web_search":
+      return { pre: t("humanize.search_web") };
     default:
       return { pre: t("humanize.use_tool").replace("{name}", name) };
   }
